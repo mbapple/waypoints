@@ -60,10 +60,30 @@ def create_trip(trip: Trip):
     )
     cur = conn.cursor()
     cur.execute(
-        "INSERT INTO trips (name, start_date, end_date) VALUES (%s, %s, %s)",
-        (trip.name, trip.start_date, trip.end_date),
+        "INSERT INTO trips (name, start_date, end_date, description) VALUES (%s, %s, %s, %s)",
+        (trip.name, trip.start_date, trip.end_date, trip.description if hasattr(trip, 'description') else None),
     )
     conn.commit()
     cur.close()
     conn.close()
     return {"message": "Trip created"}
+
+
+@app.get("/api/trips/{trip_id}")
+def get_trip(trip_id: int):
+    conn = psycopg2.connect(
+        dbname=DB_NAME,
+        user=DB_USER,
+        password=DB_PASSWORD,
+        host=DB_HOST,
+    )
+    cur = conn.cursor()
+    cur.execute("SELECT id, name, start_date, end_date FROM trips WHERE id = %s", (trip_id,))
+    row = cur.fetchone()
+    cur.close()
+    conn.close()
+
+    if row:
+        return {"id": row[0], "name": row[1], "start_date": row[2], "end_date": row[3]}
+    else:
+        return {"error": "Trip not found"}, 404

@@ -1,0 +1,33 @@
+# docker-compose.yml
+services:
+  db:
+    image: postgis/postgis
+    restart: always
+    container_name: travel_database
+    environment:
+      POSTGRES_USER: user 
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: travel_database 
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/home/matthew/Data/GitHub/TravelTracker/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  backend:
+    image: node:18
+    working_dir: /app
+    volumes:
+      - .:/app 
+    depends_on:
+      - db
+    command: node server.js
+    environment:
+      PGHOST: db
+      PGUSER: user
+      PGPASSWORD: password
+      PGDATABASE: travel_database 
+      PGPORT: 5432
+
+volumes:
+  db_data:

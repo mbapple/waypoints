@@ -16,6 +16,7 @@ function CreateTrip() {
         name,
         start_date: startDate,
         end_date: endDate,
+        description: description,
       });
       alert("Trip created!");
     } catch (err) {
@@ -48,8 +49,8 @@ function CreateTrip() {
       />
       <input
         type="text"
-        value={(description)}
         placeholder="Description (optional)"
+        value={description}
         onChange={(e) => setDescription(e.target.value)}
       />
       <button type="submit">Save Trip</button>

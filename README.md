@@ -4,6 +4,16 @@ The goal of this is to provide a solution to track any and all types of travel. 
 # Goals:
 
 
+# Stack:
+```
+database/
+├── PostgreSQL
+backend/
+├── FastAPI
+frontend/
+├── React app 
+```
+
 # Implementations:
 - [ ] PostgreSQL Database
 - [ ] PostGIS integration for location data
@@ -15,5 +25,17 @@ The goal of this is to provide a solution to track any and all types of travel. 
 
 
 # To Do:
-- [ ] Get something working
-- [ ] Implement PostgreSQL database
+- [X] Get something working
+- [ ] Implement PostgreSQL database with ability to add and query trips, nodes, legs
+	- [ ] Ability to provide sorted lists
+- [ ] Implement front end to show trips, nodes, legs and ability to add each
+- [ ] Implemnt basic styling
+- [ ] Integrate into a map view with Leaflet
+- [ ] Integrate into online services 
+	- [ ] Flight data
+	- [ ] Driving distance
+- [ ] Provide statistics about travel: distances, destination lists
+
+
+
+

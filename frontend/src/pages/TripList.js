@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { Link } from "react-router-dom";
 
-
 function App() {
   const [trips, setTrips] = useState([]);
   
@@ -10,13 +9,13 @@ function App() {
     fetchTrips();
   }, []);
 
-const fetchTrips = () => {
+  const fetchTrips = () => {
     axios.get("http://localhost:3001/api/trips")
       .then((res) => setTrips(res.data))
       .catch((err) => console.error(err));
   };
 
-    return (
+  return (
     <div>
       <h1>My Trips</h1>
 

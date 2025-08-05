@@ -1,7 +1,5 @@
-from fastapi import FastAPI, APIRouter, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-import psycopg2
 
 from connect import get_db
 
@@ -18,7 +16,7 @@ class Trip(BaseModel):
 @router.get("/")
 def get_trips():
     conn = get_db()
-    print("Connection is type:", type(conn))
+    #print("Connection is type:", type(conn))
     cur = conn.cursor()
     cur.execute("SELECT id, name, start_date, end_date FROM trips ORDER BY start_date")
     rows = cur.fetchall()
@@ -66,11 +64,16 @@ def delete_trip(trip_id: int):
     cur = conn.cursor()
     cur.execute("DELETE FROM trips WHERE id = %s RETURNING id", (trip_id,))
     deleted = cur.fetchone()
+
+    # Delete associated nodes and legs
+    cur.execute("DELETE FROM nodes WHERE trip_id = %s", (trip_id,))
+    cur.execute("DELETE FROM legs WHERE trip_id = %s", (trip_id,))
+
     conn.commit()
     cur.close()
     conn.close()
 
     if deleted:
-        return {"message": f"Trip {trip_id} deleted"}
+        return {"message": f"Trip {trip_id} and all associate legs and nodes deleted"}
     else:
         raise HTTPException(status_code=404, detail="Trip not found")

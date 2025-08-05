@@ -14,6 +14,17 @@ frontend/
 ├── React app 
 ```
 
+# Postgre Data Scheme:
+Trips: 
+- Entire trip that consists of legs and nodes
+Legs: 
+- Long distances of travel between nodes, i.e. flights, car trips, trains
+Nodes: 
+- Major destinations i.e. Cities
+Stops:
+- Attached to either a leg or a node
+- Destinations such as restaurants, hotels, parks
+
 # Implementations:
 - [ ] PostgreSQL Database
 - [ ] PostGIS integration for location data

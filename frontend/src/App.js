@@ -9,6 +9,7 @@ import CreateTrip from "./pages/CreateTrip";
 import TripDetails from "./pages/TripDetails";
 import AddNode from "./pages/AddNode";
 import AddLeg from "./pages/AddLeg";
+import AddStop from "./pages/AddStop";
 
 function App() {
   return (
@@ -23,6 +24,8 @@ function App() {
             <Route path="/trip/:tripID" element={<TripDetails />} />
             <Route path="/trip/:tripID/add-node" element={<AddNode />} />
             <Route path="/trip/:tripID/add-leg" element={<AddLeg />} />
+            <Route path="/trip/:tripID/add-stop" element={<AddStop />} />
+            {/* Add more routes as needed */}
           </Routes>
         </Container>
       </Router>

@@ -35,7 +35,7 @@ CREATE TABLE nodes (
 CREATE TABLE legs (
     id SERIAL PRIMARY KEY,
     trip_id INTEGER REFERENCES trips(id) ON DELETE CASCADE,
-    type TEXT CHECK (type IN ('flight', 'car', 'train', 'bus', 'boat')),
+    type TEXT CHECK (type IN ('flight', 'car', 'train', 'bus', 'boat', 'other')),
     date DATE,
     start_node_id INTEGER REFERENCES nodes(id),
     end_node_id INTEGER REFERENCES nodes(id),
@@ -81,14 +81,14 @@ CREATE TABLE photos (
 -- ===================
 CREATE TABLE stops (
     id SERIAL PRIMARY KEY,
+    trip_id INTEGER REFERENCES trips(id) ON DELETE CASCADE,
     leg_id INTEGER REFERENCES legs(id) ON DELETE CASCADE,
     node_id INTEGER REFERENCES nodes(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
-    description TEXT,
     latitude DOUBLE PRECISION,
     longitude DOUBLE PRECISION,
     time TIMESTAMP,
-    category TEXT, -- e.g. 'restaurant', 'hotel', 'sightseeing', 'station', etc.
+    category TEXT (CHECK (type IN ('hotel', 'restaurant', 'attraction', 'park', 'other'))),
     notes TEXT
 );
 

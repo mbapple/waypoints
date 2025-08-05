@@ -51,7 +51,8 @@ Stops:
 - [X] Implemnt basic styling
 - [X] Add ability to have stops
 - [X] Show legs/nodes in correct order
-- [ ] Add stops to frontend
+- [ ] Add README for API endpoints
+- [X] Add stops to frontend
 - [ ] Make legs/nodes a drop down to reveal stops
 - [ ] Add ability to update trips/legs/nodes
 - [ ] Add ability to add photos
@@ -68,6 +69,8 @@ Stops:
 - [ ] Fine tune styling
 - [ ] Figure out how to update database without breaking
 - [ ] Figure out how to backup database
+- [ ] Organize page files
+- [ ] Pull out redundant functions into separate file
 
 
 

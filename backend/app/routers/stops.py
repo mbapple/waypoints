@@ -8,6 +8,7 @@ router = APIRouter(prefix="/api/stops", tags=["stops"])
 # Stop model for input validation
 class Stop(BaseModel):
     name: str
+    trip_id: int
     leg_id: int | None = None
     node_id: int | None = None
     description: str | None = None
@@ -75,13 +76,13 @@ def create_stop(stop: Stop):
     conn = get_db()
     cur = conn.cursor()
     cur.execute("""
-        INSERT INTO stops (name, leg_id, node_id, description, category, notes)
+        INSERT INTO stops (trip_id, name, leg_id, node_id, category, notes)
         VALUES (%s, %s, %s, %s, %s, %s)
     """, (
+        stop.trip_id,
         stop.name,
         stop.leg_id,
         stop.node_id,
-        stop.description,
         stop.category,
         stop.notes
     ))

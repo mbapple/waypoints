@@ -1,35 +1,9 @@
 import React, {useState} from "react";
 import axios from "axios";
 import { useParams, Link } from "react-router-dom";
-import styled from "styled-components";
-import { Card, Button, Text, Flex, Form, FormGroup, Label, Input, Select } from "../styles/components";
-
-const PageHeader = styled.div`
-  margin: ${props => props.theme.space[8]} 0 ${props => props.theme.space[6]} 0;
-`;
-
-// const ComingSoonCard = styled(Card)`
-//   max-width: 600px;
-//   margin: 0 auto;
-//   text-align: center;
-//   padding: ${props => props.theme.space[12]};
-// `;
-
-const FormCard = styled(Card)`
-    max-width: 600px;
-    margin: 0 auto;
-`;
-
-const ButtonGroup = styled.div`
-    display: flex;
-    gap: ${props => props.theme.space[3]};
-    justify-content: flex-end;
-    margin-top: ${props => props.theme.space[6]};
-
-    @media (max-width: ${props => props.theme.breakpoints.sm}) {
-        flex-direction: column;
-    }
-`;
+import {FormCard} from "../components/input-components";
+import {PageHeader} from "../components/page-components";
+import { Button, Text, Flex, Form, FormGroup, Label, Input, Select } from "../styles/components";
 
 function AddLeg() {
   const { tripID } = useParams();
@@ -131,12 +105,13 @@ return (
                         required
                         
                     >
-                        <option value="">Select transport type</option>
-                        <option value="flight">flight</option>
-                        <option value="car">train</option>
-                        <option value="train">car</option>
-                        <option value="bus">bus</option>
-                        <option value="boat">boat</option>
+                        <option value="">Select Transport Type</option>
+                        <option value="flight">Flight</option>
+                        <option value="car">Car</option>
+                        <option value="train">Train</option>
+                        <option value="bus">Bus</option>
+                        <option value="boat">Boat</option>
+                        <option value="other">Other</option>
                     </Select>
                 </FormGroup>
                 <FormGroup>
@@ -200,22 +175,13 @@ return (
                     />
                 </FormGroup>
 
-                <ButtonGroup>
-                    <Button 
-                        type="button" 
-                        variant="outline" 
-                        onClick={() => window.history.back()}
+                <Button 
+                    type="submit" 
+                    variant="primary" 
+                    disabled={loading}
                     >
-                    Cancel
-                    </Button>
-                    <Button 
-                        type="submit" 
-                        variant="primary" 
-                        disabled={loading}
-                        >
-                        {loading ? 'Adding...' : 'Add Leg'}
-                    </Button>
-                </ButtonGroup>
+                    {loading ? 'Adding...' : 'Add Leg'}
+                </Button>
             </Form>
         </FormCard>
     </div>

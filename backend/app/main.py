@@ -1,11 +1,11 @@
 # backend/main.py
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
 
 from routers import trips
 from routers import nodes
 from routers import legs
+from routers import stops
 
 
 app = FastAPI()
@@ -23,3 +23,4 @@ app.add_middleware(
 app.include_router(trips.router)
 app.include_router(nodes.router)
 app.include_router(legs.router)
+app.include_router(stops.router)

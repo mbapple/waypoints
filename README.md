@@ -1,3 +1,10 @@
+Running Backend
+```
+uvicorn main:app --host 0.0.0.0 --port 3001 --reload
+```
+
+
+
 # Travel Tracker App
 The goal of this is to provide a solution to track any and all types of travel. It will be a web app designed to be self hosted, providing a place for a user to log trips and destinations. It is an all inclusive solution for tracking distances traveled, locations visitied, and destinations stopped at.
 

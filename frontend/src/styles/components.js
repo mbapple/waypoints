@@ -258,6 +258,40 @@ export const Input = styled.input`
   }
 `;
 
+export const Select = styled.select`
+    width: 100%;
+    padding: ${props => props.theme.space[3]};
+    font-size: ${props => props.theme.fontSizes.base};
+    background: ${props => props.theme.colors.surface};
+    border: 1px solid ${props => props.theme.colors.border};
+    border-radius: ${props => props.theme.radii.md};
+    color: ${props => props.theme.colors.text};
+    transition: ${props => props.theme.transitions.fast};
+    min-height: 44px;
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right ${props => props.theme.space[3]} center;
+    background-repeat: no-repeat;
+    background-size: 16px;
+    padding-right: ${props => props.theme.space[10]};
+    
+    &:focus {
+        border-color: ${props => props.theme.colors.primary};
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    }
+    
+    &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+    
+    option {
+        background: ${props => props.theme.colors.surface};
+        color: ${props => props.theme.colors.text};
+    }
+`;
+
 export const Form = styled.form`
   display: flex;
   flex-direction: column;
@@ -394,7 +428,7 @@ export const Badge = styled.span`
           color: ${props.theme.colors.primary};
         `;
       case 'success':
-        return `
+        return `/
           background: rgba(16, 185, 129, 0.2);
           color: ${props.theme.colors.success};
         `;

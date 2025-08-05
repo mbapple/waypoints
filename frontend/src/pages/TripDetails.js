@@ -47,6 +47,8 @@ function TripDetails() {
   const [trip, setTrip] = useState(null);
   const [loading, setLoading] = useState(true);
   const [nodes, setNodes] = useState([]);
+  const [legs, setLegs] = useState([]);
+  // const [legsAndNodes, setLegsAndNodes] = useState([]);
   const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
@@ -57,6 +59,12 @@ function TripDetails() {
         
         const nodesResponse = await axios.get(`http://localhost:3001/api/nodes/by_trip/${tripID}`);
         setNodes(nodesResponse.data);
+
+        const legsResponse = await axios.get(`http://localhost:3001/api/legs/by_trip/${tripID}`);
+        setLegs(legsResponse.data);
+
+        // const legsAndNodesResponse = await axios.get(`http://localhost:3001/api/trips/${tripID}/all_nodes_and_legs`);
+        // setLegsAndNodes(legsAndNodesResponse.data);
       } catch (err) {
         console.error(err);
       } finally {
@@ -96,16 +104,38 @@ function TripDetails() {
   if (!trip) {
     return (
       <div>
-        <PageHeader>
-          <h1>Trip Not Found</h1>
-          <Text variant="muted">The trip you're looking for doesn't exist.</Text>
-          <Button as={Link} to="/" variant="primary" style={{ marginTop: '1rem' }}>
-            Back to Trips
-          </Button>
-        </PageHeader>
+      <PageHeader>
+        <h1>Trip Not Found</h1>
+        <Text variant="muted">The trip you're looking for doesn't exist.</Text>
+          <div style={{ marginTop: '1rem' }}>
+            <Button as={Link} to="/" variant="primary">
+              Back to Trips
+            </Button>
+          </div>
+      </PageHeader>
       </div>
     );
   }
+
+  // Combine and sort nodes and legs
+  const getOrderedItinerary = () => {
+    const items = [];
+    
+    // Add all nodes
+    nodes.forEach(node => {
+      items.push({ type: 'node', data: node, order: node.id });
+    });
+    
+    // Add all legs
+    legs.forEach(leg => {
+      items.push({ type: 'leg', data: leg, order: leg.start_node_id + 0.5 });
+    });
+    
+    // Sort by order
+    return items.sort((a, b) => a.order - b.order);
+  };
+
+  const orderedItinerary = getOrderedItinerary();
 
   return (
     <div>
@@ -147,50 +177,72 @@ function TripDetails() {
         >
           + Add Leg
         </Button>
+        <Button
+          as={Link}
+          to={`/trip/${tripID}/add-stop`}
+          variant="primary"
+        >
+          + Add Stop
+        </Button>
       </ActionButtons>
 
       <div>
         <Flex justify="space-between" align="center" style={{ marginBottom: '1.5rem' }}>
-          <h2>Destinations</h2>
+          <h2>Trip Itinerary</h2>
           <Text variant="muted">
-            {nodes.length} {nodes.length === 1 ? 'destination' : 'destinations'}
+            {nodes.length} {nodes.length === 1 ? 'destination' : 'destinations'}, {legs.length} {legs.length === 1 ? 'leg' : 'legs'}
           </Text>
         </Flex>
 
-        {nodes.length === 0 ? (
+        {orderedItinerary.length === 0 ? (
           <EmptyState>
-            <h3>No destinations yet</h3>
+            <h3>No itinerary items yet</h3>
             <Text variant="muted">
               Start building your itinerary by adding your first destination!
             </Text>
-            <Button 
-              as={Link} 
-              to={`/trip/${tripID}/add-node`} 
-              variant="primary" 
-              style={{ marginTop: '1rem' }}
-            >
-              Add First Destination
-            </Button>
           </EmptyState>
         ) : (
-          <Grid columns={2}>
-            {nodes.map(node => (
-              <NodeCard key={node.id}>
-                <h4>{node.name}</h4>
-                {node.description && (
-                  <Text variant="secondary" size="sm" style={{ marginBottom: '0.75rem' }}>
-                    {node.description}
-                  </Text>
-                )}
-                <Flex gap={2} align="center" style={{ marginBottom: '0.5rem' }}>
-                  <Badge variant="success">{node.arrival_date}</Badge>
-                  <Text variant="muted" size="xs">to</Text>
-                  <Badge variant="warning">{node.departure_date}</Badge>
-                </Flex>
-                {node.notes && (
-                  <Text variant="muted" size="sm">
-                    <strong>Notes:</strong> {node.notes}
-                  </Text>
+          <Grid columns={1}>
+            {orderedItinerary.map((item, index) => (
+              <NodeCard key={`${item.type}-${item.data.id}`}>
+                {item.type === 'node' ? (
+                  <>
+                    <h4>{item.data.name}</h4>
+                    {item.data.description && (
+                      <Text variant="secondary" size="sm" style={{ marginBottom: '0.75rem' }}>
+                        {item.data.description}
+                      </Text>
+                    )}
+                    <Flex gap={2} align="center" style={{ marginBottom: '0.5rem' }}>
+                      <Badge variant="success">{item.data.arrival_date}</Badge>
+                      <Text variant="muted" size="xs">to</Text>
+                      <Badge variant="warning">{item.data.departure_date}</Badge>
+                    </Flex>
+                    {item.data.notes && (
+                      <Text variant="muted" size="sm">
+                        <strong>Notes:</strong> {item.data.notes}
+                      </Text>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <h4> {item.data.name || `Travel from Node ${item.data.start_node_id} to Node ${item.data.end_node_id}`}</h4>
+                    {item.data.description && (
+                      <Text variant="secondary" size="sm" style={{ marginBottom: '0.75rem' }}>
+                        {item.data.description}
+                      </Text>
+                    )}
+                    <Flex gap={2} align="center" style={{ marginBottom: '0.5rem' }}>
+                      <Badge variant="info">{item.data.start_date}</Badge>
+                      <Text variant="muted" size="xs">to</Text>
+                      <Badge variant="info">{item.data.end_date}</Badge>
+                    </Flex>
+                    {item.data.notes && (
+                      <Text variant="muted" size="sm">
+                        <strong>Notes:</strong> {item.data.notes}
+                      </Text>
+                    )}
+                  </>
                 )}
               </NodeCard>
             ))}

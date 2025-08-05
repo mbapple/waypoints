@@ -5,7 +5,7 @@ from pydantic import BaseModel
 
 from routers import trips
 from routers import nodes
-#from routers import legs
+from routers import legs
 
 
 app = FastAPI()
@@ -22,3 +22,4 @@ app.add_middleware(
 # Include routers
 app.include_router(trips.router)
 app.include_router(nodes.router)
+app.include_router(legs.router)

@@ -13,6 +13,7 @@ class Trip(BaseModel):
     description: str | None = None
 
 
+# Return a list of all trips in order by start date
 @router.get("/")
 def get_trips():
     conn = get_db()
@@ -28,7 +29,7 @@ def get_trips():
         for r in rows
     ]
 
-
+# Create a new trip
 @router.post("/")
 def create_trip(trip: Trip):
     conn = get_db()
@@ -77,3 +78,97 @@ def delete_trip(trip_id: int):
         return {"message": f"Trip {trip_id} and all associate legs and nodes deleted"}
     else:
         raise HTTPException(status_code=404, detail="Trip not found")
+    
+
+
+
+
+
+@router.get("{trip_id}/all_nodes_and_legs")
+def get_all_nodes_and_legs(trip_id: int):
+    conn = get_db()
+    cur = conn.cursor()
+
+    # Fetch nodes
+    cur.execute("""
+        SELECT id, name, description, trip_id, latitude, longitude, arrival_date, departure_date, notes
+        FROM nodes
+        WHERE trip_id = %s
+        ORDER BY arrival_date
+    """, (trip_id,))
+    nodes = cur.fetchall()
+
+    # Fetch legs
+    cur.execute("""
+        SELECT id, trip_id, type, start_node_id, end_node_id, miles, notes
+        FROM legs
+        WHERE trip_id = %s
+        ORDER BY id
+    """, (trip_id,))
+    legs = cur.fetchall()
+
+    cur.close()
+    conn.close()
+
+    # Convert to dictionaries for easier lookup
+    nodes_dict = {
+        n["id"]: {
+            "id": n["id"],
+            "name": n["name"],
+            "description": n["description"],
+            "trip_id": n["trip_id"],
+            "latitude": n["latitude"],
+            "longitude": n["longitude"],
+            "arrival_date": n["arrival_date"],
+            "departure_date": n["departure_date"],
+            "notes": n["notes"] if n["notes"] else None
+        }
+        for n in nodes
+    }
+
+    legs_list = [
+        {
+            "id": l["id"],
+            "trip_id": l["trip_id"],
+            "type": l["type"],
+            "start_node_id": l["start_node_id"],
+            "end_node_id": l["end_node_id"],
+            "miles": l["miles"],
+            "notes": l["notes"] if l["notes"] else None
+        }
+        for l in legs
+    ]
+
+    # Build ordered sequence: Node -> Leg -> Node -> Leg -> ...
+    ordered_sequence = []
+    
+    if nodes:
+        # Start with the first node (earliest arrival_date)
+        ordered_nodes = sorted(nodes, key=lambda n: n["arrival_date"] or "")
+        current_node_id = ordered_nodes[0]["id"]
+        ordered_sequence.append({"type": "node", "data": nodes_dict[current_node_id]})
+        
+        # Find legs and next nodes in sequence
+        remaining_legs = legs_list.copy()
+        
+        while remaining_legs:
+            # Find leg that starts from current node
+            leg_found = None
+            for i, leg in enumerate(remaining_legs):
+                if leg["start_node_id"] == current_node_id:
+                    leg_found = remaining_legs.pop(i)
+                    break
+            
+            if leg_found:
+                ordered_sequence.append({"type": "leg", "data": leg_found})
+                # Add the end node
+                next_node_id = leg_found["end_node_id"]
+                if next_node_id in nodes_dict:
+                    ordered_sequence.append({"type": "node", "data": nodes_dict[next_node_id]})
+                    current_node_id = next_node_id
+                else:
+                    break
+            else:
+                break
+
+    return {"sequence": ordered_sequence}

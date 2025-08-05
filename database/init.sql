@@ -36,6 +36,7 @@ CREATE TABLE legs (
     id SERIAL PRIMARY KEY,
     trip_id INTEGER REFERENCES trips(id) ON DELETE CASCADE,
     type TEXT CHECK (type IN ('flight', 'car', 'train', 'bus', 'boat')),
+    date DATE,
     start_node_id INTEGER REFERENCES nodes(id),
     end_node_id INTEGER REFERENCES nodes(id),
     start_location GEOGRAPHY(Point, 4326),

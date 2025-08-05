@@ -19,6 +19,7 @@ backend/
 ├── FastAPI
 frontend/
 ├── React app 
+├── Styled with styled-components 
 ```
 
 # Postgre Data Scheme:
@@ -44,16 +45,29 @@ Stops:
 
 # To Do:
 - [X] Get something working
-- [ ] Implement PostgreSQL database with ability to add and query trips, nodes, legs
-	- [ ] Ability to provide sorted lists
-- [ ] Implement front end to show trips, nodes, legs and ability to add each
-- [ ] Implemnt basic styling
+- [X] Implement PostgreSQL database with ability to add and query trips, nodes, legs
+	- [X] Ability to provide sorted lists
+- [X] Implement front end to show trips, nodes, legs and ability to add each
+- [X] Implemnt basic styling
+- [X] Add ability to have stops
+- [X] Show legs/nodes in correct order
+- [ ] Add stops to frontend
+- [ ] Make legs/nodes a drop down to reveal stops
+- [ ] Add ability to update trips/legs/nodes
+- [ ] Add ability to add photos
+- [ ] Add features to API and implement on frontend:
+	- [ ] Total miles of a given trip
+	- [ ] Total destination count
+- [ ] Add flights/trains/etc. to API
+	- [ ] On AddLeg, add a box that appears below to get all this info
 - [ ] Integrate into a map view with Leaflet
 - [ ] Integrate into online services 
 	- [ ] Flight data
 	- [ ] Driving distance
 - [ ] Provide statistics about travel: distances, destination lists
-
+- [ ] Fine tune styling
+- [ ] Figure out how to update database without breaking
+- [ ] Figure out how to backup database
 
 
 

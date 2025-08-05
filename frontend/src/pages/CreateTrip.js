@@ -119,7 +119,7 @@ function CreateTrip() {
               name="description"
               as="textarea"
               rows={4}
-              placeholder="Tell us about your trip plans..."
+              placeholder="Provide a brief overview of the trip..."
               value={formData.description}
               onChange={handleChange}
               style={{ resize: 'vertical', minHeight: '100px' }}

@@ -1,9 +1,9 @@
 import React, {useState} from "react";
 import axios from "axios";
 import { useParams, Link } from "react-router-dom";
-import {FormCard} from "../components/input-components";
-import {PageHeader} from "../components/page-components";
-import { Button, Text, Flex, Form, FormGroup, Label, Input, Select } from "../styles/components";
+import {FormCard} from "../../components/input-components";
+import {PageHeader} from "../../components/page-components";
+import { Button, Text, Flex, Form, FormGroup, Label, Input, Select } from "../../styles/components";
 
 function AddLeg() {
   const { tripID } = useParams();

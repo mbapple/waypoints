@@ -9,19 +9,26 @@ router = APIRouter(prefix="/api/legs", tags=["legs"])
 class Leg(BaseModel):
     trip_id: int
     type: str
+    notes: str | None = None
+    date: str
     start_node_id: int
     end_node_id: int
-    #TODO: figure out how to add geography points
-    #miles: float
-    date: str
-    notes: str | None = None
+    start_latitude: float | None = None
+    start_longitude: float | None = None
+    end_latitude: float | None = None
+    end_longitude: float | None = None
+    start_osm_name: str | None = None
+    start_osm_id: int | None = None
+    end_osm_name: str | None = None
+    end_osm_id: int | None = None
+    miles: float | None = None
 
 @router.get("/by_trip/{trip_id}")
 def get_legs_by_node(trip_id: int):
     conn = get_db()
     cur = conn.cursor()
     cur.execute("""
-        SELECT id, trip_id, type, start_node_id, end_node_id, miles, notes
+        SELECT id, trip_id, type, notes, date, start_node_id, end_node_id, start_latitude, start_longitude, end_latitude, end_longitude, start_osm_name, start_osm_id, end_osm_name, end_osm_id, miles
         FROM legs
         WHERE trip_id = %s
         ORDER BY id
@@ -35,10 +42,19 @@ def get_legs_by_node(trip_id: int):
             "id": r["id"],
             "trip_id": r["trip_id"],
             "type": r["type"],
+            "notes": r["notes"] if r["notes"] else None,
+            "date": r["date"],
             "start_node_id": r["start_node_id"],
             "end_node_id": r["end_node_id"],
-            "miles": r["miles"],
-            "notes": r["notes"] if r["notes"] else None
+            "start_latitude": r["start_latitude"],
+            "start_longitude": r["start_longitude"],
+            "end_latitude": r["end_latitude"],
+            "end_longitude": r["end_longitude"],
+            "start_osm_name": r["start_osm_name"],
+            "start_osm_id": r["start_osm_id"],
+            "end_osm_name": r["end_osm_name"],
+            "end_osm_id": r["end_osm_id"],
+            "miles": r["miles"]
         }
         for r in rows
     ]
@@ -49,15 +65,24 @@ def create_leg(leg: Leg):
     conn = get_db()
     cur = conn.cursor()
     cur.execute("""
-        INSERT INTO legs (trip_id, type, start_node_id, end_node_id, notes, date)
-        VALUES (%s, %s, %s, %s, %s, %s)
+        INSERT INTO legs (trip_id, type, notes, date, start_node_id, end_node_id, start_latitude, start_longitude, end_latitude, end_longitude, start_osm_name, start_osm_id, end_osm_name, end_osm_id, miles)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
     """, (
         leg.trip_id,
         leg.type,
+        leg.notes,
+        leg.date,
         leg.start_node_id,
         leg.end_node_id,
-        leg.notes,
-        leg.date
+        leg.start_latitude,
+        leg.start_longitude,
+        leg.end_latitude,
+        leg.end_longitude,
+        leg.start_osm_name,
+        leg.start_osm_id,
+        leg.end_osm_name,
+        leg.end_osm_id,
+        leg.miles if leg.miles is not None else None
     ))
     conn.commit()
     cur.close()
@@ -71,7 +96,7 @@ def get_leg_by_id(leg_id: int):
     conn = get_db()
     cur = conn.cursor()
     cur.execute("""
-        SELECT id, trip_id, type, start_node_id, end_node_id, miles, notes
+        SELECT id, trip_id, type, notes, date, start_node_id, end_node_id, start_latitude, start_longitude, end_latitude, end_longitude, start_osm_name, start_osm_id, end_osm_name, end_osm_id, miles
         FROM legs
         WHERE id = %s
     """, (leg_id,))
@@ -86,10 +111,19 @@ def get_leg_by_id(leg_id: int):
         "id": row["id"],
         "trip_id": row["trip_id"],
         "type": row["type"],
+        "notes": row["notes"] if row["notes"] else None,
+        "date": row["date"],
         "start_node_id": row["start_node_id"],
         "end_node_id": row["end_node_id"],
-        "miles": row["miles"],
-        "notes": row["notes"] if row["notes"] else None
+        "start_latitude": row["start_latitude"],
+        "start_longitude": row["start_longitude"],
+        "end_latitude": row["end_latitude"],
+        "end_longitude": row["end_longitude"],
+        "start_osm_name": row["start_osm_name"],
+        "start_osm_id": row["start_osm_id"],
+        "end_osm_name": row["end_osm_name"],
+        "end_osm_id": row["end_osm_id"],
+        "miles": row["miles"]
     }
 
 @router.delete("/{leg_id}")

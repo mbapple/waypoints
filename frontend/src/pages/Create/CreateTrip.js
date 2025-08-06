@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import axios from "axios";
 import styled from "styled-components";
-import { Card, Button, Input, Form, FormGroup, Label, Text } from "../styles/components";
+import { Card, Button, Input, Form, FormGroup, Label, Text } from "../../styles/components";
 
 const PageHeader = styled.div`
   margin: ${props => props.theme.space[8]} 0 ${props => props.theme.space[6]} 0;

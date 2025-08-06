@@ -22,11 +22,13 @@ CREATE TABLE nodes (
     trip_id INTEGER REFERENCES trips(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
     description TEXT,
-    latitude DOUBLE PRECISION,
-    longitude DOUBLE PRECISION,
+    notes TEXT,
     arrival_date DATE,
     departure_date DATE,
-    notes TEXT
+    latitude DOUBLE PRECISION,
+    longitude DOUBLE PRECISION,
+    osm_name TEXT,  -- Optional OpenStreetMap name
+    osm_id TEXT    -- Optional OpenStreetMap ID
 );
 
 -- ===================
@@ -36,13 +38,19 @@ CREATE TABLE legs (
     id SERIAL PRIMARY KEY,
     trip_id INTEGER REFERENCES trips(id) ON DELETE CASCADE,
     type TEXT CHECK (type IN ('flight', 'car', 'train', 'bus', 'boat', 'other')),
+    notes TEXT,
     date DATE,
     start_node_id INTEGER REFERENCES nodes(id),
     end_node_id INTEGER REFERENCES nodes(id),
-    start_location GEOGRAPHY(Point, 4326),
-    end_location GEOGRAPHY(Point, 4326),
-    miles DOUBLE PRECISION,
-    notes TEXT
+    start_latitude DOUBLE PRECISION,
+    start_longitude DOUBLE PRECISION,
+    end_latitude DOUBLE PRECISION,
+    end_longitude DOUBLE PRECISION,
+    start_osm_name TEXT,  -- Optional OpenStreetMap name for start
+    start_osm_id TEXT,    -- Optional OpenStreetMap ID for start
+    end_osm_name TEXT,    -- Optional OpenStreetMap name for end
+    end_osm_id TEXT,      -- Optional OpenStreetMap ID for end
+    miles DOUBLE PRECISION
 );
 
 -- ===================
@@ -60,8 +68,7 @@ CREATE TABLE flight_details (
 -- CAR DETAILS (Only for legs with type = 'car')
 -- ===================
 CREATE TABLE car_details (
-    leg_id INTEGER PRIMARY KEY REFERENCES legs(id) ON DELETE CASCADE,
-    stops TEXT[]  -- Optional stopover place names
+    leg_id INTEGER PRIMARY KEY REFERENCES legs(id) ON DELETE CASCADE
 );
 
 -- ===================
@@ -84,12 +91,14 @@ CREATE TABLE stops (
     trip_id INTEGER REFERENCES trips(id) ON DELETE CASCADE,
     leg_id INTEGER REFERENCES legs(id) ON DELETE CASCADE,
     node_id INTEGER REFERENCES nodes(id) ON DELETE CASCADE,
+    category TEXT CHECK (category IN ('hotel', 'restaurant', 'attraction', 'park', 'other')),
+    notes TEXT,
     name TEXT NOT NULL,
     latitude DOUBLE PRECISION,
     longitude DOUBLE PRECISION,
-    time TIMESTAMP,
-    category TEXT (CHECK (type IN ('hotel', 'restaurant', 'attraction', 'park', 'other'))),
-    notes TEXT
+    osm_name TEXT,
+    osm_id TEXT,
+    time TIMESTAMP
 );
 
 -- Optional constraint: at least one of leg_id or node_id must be present

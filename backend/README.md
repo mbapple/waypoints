@@ -119,14 +119,16 @@ Get all nodes for a specific trip, ordered by arrival date.
 [
   {
     "id": 1,
+    "trip_id": 1,
     "name": "Hotel Downtown",
     "description": "4-star hotel in city center",
-    "trip_id": 1,
-    "latitude": 40.7128,
-    "longitude": -74.0060,
+    "notes": "Check-in after 3PM",
     "arrival_date": "2025-07-01",
     "departure_date": "2025-07-03",
-    "notes": "Check-in after 3PM"
+    "latitude": 40.7128,
+    "longitude": -74.0060,
+    "osm_name": "Downtown Hotel, City Center, State, Country",
+    "osm_id": 12345
   }
 ]
 ```
@@ -138,13 +140,15 @@ Create a new node.
 ```json
 {
   "name": "Node Name",
-  "description": "Optional description",
   "trip_id": 1,
-  "latitude": 40.7128,
-  "longitude": -74.0060,
+  "description": "Optional description",
+  "notes": "Optional notes",
   "arrival_date": "2025-07-01",
   "departure_date": "2025-07-03",
-  "notes": "Optional notes"
+  "latitude": 41.8933203,
+  "longitude": 12.4829321,
+  "osm_name": "Rome, Roma Capitale, Lazio, Italy",
+  "osm_id": 41485
 }
 ```
 
@@ -162,14 +166,15 @@ Get a specific node by ID.
 ```json
 {
   "id": 1,
+  "trip_id": 1,
   "name": "Hotel Downtown",
   "description": "4-star hotel in city center",
-  "trip_id": 1,
-  "latitude": 40.7128,
-  "longitude": -74.0060,
+  "notes": "Check-in after 3PM",
   "arrival_date": "2025-07-01",
   "departure_date": "2025-07-03",
-  "notes": "Check-in after 3PM"
+  "latitude": 40.7128,
+  "longitude": -74.0060,
+  "osm_name": "Downtown Hotel, City Center, State, Country"
 }
 ```
 
@@ -201,10 +206,19 @@ Get all legs for a specific trip, ordered by ID.
     "id": 1,
     "trip_id": 1,
     "type": "driving",
+    "notes": "Take scenic route",
+    "date": "2025-07-02",
     "start_node_id": 1,
     "end_node_id": 2,
-    "miles": 250.5,
-    "notes": "Take scenic route"
+    "start_latitude": 40.7128,
+    "start_longitude": -74.0060,
+    "end_latitude": 42.3601,
+    "end_longitude": -71.0589,
+    "start_osm_name": "New York, NY, USA",
+    "start_osm_id": 175905,
+    "end_osm_name": "Boston, MA, USA",
+    "end_osm_id": 61443,
+    "miles": 250.5
   }
 ]
 ```
@@ -217,10 +231,19 @@ Create a new leg.
 {
   "trip_id": 1,
   "type": "driving",
+  "notes": "Optional notes",
+  "date": "2025-07-02",
   "start_node_id": 1,
   "end_node_id": 2,
-  "date": "2025-07-02",
-  "notes": "Optional notes"
+  "start_latitude": 40.7128,
+  "start_longitude": -74.0060,
+  "end_latitude": 42.3601,
+  "end_longitude": -71.0589,
+  "start_osm_name": "New York, NY, USA",
+  "start_osm_id": 175905,
+  "end_osm_name": "Boston, MA, USA",
+  "end_osm_id": 61443,
+  "miles": 250.5
 }
 ```
 
@@ -240,10 +263,19 @@ Get a specific leg by ID.
   "id": 1,
   "trip_id": 1,
   "type": "driving",
+  "notes": "Take scenic route",
+  "date": "2025-07-02",
   "start_node_id": 1,
   "end_node_id": 2,
-  "miles": 250.5,
-  "notes": "Take scenic route"
+  "start_latitude": 40.7128,
+  "start_longitude": -74.0060,
+  "end_latitude": 42.3601,
+  "end_longitude": -71.0589,
+  "start_osm_name": "New York, NY, USA",
+  "start_osm_id": 175905,
+  "end_osm_name": "Boston, MA, USA",
+  "end_osm_id": 61443,
+  "miles": 250.5
 }
 ```
 
@@ -273,12 +305,16 @@ Get all stops for a specific leg, ordered by creation time.
 [
   {
     "id": 1,
+    "trip_id": 1,
     "name": "Gas Station",
+    "notes": "Cheapest gas in area",
+    "category": "Other",
     "leg_id": 1,
-    "node_id": null,
+    "latitude": 81.91934,
+    "longitude": -30.193093,
     "description": "Fuel stop",
-    "category": "fuel",
-    "notes": "Cheapest gas in area"
+    "osm_name": "Shell Station, 381 Main Street",
+    "osm_id": 1901914
   }
 ]
 ```
@@ -290,13 +326,17 @@ Get all stops for a specific node, ordered by creation time.
 ```json
 [
   {
-    "id": 2,
-    "name": "Restaurant",
-    "leg_id": null,
+    "id": 1,
+    "trip_id": 1,
+    "name": "Gas Station",
+    "notes": "Cheapest gas in area",
+    "category": "Other",
     "node_id": 1,
-    "description": "Italian restaurant",
-    "category": "dining",
-    "notes": "Make reservation"
+    "latitude": 81.91934,
+    "longitude": -30.193093,
+    "description": "Fuel stop",
+    "osm_name": "Shell Station, 381 Main Street",
+    "osm_id": 1901914
   }
 ]
 ```
@@ -307,13 +347,16 @@ Create a new stop.
 **Request Body:**
 ```json
 {
-  "name": "Stop Name",
   "trip_id": 1,
+  "name": "Stop Name",
   "leg_id": 1,
   "node_id": null,
-  "description": "Optional description",
   "category": "fuel",
-  "notes": "Optional notes"
+  "notes": "Optional notes",
+  "latitude": 40.7128,
+  "longitude": -74.0060,
+  "osm_name": "Gas Station, Street Name, City, State",
+  "osm_id": 98765
 }
 ```
 
@@ -331,12 +374,16 @@ Get a specific stop by ID.
 ```json
 {
   "id": 1,
-  "name": "Gas Station",
+  "trip_id": 1,
+  "name": "Stop Name",
   "leg_id": 1,
   "node_id": null,
-  "description": "Fuel stop",
   "category": "fuel",
-  "notes": "Cheapest gas in area"
+  "notes": "Optional notes",
+  "latitude": 40.7128,
+  "longitude": -74.0060,
+  "osm_name": "Gas Station, Street Name, City, State",
+  "osm_id": 98765
 }
 ```
 
@@ -359,13 +406,15 @@ Get a specific stop by ID.
 ```json
 {
   "name": "string (required)",
-  "description": "string (optional)",
   "trip_id": "integer (optional)",
-  "latitude": "float (optional)",
-  "longitude": "float (optional)",
+  "description": "string (optional)",
+  "notes": "string (optional)",
   "arrival_date": "string (optional)",
   "departure_date": "string (optional)",
-  "notes": "string (optional)"
+  "latitude": "float (optional)",
+  "longitude": "float (optional)",
+  "osm_name": "string (optional)",
+  "osm_id": "integer (optional)"
 }
 ```
 
@@ -374,10 +423,19 @@ Get a specific stop by ID.
 {
   "trip_id": "integer (required)",
   "type": "string (required)",
+  "notes": "string (optional)",
+  "date": "string (required)",
   "start_node_id": "integer (required)",
   "end_node_id": "integer (required)",
-  "date": "string (required)",
-  "notes": "string (optional)"
+  "start_latitude": "float (optional)",
+  "start_longitude": "float (optional)",
+  "end_latitude": "float (optional)",
+  "end_longitude": "float (optional)",
+  "start_osm_name": "string (optional)",
+  "start_osm_id": "integer (optional)",
+  "end_osm_name": "string (optional)",
+  "end_osm_id": "integer (optional)",
+  "miles": "float (optional)"
 }
 ```
 
@@ -390,7 +448,11 @@ Get a specific stop by ID.
   "node_id": "integer (optional)",
   "description": "string (optional)",
   "category": "string (optional)",
-  "notes": "string (optional)"
+  "notes": "string (optional)",
+  "latitude": "float (optional)",
+  "longitude": "float (optional)",
+  "osm_name": "string (optional)",
+  "osm_id": "integer (optional)"
 }
 ```
 

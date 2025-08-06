@@ -8,13 +8,15 @@ router = APIRouter(prefix="/api/nodes", tags=["nodes"])
 # Node model for input validation
 class Node(BaseModel):
     name: str
-    description: str | None = None
     trip_id: int | None = None
-    latitude: float | None = None
-    longitude: float | None = None
+    description: str | None = None
+    notes: str | None = None
     arrival_date: str | None = None
     departure_date: str | None = None
-    notes: str | None = None
+    latitude: float | None = None
+    longitude: float | None = None
+    osm_name: str | None = None
+    osm_id: int | None = None
 
 # Return a list of all nodes corresponding to a specific trip
 @router.get("/by_trip/{trip_id}")
@@ -22,7 +24,7 @@ def get_nodes_by_trip(trip_id: int):
     conn = get_db()
     cur = conn.cursor()
     cur.execute("""
-        SELECT id, name, description, trip_id, latitude, longitude, arrival_date, departure_date, notes
+        SELECT id, trip_id, name, description, notes, arrival_date, departure_date, latitude, longitude, osm_name,osm_id
         FROM nodes
         WHERE trip_id = %s
         ORDER BY arrival_date
@@ -34,14 +36,16 @@ def get_nodes_by_trip(trip_id: int):
     return [
         {
             "id": r["id"],
+            "trip_id": r["trip_id"],
             "name": r["name"],
             "description": r["description"],
-            "trip_id": r["trip_id"],
-            "latitude": r["latitude"],
-            "longitude": r["longitude"],
+            "notes": r["notes"] if r["notes"] else None,
             "arrival_date": r["arrival_date"],
             "departure_date": r["departure_date"],
-            "notes": r["notes"] if r["notes"] else None
+            "latitude": r["latitude"],
+            "longitude": r["longitude"],
+            "osm_name": r["osm_name"] if r["osm_name"] else None,
+            "osm_id": r["osm_id"] if r["osm_id"] else None
         }
         for r in rows
     ]
@@ -52,17 +56,19 @@ def create_node(node: Node):
     conn = get_db()
     cur = conn.cursor()
     cur.execute("""
-        INSERT INTO nodes (name, description, trip_id, latitude, longitude, arrival_date, departure_date, notes)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        INSERT INTO nodes (trip_id, name, description, notes, arrival_date, departure_date, latitude, longitude, osm_name, osm_id)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
     """, (
+        node.trip_id,
         node.name,
         node.description,
-        node.trip_id,
-        node.latitude,
-        node.longitude,
+        node.notes,
         node.arrival_date,
         node.departure_date,
-        node.notes
+        node.latitude,
+        node.longitude,
+        node.osm_name,
+        node.osm_id
     ))
     conn.commit()
     cur.close()
@@ -75,7 +81,7 @@ def get_node(node_id: int):
     conn = get_db()
     cur = conn.cursor()
     cur.execute("""
-        SELECT id, name, description, trip_id, latitude, longitude, arrival_date, departure_date, notes
+        SELECT id, trip_id, name, description, notes, arrival_date, departure_date, latitude, longitude, osm_name, osm_id
         FROM nodes
         WHERE id = %s
     """, (node_id,))
@@ -86,14 +92,15 @@ def get_node(node_id: int):
     if row:
         return {
             "id": row["id"],
+            "trip_id": row["trip_id"],
             "name": row["name"],
             "description": row["description"],
-            "trip_id": row["trip_id"],
-            "latitude": row["latitude"],
-            "longitude": row["longitude"],
+            "notes": row["notes"] if row["notes"] else None,
             "arrival_date": row["arrival_date"],
             "departure_date": row["departure_date"],
-            "notes": row["notes"] if row["notes"] else None
+            "latitude": row["latitude"],
+            "longitude": row["longitude"],
+            "osm_name": row["osm_name"] if row["osm_name"] else None,
         }
     else:
         raise HTTPException(status_code=404, detail="Node not found")

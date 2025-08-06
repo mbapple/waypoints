@@ -5,11 +5,12 @@ import { theme } from "./styles/theme";
 import { GlobalStyles, Container } from "./styles/components";
 import Navigation from "./components/Navigation";
 import TripList from "./pages/TripList";
-import CreateTrip from "./pages/CreateTrip";
+import CreateTrip from "./pages/Create/CreateTrip";
 import TripDetails from "./pages/TripDetails";
-import AddNode from "./pages/AddNode";
-import AddLeg from "./pages/AddLeg";
-import AddStop from "./pages/AddStop";
+import AddNode from "./pages/Create/AddNode";
+import AddLeg from "./pages/Create/AddLeg";
+import AddStop from "./pages/Create/AddStop";
+
 
 function App() {
   return (
@@ -25,6 +26,7 @@ function App() {
             <Route path="/trip/:tripID/add-node" element={<AddNode />} />
             <Route path="/trip/:tripID/add-leg" element={<AddLeg />} />
             <Route path="/trip/:tripID/add-stop" element={<AddStop />} />
+          
             {/* Add more routes as needed */}
           </Routes>
         </Container>

@@ -51,8 +51,10 @@ Stops:
 - [X] Implemnt basic styling
 - [X] Add ability to have stops
 - [X] Show legs/nodes in correct order
-- [ ] Add README for API endpoints
+- [X] Add README for API endpoints
 - [X] Add stops to frontend
+- [ ] Integrate OSM location selection for nodes/stops/legs
+- [X] Clean up order in API, database, and add pages to make consistent
 - [ ] Make legs/nodes a drop down to reveal stops
 - [ ] Add ability to update trips/legs/nodes
 - [ ] Add ability to add photos
@@ -71,6 +73,6 @@ Stops:
 - [ ] Figure out how to backup database
 - [ ] Organize page files
 - [ ] Pull out redundant functions into separate file
-
+- [ ] Add ability to customize style and light/dark mode
 
 

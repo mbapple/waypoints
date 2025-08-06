@@ -2,7 +2,8 @@ import React, { useState } from "react";
 import axios from "axios";
 import { useParams, Link } from "react-router-dom";
 import styled from "styled-components";
-import { Card, Button, Input, Form, FormGroup, Label, Text, Flex } from "../styles/components";
+import {PlaceSearchInput} from "../../components/map-integration-components";
+import { Card, Button, Input, Form, FormGroup, Label, Text, Flex } from "../../styles/components";
 
 const PageHeader = styled.div`
   margin: ${props => props.theme.space[8]} 0 ${props => props.theme.space[6]} 0;
@@ -32,6 +33,10 @@ function AddNode() {
     arrivalDate: "",
     departureDate: "",
     notes: "",
+    latitude: "",
+    longitude: "",
+    osmName: "",
+    osmID: "",
   });
   const [loading, setLoading] = useState(false);
 
@@ -55,6 +60,10 @@ function AddNode() {
         arrival_date: formData.arrivalDate,
         departure_date: formData.departureDate,
         notes: formData.notes,
+        latitude: formData.latitude,
+        longitude: formData.longitude,
+        osm_name: formData.osmName,
+        osm_id: formData.osmID,
       });
       
       // Redirect back to trip details
@@ -97,6 +106,25 @@ function AddNode() {
               required
             />
           </FormGroup>
+
+          <FormGroup>
+              <Label htmlFor="location">Location</Label>
+              <PlaceSearchInput
+                  id="location"
+                  name="location"
+                  placeholder="Search for a location..."
+                  onPlaceSelect={(place) => {
+                      setFormData(prev => ({
+                          ...prev,
+                          latitude: place.lat,
+                          longitude: place.lon,
+                          osmName: place.name,
+                          osmID: place.osm_id
+                      }));
+                  }}
+              />
+          </FormGroup>
+
 
           <FormGroup>
             <Label htmlFor="description">Description</Label>

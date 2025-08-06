@@ -14,6 +14,10 @@ class Stop(BaseModel):
     description: str | None = None
     category: str | None = None
     notes: str | None = None
+    latitude: float | None = None
+    longitude: float | None = None
+    osm_name: str | None = None
+    osm_id: int | None = None
 
 # Return a list of all stops corresponding to a specific leg
 @router.get("/by_leg/{leg_id}")
@@ -21,7 +25,7 @@ def get_stops_by_leg(leg_id: int):
     conn = get_db()
     cur = conn.cursor()
     cur.execute("""
-        SELECT id, name, leg_id, node_id, description, category, notes
+        SELECT id, trip_id, name, notes, category, leg_id, latitude, longitude, osm_name, osm_id
         FROM stops
         WHERE leg_id = %s
         ORDER BY time_created
@@ -33,12 +37,15 @@ def get_stops_by_leg(leg_id: int):
     return [
         {
             "id": r["id"],
+            "trip_id": r["trip_id"],
             "name": r["name"],
-            "leg_id": r["leg_id"],
-            "node_id": r["node_id"],
-            "description": r["description"],
+            "notes": r["notes"] if r["notes"] else None,
             "category": r["category"],
-            "notes": r["notes"] if r["notes"] else None
+            "leg_id": r["leg_id"],
+            "latitude": r["latitude"],
+            "longitude": r["longitude"],
+            "osm_name": r["osm_name"],
+            "osm_id": r["osm_id"]
         }
         for r in rows
     ]
@@ -49,7 +56,7 @@ def get_stops_by_node(node_id: int):
     conn = get_db()
     cur = conn.cursor()
     cur.execute("""
-        SELECT id, name, leg_id, node_id, description, category, notes
+        SELECT id, trip_id, name, notes, category, node_id, latitude, longitude, osm_name, osm_id
         FROM stops
         WHERE node_id = %s
         ORDER BY time_created
@@ -61,12 +68,15 @@ def get_stops_by_node(node_id: int):
     return [
         {
             "id": r["id"],
+            "trip_id": r["trip_id"],
             "name": r["name"],
-            "leg_id": r["leg_id"],
-            "node_id": r["node_id"],
-            "description": r["description"],
+            "notes": r["notes"] if r["notes"] else None,
             "category": r["category"],
-            "notes": r["notes"] if r["notes"] else None
+            "node_id": r["node_id"],
+            "latitude": r["latitude"],
+            "longitude": r["longitude"],
+            "osm_name": r["osm_name"],
+            "osm_id": r["osm_id"]
         }
         for r in rows
     ]
@@ -76,15 +86,19 @@ def create_stop(stop: Stop):
     conn = get_db()
     cur = conn.cursor()
     cur.execute("""
-        INSERT INTO stops (trip_id, name, leg_id, node_id, category, notes)
-        VALUES (%s, %s, %s, %s, %s, %s)
+        INSERT INTO stops (trip_id, name, leg_id, node_id, category, notes, latitude, longitude, osm_name, osm_id)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
     """, (
         stop.trip_id,
         stop.name,
         stop.leg_id,
         stop.node_id,
         stop.category,
-        stop.notes
+        stop.notes,
+        stop.latitude,
+        stop.longitude,
+        stop.osm_name,
+        stop.osm_id
     ))
     conn.commit()
     cur.close()
@@ -96,7 +110,7 @@ def get_stop_by_id(stop_id: int):
     conn = get_db()
     cur = conn.cursor()
     cur.execute("""
-        SELECT id, name, leg_id, node_id, description, category, notes
+        SELECT id, trip_id, name, notes, category, leg_id, node_id, latitude, longitude, osm_name, osm_id
         FROM stops
         WHERE id = %s
     """, (stop_id,))
@@ -107,12 +121,16 @@ def get_stop_by_id(stop_id: int):
     if row:
         return {
             "id": row["id"],
+            "trip_id": row["trip_id"],
             "name": row["name"],
+            "notes": row["notes"] if row["notes"] else None,
+            "category": row["category"],
             "leg_id": row["leg_id"],
             "node_id": row["node_id"],
-            "description": row["description"],
-            "category": row["category"],
-            "notes": row["notes"] if row["notes"] else None
+            "latitude": row["latitude"],
+            "longitude": row["longitude"],
+            "osm_name": row["osm_name"],
+            "osm_id": row["osm_id"]
         }
     else:
         raise HTTPException(status_code=404, detail="Stop not found")

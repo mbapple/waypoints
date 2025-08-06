@@ -1,9 +1,10 @@
 import React, {useState} from "react";
 import axios from "axios";
 import { useParams, Link } from "react-router-dom";
-import {FormCard} from "../components/input-components";
-import {PageHeader} from "../components/page-components";
-import { Button, Text, Flex, Form, FormGroup, Label, Input, Select } from "../styles/components";
+import {FormCard} from "../../components/input-components";
+import {PageHeader} from "../../components/page-components";
+import {PlaceSearchInput} from "../../components/map-integration-components";
+import { Button, Text, Flex, Form, FormGroup, Label, Input, Select } from "../../styles/components";
 
 
 function AddStop() {
@@ -15,6 +16,10 @@ function AddStop() {
         nodeID: "",
         category: "",
         notes: "",
+        latitude: "",
+        longitude: "",
+        osmName: "",
+        osmID: "",
     });
 
     const [loading, setLoading] = useState(false);
@@ -32,15 +37,6 @@ function AddStop() {
         setLoading(true);
 
         try {
-            console.log("Submitting stop data:", {
-                trip_id: tripID,
-                name: formData.name,
-                leg_id: formData.legID,
-                node_id: formData.nodeID,
-                category: formData.category,
-                notes: formData.notes,
-            });
-
             await axios.post("http://localhost:3001/api/stops", {
                 trip_id: tripID,
                 name: formData.name,
@@ -48,6 +44,10 @@ function AddStop() {
                 node_id: formData.nodeID,
                 category: formData.category,
                 notes: formData.notes,
+                latitude: formData.latitude,
+                longitude: formData.longitude,
+                osm_name: formData.osmName,
+                osm_id: formData.osmID,
             });
             
             // Redirect back to trip details
@@ -158,6 +158,24 @@ function AddStop() {
                     </FormGroup>
 
                     <FormGroup>
+                        <Label htmlFor="location">Location</Label>
+                        <PlaceSearchInput
+                            id="location"
+                            name="location"
+                            placeholder="Search for a location..."
+                            onPlaceSelect={(place) => {
+                                setFormData(prev => ({
+                                    ...prev,
+                                    latitude: place.lat,
+                                    longitude: place.lon,
+                                    osmName: place.name,
+                                    osmID: place.osm_id
+                                }));
+                            }}
+                        />
+                    </FormGroup>
+
+                    <FormGroup>
                         <Label htmlFor="type">Category *</Label>
                         <Select
                             id="category"
@@ -190,7 +208,10 @@ function AddStop() {
                     <Button type="submit" variant="primary" disabled={loading}>
                         {loading ? "Adding Stop..." : "Add Stop"}
                     </Button>
+    
+               
                 </Form>
+
             </FormCard>
         </div>
     );

@@ -258,6 +258,97 @@ export const Input = styled.input`
   }
 `;
 
+export const DropdownContainer = styled.div`
+  position: relative;
+  width: 100%;
+`;
+
+export const DropdownMenu = styled.div`
+  position: absolute;
+  z-index: 50;
+  width: 100%;
+  margin-top: ${props => props.theme.space[1]};
+  background: ${props => props.theme.colors.surface};
+  border: 1px solid ${props => props.theme.colors.border};
+  border-radius: ${props => props.theme.radii.md};
+  box-shadow: ${props => props.theme.shadows.lg};
+  max-height: 240px;
+  overflow-y: auto;
+  
+  /* Custom scrollbar styling */
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: ${props => props.theme.colors.backgroundSecondary};
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: ${props => props.theme.colors.border};
+    border-radius: ${props => props.theme.radii.base};
+  }
+  
+  &::-webkit-scrollbar-thumb:hover {
+    background: ${props => props.theme.colors.borderLight};
+  }
+`;
+
+export const DropdownItem = styled.div`
+  padding: ${props => props.theme.space[3]};
+  cursor: pointer;
+  border-bottom: 1px solid ${props => props.theme.colors.backgroundSecondary};
+  transition: ${props => props.theme.transitions.fast};
+  
+  &:last-child {
+    border-bottom: none;
+  }
+  
+  &:hover {
+    background: ${props => props.theme.colors.surfaceHover};
+  }
+  
+  .primary-text {
+    font-weight: ${props => props.theme.fontWeights.medium};
+    font-size: ${props => props.theme.fontSizes.sm};
+    color: ${props => props.theme.colors.text};
+    margin-bottom: ${props => props.theme.space[1]};
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  .secondary-text {
+    font-size: ${props => props.theme.fontSizes.xs};
+    color: ${props => props.theme.colors.textMuted};
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+`;
+
+export const LoadingSpinner = styled.div`
+  position: absolute;
+  right: ${props => props.theme.space[3]};
+  top: 50%;
+  transform: translateY(-50%);
+  
+  .spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid ${props => props.theme.colors.border};
+    border-top-color: ${props => props.theme.colors.primary};
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+  
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+`;
+
 export const Select = styled.select`
     width: 100%;
     padding: ${props => props.theme.space[3]};

@@ -84,7 +84,7 @@ def delete_trip(trip_id: int):
 
 
 
-@router.get("{trip_id}/all_nodes_and_legs")
+@router.get("/{trip_id}/all_nodes_and_legs")
 def get_all_nodes_and_legs(trip_id: int):
     conn = get_db()
     cur = conn.cursor()

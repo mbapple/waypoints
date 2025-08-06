@@ -108,11 +108,12 @@ function AddNode() {
           </FormGroup>
 
           <FormGroup>
-              <Label htmlFor="location">Location</Label>
+              <Label htmlFor="location">Location *</Label>
               <PlaceSearchInput
                   id="location"
                   name="location"
                   placeholder="Search for a location..."
+                  required
                   onPlaceSelect={(place) => {
                       setFormData(prev => ({
                           ...prev,

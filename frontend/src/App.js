@@ -10,6 +10,7 @@ import TripDetails from "./pages/TripDetails";
 import AddNode from "./pages/Create/AddNode";
 import AddLeg from "./pages/Create/AddLeg";
 import AddStop from "./pages/Create/AddStop";
+import Settings from "./pages/Settings";
 
 
 function App() {
@@ -20,6 +21,7 @@ function App() {
         <Navigation />
         <Container>
           <Routes>
+            <Route path="/settings" element={<Settings />} />
             <Route path="/" element={<TripList />} />
             <Route path="/create" element={<CreateTrip />} />
             <Route path="/trip/:tripID" element={<TripDetails />} />

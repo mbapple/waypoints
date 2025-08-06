@@ -1,46 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import axios from "axios";
-import styled from "styled-components";
-import { Card, Button, Text, Grid, Flex, Badge } from "../styles/components";
-
-const PageHeader = styled.div`
-  margin: ${props => props.theme.space[8]} 0 ${props => props.theme.space[6]} 0;
-`;
-
-const TripInfoCard = styled(Card)`
-  margin-bottom: ${props => props.theme.space[8]};
-`;
-
-const NodeCard = styled(Card)`
-  transition: ${props => props.theme.transitions.base};
-  
-  &:hover {
-    transform: translateY(-1px);
-    box-shadow: ${props => props.theme.shadows.lg};
-  }
-`;
-
-const ActionButtons = styled(Flex)`
-  gap: ${props => props.theme.space[3]};
-  margin: ${props => props.theme.space[6]} 0;
-  
-  @media (max-width: ${props => props.theme.breakpoints.sm}) {
-    flex-direction: column;
-  }
-`;
-
-const DangerZone = styled(Card)`
-  border-color: ${props => props.theme.colors.danger};
-  background: rgba(239, 68, 68, 0.05);
-  margin-top: ${props => props.theme.space[8]};
-`;
-
-const EmptyState = styled.div`
-  text-align: center;
-  padding: ${props => props.theme.space[12]} ${props => props.theme.space[8]};
-  color: ${props => props.theme.colors.textMuted};
-`;
+import { PageHeader } from "../components/page-components";
+import { TripInfoCard, NodeCard, DangerZone, ActionButtons, EmptyState } from "../components/trip-detail-components";
+import { Button, Text, Grid, Flex, Badge } from "../styles/components";
 
 function TripDetails() {
   const { tripID } = useParams();
@@ -121,21 +84,53 @@ function TripDetails() {
   const getOrderedItinerary = () => {
     const items = [];
     
-    // Add all nodes
-    nodes.forEach(node => {
-      items.push({ type: 'node', data: node, order: node.id });
+    // Sort nodes by arrival_date
+    const sortedNodes = [...nodes].sort((a, b) => new Date(a.arrival_date) - new Date(b.arrival_date));
+    
+    sortedNodes.forEach((node, nodeIndex) => {
+      // Add the node
+      items.push({ type: 'node', data: node, order: nodeIndex * 2 });
+      
+      // Find and add legs that start from this node
+      const nodeLegs = legs.filter(leg => leg.start_node_id === node.id);
+      nodeLegs.forEach((leg, legIndex) => {
+        items.push({ type: 'leg', data: leg, order: nodeIndex * 2 + 1 + legIndex * 0.1 });
+      });
     });
     
-    // Add all legs
-    legs.forEach(leg => {
-      items.push({ type: 'leg', data: leg, order: leg.start_node_id + 0.5 });
-    });
-    
-    // Sort by order
+    // Sort by order to ensure proper sequence
     return items.sort((a, b) => a.order - b.order);
   };
 
   const orderedItinerary = getOrderedItinerary();
+
+  const getTransportTypeLabel = (type) => {
+    switch (type?.toLowerCase()) {
+      case 'flight':
+        return 'Flight from';
+      case 'car':
+        return 'Driving from';
+      case 'train':
+        return 'Train from';
+      case 'boat':
+        return 'Travel by sea from';
+      case 'bus':
+        return 'Bus from';
+      default:
+        return 'Travel from';
+    }
+  };
+
+  const getNodeName = (nodeID) => {
+    const node = nodes.find(n => n.id === nodeID);
+    return node ? node.name : `Node ${nodeID}`;
+  };
+
+  const calculateMiles = () => {
+    return (nodes.reduce((sum, node) => sum + (node.miles || 0), 0));
+  }
+
+  const miles = calculateMiles();
 
   return (
     <div>
@@ -160,31 +155,12 @@ function TripDetails() {
         <Text variant="secondary">
           <strong>Description:</strong> {trip.description || "No description provided."}
         </Text>
+        <Text variant="secondary" style={{ display: 'block', marginTop: '1rem' }}>
+          <strong>Total Miles:</strong> {miles} miles
+        </Text>
       </TripInfoCard>
 
-      <ActionButtons>
-        <Button 
-          as={Link} 
-          to={`/trip/${tripID}/add-node`} 
-          variant="primary"
-        >
-          + Add Node
-        </Button>
-        <Button 
-          as={Link} 
-          to={`/trip/${tripID}/add-leg`} 
-          variant="secondary"
-        >
-          + Add Leg
-        </Button>
-        <Button
-          as={Link}
-          to={`/trip/${tripID}/add-stop`}
-          variant="primary"
-        >
-          + Add Stop
-        </Button>
-      </ActionButtons>
+      
 
       <div>
         <Flex justify="space-between" align="center" style={{ marginBottom: '1.5rem' }}>
@@ -226,17 +202,12 @@ function TripDetails() {
                   </>
                 ) : (
                   <>
-                    <h4> {item.data.name || `Travel from Node ${item.data.start_node_id} to Node ${item.data.end_node_id}`}</h4>
+                    <h4>{item.data.name || `${getTransportTypeLabel(item.data.type)} ${getNodeName(item.data.start_node_id)} to ${getNodeName(item.data.end_node_id)}`}</h4>
                     {item.data.description && (
                       <Text variant="secondary" size="sm" style={{ marginBottom: '0.75rem' }}>
                         {item.data.description}
                       </Text>
                     )}
-                    <Flex gap={2} align="center" style={{ marginBottom: '0.5rem' }}>
-                      <Badge variant="info">{item.data.start_date}</Badge>
-                      <Text variant="muted" size="xs">to</Text>
-                      <Badge variant="info">{item.data.end_date}</Badge>
-                    </Flex>
                     {item.data.notes && (
                       <Text variant="muted" size="sm">
                         <strong>Notes:</strong> {item.data.notes}
@@ -249,6 +220,30 @@ function TripDetails() {
           </Grid>
         )}
       </div>
+
+      <ActionButtons>
+        <Button 
+          as={Link} 
+          to={`/trip/${tripID}/add-node`} 
+          variant="primary"
+        >
+          + Add Node
+        </Button>
+        <Button 
+          as={Link} 
+          to={`/trip/${tripID}/add-leg`} 
+          variant="secondary"
+        >
+          + Add Leg
+        </Button>
+        <Button
+          as={Link}
+          to={`/trip/${tripID}/add-stop`}
+          variant="primary"
+        >
+          + Add Stop
+        </Button>
+      </ActionButtons>
 
       <DangerZone>
         <h3 style={{ color: '#ef4444', marginBottom: '1rem' }}>Danger Zone</h3>

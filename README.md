@@ -53,10 +53,10 @@ Stops:
 - [X] Show legs/nodes in correct order
 - [X] Add README for API endpoints
 - [X] Add stops to frontend
-- [ ] Integrate OSM location selection for nodes/stops/legs
+- [X] Integrate OSM location selection for nodes/stops/legs
 - [X] Clean up order in API, database, and add pages to make consistent
-- [ ] Make legs/nodes a drop down to reveal stops
-- [ ] Make legs display correctly
+- [X] Make legs/nodes a drop down to reveal stops
+- [X] Make legs display correctly
 - [ ] Add ability to update trips/legs/nodes
 - [ ] Add ability to add photos
 - [ ] Add features to API and implement on frontend:

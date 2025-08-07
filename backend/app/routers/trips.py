@@ -172,3 +172,16 @@ def get_all_nodes_and_legs(trip_id: int):
                 break
 
     return {"sequence": ordered_sequence}
+
+
+@router.get("/{trip_id}/miles")
+def get_total_miles(trip_id: int):
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("SELECT SUM(miles) AS total_miles FROM legs WHERE trip_id = %s", (trip_id,))
+    row = cur.fetchone()
+    cur.close()
+    conn.close()
+
+    total_miles = row["total_miles"] if row and row["total_miles"] is not None else 0
+    return {"total_miles": total_miles}

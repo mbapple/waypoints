@@ -109,6 +109,15 @@ Get all nodes and legs for a trip in ordered sequence.
 }
 ```
 
+### GET `/api/trips/{trip_id}/miles`
+Get the total miles of all legs in a trip.
+
+**Response:**
+```json
+{
+    "miles": 1903
+}
+
 ## Nodes API (`/api/nodes`)
 
 ### GET `/api/nodes/by_trip/{trip_id}`
@@ -341,7 +350,30 @@ Get all stops for a specific node, ordered by creation time.
 ]
 ```
 
-### POST `/api/stops/`
+### GET `/api/stops/by_trip/{trip_id}`
+Geat all stops for a specific trip, ordered by id.
+
+**Response:**
+```json
+[
+  {
+    "id": 1,
+    "trip_id": 1,
+    "name": "Gas Station",
+    "notes": "Cheapest gas in area",
+    "category": "Other",
+    "node_id": 1,
+    "leg_id": null,
+    "latitude": 81.91934,
+    "longitude": -30.193093,
+    "description": "Fuel stop",
+    "osm_name": "Shell Station, 381 Main Street",
+    "osm_id": 1901914
+  }
+]
+```
+
+### POST `/
 Create a new stop.
 
 **Request Body:**

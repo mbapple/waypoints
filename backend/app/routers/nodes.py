@@ -16,7 +16,7 @@ class Node(BaseModel):
     latitude: float | None = None
     longitude: float | None = None
     osm_name: str | None = None
-    osm_id: int | None = None
+    osm_id: str | None = None
 
 # Return a list of all nodes corresponding to a specific trip
 @router.get("/by_trip/{trip_id}")

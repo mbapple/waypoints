@@ -7,7 +7,7 @@ import {
     LoadingSpinner 
 } from '../styles/components';
 
-const PlaceSearchInput = ({ onPlaceSelect, placeholder = "Search for a place...", className = "" }) => {
+export const PlaceSearchInput = ({ onPlaceSelect, placeholder = "Search for a place...", className = "" }) => {
     const [query, setQuery] = useState('');
     const [results, setResults] = useState([]);
     const [isOpen, setIsOpen] = useState(false);
@@ -45,7 +45,7 @@ const PlaceSearchInput = ({ onPlaceSelect, placeholder = "Search for a place..."
         setLoading(true);
         try {
             const response = await fetch(
-                `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&limit=5&addressdetails=1`
+                `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&limit=5&addressdetails=1&extratags=1&namedetails=1&featuretype=settlement`
             );
             const data = await response.json();
             setResults(data);
@@ -70,7 +70,7 @@ const PlaceSearchInput = ({ onPlaceSelect, placeholder = "Search for a place..."
                 boundingBox: place.boundingbox,
                 type: place.type,
                 address: place.address,
-                osm_id: place.osm_id,
+                osm_id: `${place.osm_type.charAt(0).toUpperCase()}${place.osm_id}`,
             });
         }
     };
@@ -119,4 +119,12 @@ const PlaceSearchInput = ({ onPlaceSelect, placeholder = "Search for a place..."
     );
 };
 
-export {PlaceSearchInput};
+
+
+export const getPlaceLink = (osmID, osmName) => {
+    if (!osmID) return '#';
+    const baseUrl = 'https://www.openstreetmap.org';
+    const type = osmID.startsWith('N') ? 'node' : osmID.startsWith('W') ? 'way' : 'relation';
+    const idNumber = osmID.slice(1);
+    return `${baseUrl}/${type}/${idNumber}`;
+};

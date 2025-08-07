@@ -18,9 +18,9 @@ class Leg(BaseModel):
     end_latitude: float | None = None
     end_longitude: float | None = None
     start_osm_name: str | None = None
-    start_osm_id: int | None = None
+    start_osm_id: str | None = None
     end_osm_name: str | None = None
-    end_osm_id: int | None = None
+    end_osm_id: str | None = None
     miles: float | None = None
 
 @router.get("/by_trip/{trip_id}")

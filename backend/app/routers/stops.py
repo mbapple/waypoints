@@ -17,7 +17,7 @@ class Stop(BaseModel):
     latitude: float | None = None
     longitude: float | None = None
     osm_name: str | None = None
-    osm_id: int | None = None
+    osm_id: str | None = None
 
 # Return a list of all stops corresponding to a specific leg
 @router.get("/by_leg/{leg_id}")
@@ -28,7 +28,7 @@ def get_stops_by_leg(leg_id: int):
         SELECT id, trip_id, name, notes, category, leg_id, latitude, longitude, osm_name, osm_id
         FROM stops
         WHERE leg_id = %s
-        ORDER BY time_created
+        ORDER BY id
     """, (leg_id,))
     rows = cur.fetchall()
     cur.close()
@@ -59,7 +59,7 @@ def get_stops_by_node(node_id: int):
         SELECT id, trip_id, name, notes, category, node_id, latitude, longitude, osm_name, osm_id
         FROM stops
         WHERE node_id = %s
-        ORDER BY time_created
+        ORDER BY id
     """, (node_id,))
     rows = cur.fetchall()
     cur.close()
@@ -73,6 +73,38 @@ def get_stops_by_node(node_id: int):
             "notes": r["notes"] if r["notes"] else None,
             "category": r["category"],
             "node_id": r["node_id"],
+            "latitude": r["latitude"],
+            "longitude": r["longitude"],
+            "osm_name": r["osm_name"],
+            "osm_id": r["osm_id"]
+        }
+        for r in rows
+    ]
+
+# Return a list of all stops corresponding to a specific node
+@router.get("/by_trip/{trip_id}")
+def get_stops_by_node(trip_id: int):
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT id, trip_id, name, notes, category, node_id, leg_id, latitude, longitude, osm_name, osm_id
+        FROM stops
+        WHERE trip_id = %s
+        ORDER BY id
+    """, (trip_id,))
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+
+    return [
+        {
+            "id": r["id"],
+            "trip_id": r["trip_id"],
+            "name": r["name"],
+            "notes": r["notes"] if r["notes"] else None,
+            "category": r["category"],
+            "node_id": r["node_id"],
+            "leg_id": r["leg_id"],
             "latitude": r["latitude"],
             "longitude": r["longitude"],
             "osm_name": r["osm_name"],

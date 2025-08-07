@@ -2,7 +2,8 @@ import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import axios from "axios";
 import { PageHeader } from "../components/page-components";
-import { TripInfoCard, NodeCard, DangerZone, ActionButtons, EmptyState } from "../components/trip-detail-components";
+import { getPlaceLink } from "../components/map-integration-components";
+import { TripInfoCard, NodeCard, DangerZone, ActionButtons, EmptyState, StopCard } from "../components/trip-detail-components";
 import { Button, Text, Grid, Flex, Badge } from "../styles/components";
 
 function TripDetails() {
@@ -11,6 +12,8 @@ function TripDetails() {
   const [loading, setLoading] = useState(true);
   const [nodes, setNodes] = useState([]);
   const [legs, setLegs] = useState([]);
+  const [stops, setStops] = useState([]);
+  const [miles, setMiles] = useState(0);
   // const [legsAndNodes, setLegsAndNodes] = useState([]);
   const [deleting, setDeleting] = useState(false);
 
@@ -25,6 +28,13 @@ function TripDetails() {
 
         const legsResponse = await axios.get(`http://localhost:3001/api/legs/by_trip/${tripID}`);
         setLegs(legsResponse.data);
+
+        const stopsResponse = await axios.get(`http://localhost:3001/api/stops/by_trip/${tripID}`);
+        setStops(stopsResponse.data);
+
+        const milesResponse = await axios.get(`http://localhost:3001/api/trips/${tripID}/miles`);
+        setMiles(milesResponse.data.total_miles);
+        console.log("Miles for trip:", milesResponse.data.total_miles);
 
         // const legsAndNodesResponse = await axios.get(`http://localhost:3001/api/trips/${tripID}/all_nodes_and_legs`);
         // setLegsAndNodes(legsAndNodesResponse.data);
@@ -104,6 +114,8 @@ function TripDetails() {
 
   const orderedItinerary = getOrderedItinerary();
 
+
+  // Helper function to get transport type label for displaying correctly
   const getTransportTypeLabel = (type) => {
     switch (type?.toLowerCase()) {
       case 'flight':
@@ -126,11 +138,17 @@ function TripDetails() {
     return node ? node.name : `Node ${nodeID}`;
   };
 
-  const calculateMiles = () => {
-    return (nodes.reduce((sum, node) => sum + (node.miles || 0), 0));
-  }
 
-  const miles = calculateMiles();
+
+
+  // Helper functions to get stops for legs and nodes
+  const getStopsForLeg = (legID) => {
+    console.log("Getting stops for leg ID:", legID, stops);
+    return stops.filter(stop => stop.leg_id === legID);
+  };
+  const getStopsForNode = (nodeID) => {
+    return stops.filter(stop => stop.node_id === nodeID);
+  };
 
   return (
     <div>
@@ -150,6 +168,7 @@ function TripDetails() {
         </Flex>
       </PageHeader>
 
+      {/* Trip information Card */}
       <TripInfoCard>
         <h3>Trip Information</h3>
         <Text variant="secondary">
@@ -161,7 +180,7 @@ function TripDetails() {
       </TripInfoCard>
 
       
-
+      {/* Itinerary Section */}
       <div>
         <Flex justify="space-between" align="center" style={{ marginBottom: '1.5rem' }}>
           <h2>Trip Itinerary</h2>
@@ -180,42 +199,81 @@ function TripDetails() {
         ) : (
           <Grid columns={1}>
             {orderedItinerary.map((item, index) => (
-              <NodeCard key={`${item.type}-${item.data.id}`}>
-                {item.type === 'node' ? (
-                  <>
-                    <h4>{item.data.name}</h4>
-                    {item.data.description && (
-                      <Text variant="secondary" size="sm" style={{ marginBottom: '0.75rem' }}>
-                        {item.data.description}
-                      </Text>
-                    )}
-                    <Flex gap={2} align="center" style={{ marginBottom: '0.5rem' }}>
-                      <Badge variant="success">{item.data.arrival_date}</Badge>
-                      <Text variant="muted" size="xs">to</Text>
-                      <Badge variant="warning">{item.data.departure_date}</Badge>
-                    </Flex>
-                    {item.data.notes && (
-                      <Text variant="muted" size="sm">
-                        <strong>Notes:</strong> {item.data.notes}
-                      </Text>
-                    )}
-                  </>
-                ) : (
-                  <>
-                    <h4>{item.data.name || `${getTransportTypeLabel(item.data.type)} ${getNodeName(item.data.start_node_id)} to ${getNodeName(item.data.end_node_id)}`}</h4>
-                    {item.data.description && (
-                      <Text variant="secondary" size="sm" style={{ marginBottom: '0.75rem' }}>
-                        {item.data.description}
-                      </Text>
-                    )}
-                    {item.data.notes && (
-                      <Text variant="muted" size="sm">
-                        <strong>Notes:</strong> {item.data.notes}
-                      </Text>
-                    )}
-                  </>
-                )}
-              </NodeCard>
+              <div key={`${item.type}-${item.data.id}`}>
+                <NodeCard>
+                  {item.type === 'node' ? (
+                    <>
+                      <h4>{item.data.name}</h4>
+                      {item.data.description && (
+                        <Text variant="secondary" size="sm" style={{ marginBottom: '0.75rem' }}>
+                          {item.data.description}
+                        </Text>
+                      )}
+                      <Flex gap={2} align="center" style={{ marginBottom: '0.5rem' }}>
+                        <Badge variant="success">{item.data.arrival_date}</Badge>
+                        <Text variant="muted" size="xs">to</Text>
+                        <Badge variant="warning">{item.data.departure_date}</Badge>
+                      </Flex>
+                      {item.data.notes && (
+                        <Text variant="muted" size="sm">
+                          <strong>Notes:</strong> {item.data.notes}
+                        </Text>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <h4>{item.data.name || `${getTransportTypeLabel(item.data.type)} ${getNodeName(item.data.start_node_id)} to ${getNodeName(item.data.end_node_id)}`}</h4>
+                      {item.data.description && (
+                        <Text variant="secondary" size="sm" style={{ marginBottom: '0.75rem' }}>
+                          {item.data.description}
+                        </Text>
+                      )}
+                      {item.data.notes && (
+                        <Text variant="muted" size="sm">
+                          <strong>Notes:</strong> {item.data.notes}
+                        </Text>
+                      )}
+                    </>
+                  )}
+                </NodeCard>
+                {/* Display stops for this node or leg */}
+                {item.type === 'node' ? 
+                  getStopsForNode(item.data.id).map(stop => (
+                    <StopCard key={stop.id}>
+                      <h5>{stop.name}   <Badge variant="info">{stop.category}</Badge></h5>
+                      <Link to={getPlaceLink(stop.osm_id, stop.osm_name)} target="_blank" rel="noopener noreferrer">
+                        <Text variant="muted" size="sm">
+                          <strong>Location:</strong> (OSM: {stop.osm_name || 'N/A'})
+                        </Text>
+                      </Link>
+                      <div>
+                        {stop.notes && (
+                          <Text variant="muted" size="sm">
+                            <strong>Notes:</strong> {stop.notes}
+                          </Text>
+                        )}
+                      </div>
+                    </StopCard>
+                  )) :
+                  getStopsForLeg(item.data.id).map(stop => (
+                    <StopCard key={stop.id}>
+                      <h5>{stop.name}   <Badge variant="info">{stop.category}</Badge></h5>
+                      <Link to={getPlaceLink(stop.osm_id, stop.osm_name)} target="_blank" rel="noopener noreferrer">
+                        <Text variant="muted" size="sm">
+                          <strong>Location:</strong> (OSM: {stop.osm_name || 'N/A'})
+                        </Text>
+                      </Link>
+                      <div>
+                        {stop.notes && (
+                          <Text variant="muted" size="sm">
+                            <strong>Notes:</strong> {stop.notes}
+                          </Text>
+                      )}
+                      </div>
+                    </StopCard>
+                  ))
+                }
+              </div>
             ))}
           </Grid>
         )}
@@ -248,15 +306,17 @@ function TripDetails() {
       <DangerZone>
         <h3 style={{ color: '#ef4444', marginBottom: '1rem' }}>Danger Zone</h3>
         <Text variant="muted" style={{ marginBottom: '1rem' }}>
-          Once you delete a trip, there is no going back. Please be certain.
+          Once you delete a trip, there is no going back. This will delete the trip and all associated nodes, legs, and stops.
         </Text>
-        <Button
-          onClick={handleDeleteTrip}
-          variant="danger"
-          disabled={deleting}
-        >
-          {deleting ? 'Deleting...' : 'Delete Trip'}
-        </Button>
+        <div>
+          <Button
+            onClick={handleDeleteTrip}
+            variant="danger"
+            disabled={deleting}
+          >
+            {deleting ? 'Deleting...' : 'Delete Trip'}
+          </Button>
+        </div>
       </DangerZone>
     </div>
   );

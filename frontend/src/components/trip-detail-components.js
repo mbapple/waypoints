@@ -15,6 +15,15 @@ export const NodeCard = styled(Card)`
   }
 `;
 
+export const StopCard = styled(Card)`
+  transition: ${props => props.theme.transitions.base};
+  margin-left: ${props => props.theme.space[6]};
+  &:hover {
+    transform: translateY(1px);
+    box-shadow: ${props => props.theme.shadows.lg};
+  }
+`;
+
 export const ActionButtons = styled(Flex)`
   gap: ${props => props.theme.space[3]};
   margin: ${props => props.theme.space[6]} 0;

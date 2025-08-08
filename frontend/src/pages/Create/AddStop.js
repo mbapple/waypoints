@@ -1,14 +1,18 @@
 import React, {useState} from "react";
-import axios from "axios";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import {FormCard} from "../../components/input-components";
 import {PageHeader} from "../../components/page-components";
 import {PlaceSearchInput} from "../../components/map-integration-components";
 import { Button, Text, Flex, Form, FormGroup, Label, Input, Select } from "../../styles/components";
+import { listNodesByTrip } from "../../api/nodes";
+import { listLegsByTrip } from "../../api/legs";
+import { createStop } from "../../api/stops";
+import { placeToOsmFields } from "../../utils/places";
 
 
 function AddStop() {
     const { tripID } = useParams();
+    const navigate = useNavigate();
 
     const [formData, setFormData] = useState({
         name: "",
@@ -37,7 +41,7 @@ function AddStop() {
         setLoading(true);
 
         try {
-            await axios.post("http://localhost:3001/api/stops", {
+            await createStop({
                 trip_id: tripID,
                 name: formData.name,
                 leg_id: formData.legID,
@@ -51,7 +55,7 @@ function AddStop() {
             });
             
             // Redirect back to trip details
-            window.location.href = `/trip/${tripID}`;
+            navigate(`/trip/${tripID}`);
         } catch (err) {
             console.error(err);
             alert("Failed to create stop. Please try again.");
@@ -67,11 +71,11 @@ function AddStop() {
     React.useEffect(() => {
         const fetchTripData = async () => {
             try {
-                const nodesResponse = await axios.get(`http://localhost:3001/api/nodes/by_trip/${tripID}`);
-                setNodes(nodesResponse.data);
+                const nodesResponse = await listNodesByTrip(tripID);
+                setNodes(nodesResponse);
 
-                const legsResponse = await axios.get(`http://localhost:3001/api/legs/by_trip/${tripID}`);
-                setLegs(legsResponse.data);
+                const legsResponse = await listLegsByTrip(tripID);
+                setLegs(legsResponse);
             } catch (err) {
                 console.error(err);
             }
@@ -111,7 +115,7 @@ function AddStop() {
                     </FormGroup>
 
                     <FormGroup>
-                        <Label htmlFor="association">Associated Leg or Node *</Label>
+                        <Label htmlFor="association">Associate this stop to either a Leg or a Node *</Label>
                         <Select
                             id="association"
                             name="association"
@@ -166,10 +170,7 @@ function AddStop() {
                             onPlaceSelect={(place) => {
                                 setFormData(prev => ({
                                     ...prev,
-                                    latitude: place.lat,
-                                    longitude: place.lon,
-                                    osmName: place.name,
-                                    osmID: place.osm_id
+                                    ...placeToOsmFields(place)
                                 }));
                             }}
                         />

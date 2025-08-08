@@ -1,10 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import axios from "axios";
 import { PageHeader } from "../components/page-components";
 import { getPlaceLink } from "../components/map-integration-components";
 import { TripInfoCard, NodeCard, ActionButtons, EmptyState, StopCard } from "../components/trip-detail-components";
 import { Button, Text, Grid, Flex, Badge } from "../styles/components";
+import { getTrip, getTripMiles } from "../api/trips";
+import { listNodesByTrip } from "../api/nodes";
+import { listLegsByTrip } from "../api/legs";
+import { listStopsByTrip } from "../api/stops";
+import { getTransportTypeLabel } from "../utils/format";
 
 function TripDetails() {
   const { tripID } = useParams();
@@ -13,30 +17,34 @@ function TripDetails() {
   const [nodes, setNodes] = useState([]);
   const [legs, setLegs] = useState([]);
   const [stops, setStops] = useState([]);
-  const [miles, setMiles] = useState(0);
   // const [legsAndNodes, setLegsAndNodes] = useState([]);
+
+  const [miles, setMiles] = useState(0);
 
   useEffect(() => {
     const fetchTripData = async () => {
       try {
-        const tripResponse = await axios.get(`http://localhost:3001/api/trips/${tripID}`);
-        setTrip(tripResponse.data);
-        
-        const nodesResponse = await axios.get(`http://localhost:3001/api/nodes/by_trip/${tripID}`);
-        setNodes(nodesResponse.data);
+        const [tripData, nodesData, legsData, stopsData] = await Promise.all([
+          getTrip(tripID),
+          listNodesByTrip(tripID),
+          listLegsByTrip(tripID),
+          listStopsByTrip(tripID),
+        ]);
+        setTrip(tripData);
+        setNodes(nodesData);
+        setLegs(legsData);
+        setStops(stopsData);
 
-        const legsResponse = await axios.get(`http://localhost:3001/api/legs/by_trip/${tripID}`);
-        setLegs(legsResponse.data);
-
-        const stopsResponse = await axios.get(`http://localhost:3001/api/stops/by_trip/${tripID}`);
-        setStops(stopsResponse.data);
-
-        const milesResponse = await axios.get(`http://localhost:3001/api/trips/${tripID}/miles`);
-        setMiles(milesResponse.data.total_miles);
-        console.log("Miles for trip:", milesResponse.data.total_miles);
-
-        // const legsAndNodesResponse = await axios.get(`http://localhost:3001/api/trips/${tripID}/all_nodes_and_legs`);
-        // setLegsAndNodes(legsAndNodesResponse.data);
+        // Fetch miles separately
+        try {
+          const milesData = await getTripMiles(tripID);
+          if (milesData && typeof milesData.total_miles !== 'undefined') {
+            setMiles(milesData.total_miles);
+          }
+        } catch (e) {
+          // Non-blocking
+          console.warn('Failed to fetch miles', e);
+        }
       } catch (err) {
         console.error(err);
       } finally {
@@ -97,24 +105,7 @@ function TripDetails() {
 
   const orderedItinerary = getOrderedItinerary();
 
-
-  // Helper function to get transport type label for displaying correctly
-  const getTransportTypeLabel = (type) => {
-    switch (type?.toLowerCase()) {
-      case 'flight':
-        return 'Flight from';
-      case 'car':
-        return 'Driving from';
-      case 'train':
-        return 'Train from';
-      case 'boat':
-        return 'Travel by sea from';
-      case 'bus':
-        return 'Bus from';
-      default:
-        return 'Travel from';
-    }
-  };
+  // getTransportTypeLabel moved to utils/format
 
   const getNodeName = (nodeID) => {
     const node = nodes.find(n => n.id === nodeID);

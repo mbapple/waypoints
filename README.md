@@ -63,7 +63,7 @@ Stops:
 	- [X] Total miles of a given trip
 	- [ ] Total destination count
 - [ ] Add flights/trains/etc. to API
-	- [ ] On AddLeg, add a box that appears below to get all this info
+	- [X] On AddLeg, add a box that appears below to get all this info
 - [ ] Integrate into a map view with Leaflet
 - [ ] Integrate into online services 
 	- [ ] Flight data
@@ -75,5 +75,7 @@ Stops:
 - [ ] Organize page files
 - [ ] Pull out redundant functions into separate file
 - [ ] Add ability to customize style and light/dark mode
+- [ ] Add create trip by flight numbers feature
+- [ ] Add create trip by cruise
 
 

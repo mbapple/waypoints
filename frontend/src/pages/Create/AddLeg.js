@@ -1,14 +1,17 @@
 import React, {useEffect, useMemo, useState} from "react";
-import axios from "axios";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import {FormCard} from "../../components/input-components";
 import {PageHeader} from "../../components/page-components";
 import { Button, Text, Flex, Form, FormGroup, Label, Input, Select } from "../../styles/components";
 import { PlaceSearchInput } from "../../components/map-integration-components";
 import { CarDetails } from "../../components/leg-details-components";
+import { listNodesByTrip } from "../../api/nodes";
+import { createLeg, createCarDetails } from "../../api/legs";
+import { placeToLegStart, placeToLegEnd } from "../../utils/places";
 
 function AddLeg() {
   const { tripID } = useParams();
+    const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
     type: "",
@@ -61,19 +64,19 @@ function AddLeg() {
                 miles: formData.miles ? Number(formData.miles) : null,
             };
 
-            const legRes = await axios.post("http://localhost:3001/api/legs", payload);
-            const newLegId = legRes?.data?.id;
+            const legRes = await createLeg(payload);
+            const newLegId = legRes?.id;
 
             if (formData.type === 'car' && newLegId && carAutoFill) {
                 // Save car_details once
-                await axios.post("http://localhost:3001/api/car_details", {
+                await createCarDetails({
                     leg_id: newLegId,
                     driving_time_seconds: carAutoFill.driving_time_seconds ?? null,
                     polyline: carAutoFill.polyline ?? null,
                 });
             }
         // Redirect back to trip details  
-        window.location.href = `/trip/${tripID}`;
+        navigate(`/trip/${tripID}`);
     } catch (err) {
       console.error(err);
       alert("Failed to create travel leg. Please try again.");
@@ -94,8 +97,8 @@ const [carAutoFill, setCarAutoFill] = useState(null);
 React.useEffect(() => {
     const fetchNodes = async () => {
         try {
-            const response = await axios.get(`http://localhost:3001/api/nodes/by_trip/${tripID}`);
-            setNodes(response.data);
+            const response = await listNodesByTrip(tripID);
+            setNodes(response);
         } catch (err) {
             console.error('Failed to fetch nodes:', err);
         }
@@ -214,10 +217,7 @@ return (
                         onPlaceSelect={(place) => {
                             setFormData(prev => ({
                                 ...prev,
-                                start_latitude: place.lat,
-                                start_longitude: place.lon,
-                                start_osm_name: place.name,
-                                start_osm_id: place.osm_id,
+                                ...placeToLegStart(place)
                             }));
                         }}
                     />
@@ -232,10 +232,7 @@ return (
                         onPlaceSelect={(place) => {
                             setFormData(prev => ({
                                 ...prev,
-                                end_latitude: place.lat,
-                                end_longitude: place.lon,
-                                end_osm_name: place.name,
-                                end_osm_id: place.osm_id,
+                                ...placeToLegEnd(place)
                             }));
                         }}
                     />

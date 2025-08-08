@@ -1,13 +1,16 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
 import { Button, Input, Form, FormGroup, Label, Text, Flex } from "../../styles/components";
 import { PageHeader } from "../../components/page-components";
 import { FormCard, ButtonGroup, DangerZone } from "../../components/input-components";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { PlaceSearchInput } from "../../components/map-integration-components";
+import { placeToOsmFields } from "../../utils/places";
+import ConfirmDeleteButton from "../../components/common/ConfirmDeleteButton";
+import { deleteNode as apiDeleteNode, getNode as apiGetNode, updateNode as apiUpdateNode } from "../../api/nodes";
 
 function UpdateNode() {
   const { tripID } = useParams();
+  const navigate = useNavigate();
   const params = new URLSearchParams(window.location.search);
   const nodeID = params.get("nodeID");
 
@@ -24,29 +27,21 @@ function UpdateNode() {
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [deleting, setDeleting] = useState(false);
 
   const handleDeleteNode = async () => {
-      if (!window.confirm("Are you sure you want to delete this leg? This action cannot be undone.")) {
-        return;
-      }
-      
-      setDeleting(true);
       try {
-        await axios.delete(`http://localhost:3001/api/legs/${nodeID}`);
-        window.location.href = "/";
+        await apiDeleteNode(nodeID);
+        navigate(`/trip/${tripID}`);
       } catch (err) {
         alert("Failed to delete node.");
         console.error(err);
-        setDeleting(false);
       }
     };
 
   useEffect(() => {
     const loadNode = async () => {
       try {
-        const res = await axios.get(`http://localhost:3001/api/nodes/${nodeID}`);
-        const n = res.data;
+  const n = await apiGetNode(nodeID);
         setFormData({
           name: n.name || "",
           description: n.description || "",
@@ -89,8 +84,8 @@ function UpdateNode() {
         osm_name: formData.osmName || null,
         osm_id: formData.osmID || null,
       };
-      await axios.put(`http://localhost:3001/api/nodes/${nodeID}`, payload);
-      window.location.href = `/trip/${tripID}`;
+  await apiUpdateNode(nodeID, payload);
+  navigate(`/trip/${tripID}`);
     } catch (err) {
       console.error(err);
       alert("Failed to update node.");
@@ -141,10 +136,7 @@ function UpdateNode() {
               onPlaceSelect={(place) => {
                 setFormData(prev => ({
                   ...prev,
-                  latitude: place.lat,
-                  longitude: place.lon,
-                  osmName: place.name,
-                  osmID: place.osm_id
+                  ...placeToOsmFields(place)
                 }));
               }}
             />
@@ -183,13 +175,12 @@ function UpdateNode() {
           Once you delete a node, there is no going back. This will delete the node and all associated stops.
         </Text>
         <div>
-          <Button
-            onClick={handleDeleteNode}
-            variant="danger"
-            disabled={deleting}
+          <ConfirmDeleteButton
+            onConfirm={handleDeleteNode}
+            confirmMessage="Are you sure you want to delete this node? This action cannot be undone."
           >
-            {deleting ? 'Deleting...' : 'Delete Leg'}
-          </Button>
+            Delete Node
+          </ConfirmDeleteButton>
         </div>
       </DangerZone>
     </div>

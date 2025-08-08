@@ -1,14 +1,19 @@
 import React, { useEffect, useMemo, useState } from "react";
-import axios from "axios";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { FormCard, DangerZone } from "../../components/input-components";
 import { PageHeader } from "../../components/page-components";
 import { Button, Text, Flex, Form, FormGroup, Label, Input, Select } from "../../styles/components";
 import { PlaceSearchInput } from "../../components/map-integration-components";
 import { CarDetails } from "../../components/leg-details-components";
+import ConfirmDeleteButton from "../../components/common/ConfirmDeleteButton";
+import { listNodesByTrip } from "../../api/nodes";
+import { getLeg, updateLeg as apiUpdateLeg, deleteLeg as apiDeleteLeg, getCarDetails, createCarDetails } from "../../api/legs";
+import NodeSelect from "../../components/common/NodeSelect";
+import { placeToLegStart, placeToLegEnd } from "../../utils/places";
 
 function UpdateLeg() {
   const { tripID } = useParams();
+  const navigate = useNavigate();
   const params = new URLSearchParams(window.location.search);
   const legID = params.get("legID");
 
@@ -32,22 +37,15 @@ function UpdateLeg() {
   const [nodes, setNodes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [deleting, setDeleting] = useState(false);
 
 
   const handleDeleteLeg = async () => {
-    if (!window.confirm("Are you sure you want to delete this leg? This action cannot be undone.")) {
-      return;
-    }
-    
-    setDeleting(true);
     try {
-      await axios.delete(`http://localhost:3001/api/legs/${legID}`);
-      window.location.href = "/";
+      await apiDeleteLeg(legID);
+      navigate(`/trip/${tripID}`);
     } catch (err) {
       alert("Failed to delete leg.");
       console.error(err);
-      setDeleting(false);
     }
   };
 
@@ -55,14 +53,14 @@ function UpdateLeg() {
   useEffect(() => {
     const load = async () => {
       try {
-        const [nodesRes, legRes, carRes] = await Promise.all([
-          axios.get(`http://localhost:3001/api/nodes/by_trip/${tripID}`),
-          axios.get(`http://localhost:3001/api/legs/${legID}`),
-          axios.get(`http://localhost:3001/api/car_details/${legID}`).catch(() => ({ data: null }))
+        const [nodesData, legData, carData] = await Promise.all([
+          listNodesByTrip(tripID),
+          getLeg(legID),
+          getCarDetails(legID).catch(() => null)
         ]);
-        setNodes(nodesRes.data);
+        setNodes(nodesData);
 
-        const l = legRes.data;
+        const l = legData;
         setFormData({
           type: l.type || "",
           fromNode: l.start_node_id || "",
@@ -79,7 +77,7 @@ function UpdateLeg() {
           end_osm_id: l.end_osm_id || "",
           miles: l.miles || "",
         });
-        setCarAutoFill(carRes?.data ? { driving_time_seconds: carRes.data.driving_time_seconds, polyline: carRes.data.polyline } : null);
+        setCarAutoFill(carData ? { driving_time_seconds: carData.driving_time_seconds, polyline: carData.polyline } : null);
       } catch (e) {
         console.error(e);
         alert("Failed to load leg.");
@@ -100,7 +98,7 @@ function UpdateLeg() {
     setSaving(true);
 
     try {
-      await axios.put(`http://localhost:3001/api/legs/${legID}`, {
+      await apiUpdateLeg(legID, {
         trip_id: parseInt(tripID, 10),
         type: formData.type,
         start_node_id: formData.fromNode ? Number(formData.fromNode) : null,
@@ -120,13 +118,13 @@ function UpdateLeg() {
 
       // Upsert car_details if car and we have details
       if (formData.type === 'car') {
-        await axios.post("http://localhost:3001/api/car_details", {
+        await createCarDetails({
           leg_id: Number(legID),
           driving_time_seconds: carAutoFill?.driving_time_seconds ?? null,
           polyline: carAutoFill?.polyline ?? null,
         });
       }
-      window.location.href = `/trip/${tripID}`;
+      navigate(`/trip/${tripID}`);
     } catch (err) {
       console.error(err);
       alert("Failed to update travel leg. Please try again.");
@@ -203,22 +201,12 @@ function UpdateLeg() {
 
           <FormGroup>
             <Label htmlFor="fromNode">From Node *</Label>
-            <Select id="fromNode" name="fromNode" value={formData.fromNode} onChange={handleChange} required>
-              <option value="">Select starting node</option>
-              {nodes.map(node => (
-                <option key={node.id} value={node.id}>{node.name}</option>
-              ))}
-            </Select>
+            <NodeSelect id="fromNode" name="fromNode" nodes={nodes} value={formData.fromNode} onChange={handleChange} required />
           </FormGroup>
 
           <FormGroup>
             <Label htmlFor="toNode">To Node *</Label>
-            <Select id="toNode" name="toNode" value={formData.toNode} onChange={handleChange} required>
-              <option value="">Select destination node</option>
-              {nodes.map(node => (
-                <option key={node.id} value={node.id}>{node.name}</option>
-              ))}
-            </Select>
+            <NodeSelect id="toNode" name="toNode" nodes={nodes} value={formData.toNode} onChange={handleChange} required />
           </FormGroup>
 
           <FormGroup>
@@ -228,32 +216,26 @@ function UpdateLeg() {
 
           <FormGroup>
             <Label>From Location</Label>
-            <PlaceSearchInput
+      <PlaceSearchInput
               placeholder="Search for a start location..."
               value={formData.start_osm_name || ''}
               onChange={(e) => setFormData(prev => ({ ...prev, start_osm_name: e.target.value }))}
               onPlaceSelect={(place) => setFormData(prev => ({
-                ...prev,
-                start_latitude: place.lat,
-                start_longitude: place.lon,
-                start_osm_name: place.name,
-                start_osm_id: place.osm_id,
+        ...prev,
+        ...placeToLegStart(place)
               }))}
             />
           </FormGroup>
 
           <FormGroup>
             <Label>To Location</Label>
-            <PlaceSearchInput
+      <PlaceSearchInput
               placeholder="Search for a destination..."
               value={formData.end_osm_name || ''}
               onChange={(e) => setFormData(prev => ({ ...prev, end_osm_name: e.target.value }))}
               onPlaceSelect={(place) => setFormData(prev => ({
-                ...prev,
-                end_latitude: place.lat,
-                end_longitude: place.lon,
-                end_osm_name: place.name,
-                end_osm_id: place.osm_id,
+        ...prev,
+        ...placeToLegEnd(place)
               }))}
             />
           </FormGroup>
@@ -290,13 +272,12 @@ function UpdateLeg() {
           Once you delete a leg, there is no going back. This will delete the leg and all associated stops.
         </Text>
         <div>
-          <Button
-            onClick={handleDeleteLeg}
-            variant="danger"
-            disabled={deleting}
+          <ConfirmDeleteButton
+            onConfirm={handleDeleteLeg}
+            confirmMessage="Are you sure you want to delete this leg? This action cannot be undone."
           >
-            {deleting ? 'Deleting...' : 'Delete Leg'}
-          </Button>
+            Delete Leg
+          </ConfirmDeleteButton>
         </div>
       </DangerZone>
     </div>

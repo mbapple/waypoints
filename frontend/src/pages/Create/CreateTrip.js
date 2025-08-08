@@ -1,7 +1,8 @@
 import React, { useState } from "react";
-import axios from "axios";
+import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import { Card, Button, Input, Form, FormGroup, Label, Text } from "../../styles/components";
+import { createTrip } from "../../api/trips";
 
 const PageHeader = styled.div`
   margin: ${props => props.theme.space[8]} 0 ${props => props.theme.space[6]} 0;
@@ -25,6 +26,7 @@ const ButtonGroup = styled.div`
 `;
 
 function CreateTrip() {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: "",
     startDate: "",
@@ -46,7 +48,7 @@ function CreateTrip() {
     setLoading(true);
     
     try {
-      await axios.post("http://localhost:3001/api/trips", {
+      await createTrip({
         name: formData.name,
         start_date: formData.startDate,
         end_date: formData.endDate,
@@ -54,7 +56,7 @@ function CreateTrip() {
       });
       
       // Redirect to trips list or show success message
-      window.location.href = "/";
+      navigate("/");
     } catch (err) {
       console.error(err);
       alert("Failed to create trip. Please try again.");

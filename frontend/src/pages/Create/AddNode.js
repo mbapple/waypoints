@@ -1,9 +1,10 @@
 import React, { useState } from "react";
-import axios from "axios";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import {PlaceSearchInput} from "../../components/map-integration-components";
 import { Card, Button, Input, Form, FormGroup, Label, Text, Flex } from "../../styles/components";
+import { createNode } from "../../api/nodes";
+import { placeToOsmFields } from "../../utils/places";
 
 const PageHeader = styled.div`
   margin: ${props => props.theme.space[8]} 0 ${props => props.theme.space[6]} 0;
@@ -27,6 +28,7 @@ const ButtonGroup = styled.div`
 
 function AddNode() {
   const { tripID } = useParams();
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -53,9 +55,9 @@ function AddNode() {
     setLoading(true);
     
     try {
-      await axios.post("http://localhost:3001/api/nodes", {
+      await createNode({
         name: formData.name,
-        trip_id: tripID,
+        trip_id: Number(tripID),
         description: formData.description,
         arrival_date: formData.arrivalDate,
         departure_date: formData.departureDate,
@@ -67,7 +69,7 @@ function AddNode() {
       });
       
       // Redirect back to trip details
-      window.location.href = `/trip/${tripID}`;
+      navigate(`/trip/${tripID}`);
     } catch (err) {
       console.error(err);
       alert("Failed to create node. Please try again.");
@@ -109,19 +111,16 @@ function AddNode() {
 
           <FormGroup>
               <Label htmlFor="location">Location *</Label>
-              <PlaceSearchInput
+        <PlaceSearchInput
                   id="location"
                   name="location"
                   placeholder="Search for a location..."
                   required
                   onPlaceSelect={(place) => {
-                      setFormData(prev => ({
-                          ...prev,
-                          latitude: place.lat,
-                          longitude: place.lon,
-                          osmName: place.name,
-                          osmID: place.osm_id
-                      }));
+            setFormData(prev => ({
+              ...prev,
+              ...placeToOsmFields(place)
+            }));
                   }}
               />
           </FormGroup>

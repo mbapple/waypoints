@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
 import { Link } from "react-router-dom";
 import styled from "styled-components";
 import { Card, Button, Text, Grid, Flex, Badge } from "../styles/components";
+import { listTrips } from "../api/trips";
 
 const PageHeader = styled.div`
   margin: ${props => props.theme.space[8]} 0 ${props => props.theme.space[6]} 0;
@@ -53,9 +53,9 @@ function TripList() {
   }, []);
 
   const fetchTrips = () => {
-    axios.get("http://localhost:3001/api/trips")
+    listTrips()
       .then((res) => {
-        setTrips(res.data);
+        setTrips(res);
         setLoading(false);
       })
       .catch((err) => {

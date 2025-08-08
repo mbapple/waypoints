@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
 import { Button, Input, Form, FormGroup, Label, Text } from "../../styles/components";
 import { PageHeader } from "../../components/page-components";
 import { FormCard, ButtonGroup, DangerZone } from "../../components/input-components";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
+import { getTrip, updateTrip as apiUpdateTrip, deleteTrip as apiDeleteTrip } from "../../api/trips";
+import ConfirmDeleteButton from "../../components/common/ConfirmDeleteButton";
 
 function UpdateTrip() {
   const { tripID } = useParams();
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: "",
     startDate: "",
@@ -15,29 +17,21 @@ function UpdateTrip() {
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [deleting, setDeleting] = useState(false);
 
   const handleDeleteTrip = async () => {
-    if (!window.confirm("Are you sure you want to delete this trip? This action cannot be undone.")) {
-      return;
-    }
-
-    setDeleting(true);
     try {
-      await axios.delete(`http://localhost:3001/api/trips/${tripID}`);
-      window.location.href = `/trips`;
+      await apiDeleteTrip(tripID);
+      navigate(`/trips`);
     } catch (err) {
       alert("Failed to delete trip.");
       console.error(err);
-      setDeleting(false);
     }
   };
 
   useEffect(() => {
     const loadTrip = async () => {
       try {
-        const res = await axios.get(`http://localhost:3001/api/trips/${tripID}`);
-        const t = res.data;
+        const t = await getTrip(tripID);
         setFormData({
           name: t.name || "",
           startDate: t.start_date || "",
@@ -69,8 +63,8 @@ function UpdateTrip() {
         end_date: formData.endDate,
         description: formData.description,
       };
-      await axios.put(`http://localhost:3001/api/trips/${tripID}`, payload);
-      window.location.href = `/trip/${tripID}`;
+  await apiUpdateTrip(tripID, payload);
+  navigate(`/trip/${tripID}`);
     } catch (err) {
       console.error(err);
       alert("Failed to update trip.");
@@ -129,9 +123,12 @@ function UpdateTrip() {
           Once you delete a trip, there is no going back. This will delete the trip and all associated legs, nodes, and stops.
         </Text>
         <div>
-          <Button variant="danger" onClick={handleDeleteTrip} disabled={deleting}>
-            {deleting ? "Deleting..." : "Delete Trip"}
-          </Button>
+          <ConfirmDeleteButton
+            onConfirm={handleDeleteTrip}
+            confirmMessage="Are you sure you want to delete this trip? This action cannot be undone."
+          >
+            Delete Trip
+          </ConfirmDeleteButton>
         </div>
       </DangerZone>
     </div>

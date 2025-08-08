@@ -1,15 +1,20 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { FormCard, DangerZone } from "../../components/input-components";
 import { PageHeader } from "../../components/page-components";
 import { PlaceSearchInput } from "../../components/map-integration-components";
 import { Button, Text, Flex, Form, FormGroup, Label, Input, Select } from "../../styles/components";
+import ConfirmDeleteButton from "../../components/common/ConfirmDeleteButton";
+import { listNodesByTrip } from "../../api/nodes";
+import { listLegsByTrip } from "../../api/legs";
+import { getStop as apiGetStop, updateStop as apiUpdateStop, deleteStop as apiDeleteStop } from "../../api/stops";
+import { placeToOsmFields } from "../../utils/places";
 
 function UpdateStop() {
   const { tripID } = useParams();
   const params = new URLSearchParams(window.location.search);
   const stopID = params.get("stopID");
+  const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
     name: "",
@@ -27,36 +32,29 @@ function UpdateStop() {
   const [legs, setLegs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [deleting, setDeleting] = useState(false);
 
   const handleDeleteStop = async () => {
-    if (!window.confirm("Are you sure you want to delete this stop? This action cannot be undone.")) {
-      return;
-    }
-
-    setDeleting(true);
     try {
-      await axios.delete(`http://localhost:3001/api/stops/${stopID}`);
-      window.location.href = `/trip/${tripID}`;
+      await apiDeleteStop(stopID);
+      navigate(`/trip/${tripID}`);
     } catch (err) {
       alert("Failed to delete stop.");
       console.error(err);
-      setDeleting(false);
     }
   };
 
   useEffect(() => {
     const load = async () => {
       try {
-        const [nodesRes, legsRes, stopRes] = await Promise.all([
-          axios.get(`http://localhost:3001/api/nodes/by_trip/${tripID}`),
-          axios.get(`http://localhost:3001/api/legs/by_trip/${tripID}`),
-          axios.get(`http://localhost:3001/api/stops/${stopID}`)
+        const [nodesData, legsData, stopData] = await Promise.all([
+          listNodesByTrip(tripID),
+          listLegsByTrip(tripID),
+          apiGetStop(stopID)
         ]);
-        setNodes(nodesRes.data);
-        setLegs(legsRes.data);
+        setNodes(nodesData);
+        setLegs(legsData);
 
-        const s = stopRes.data;
+        const s = stopData;
         setFormData({
           name: s.name || "",
           legID: s.leg_id || "",
@@ -88,7 +86,7 @@ function UpdateStop() {
     setSaving(true);
 
     try {
-      await axios.put(`http://localhost:3001/api/stops/${stopID}`, {
+      await apiUpdateStop(stopID, {
         trip_id: parseInt(tripID, 10),
         name: formData.name,
         leg_id: formData.legID || null,
@@ -100,7 +98,7 @@ function UpdateStop() {
         osm_name: formData.osmName || null,
         osm_id: formData.osmID || null,
       });
-      window.location.href = `/trip/${tripID}`;
+      navigate(`/trip/${tripID}`);
     } catch (err) {
       console.error(err);
       alert("Failed to update stop. Please try again.");
@@ -139,21 +137,18 @@ function UpdateStop() {
           </FormGroup>
 
           <FormGroup>
-            <Label htmlFor="association">Associated Leg or Node *</Label>
+            <Label htmlFor="association">Associate this stop to either a Leg or a Node *</Label>
             <Select
               id="association"
               name="association"
               required
-              value={formData.legID || formData.nodeID || ""}
+              value={(formData.legID ? `leg-${formData.legID}` : (formData.nodeID ? `node-${formData.nodeID}` : ""))}
               onChange={(e) => {
                 const value = e.target.value;
-                const selectedOption = e.target.options[e.target.selectedIndex];
-                const type = selectedOption.dataset.type;
-
-                if (type === 'leg') {
-                  setFormData(prev => ({ ...prev, legID: value, nodeID: null }));
-                } else if (type === 'node') {
-                  setFormData(prev => ({ ...prev, nodeID: value, legID: null }));
+                if (value.startsWith('leg-')) {
+                  setFormData(prev => ({ ...prev, legID: value.replace('leg-', ''), nodeID: null }));
+                } else if (value.startsWith('node-')) {
+                  setFormData(prev => ({ ...prev, nodeID: value.replace('node-', ''), legID: null }));
                 } else {
                   setFormData(prev => ({ ...prev, legID: null, nodeID: null }));
                 }
@@ -161,12 +156,12 @@ function UpdateStop() {
             >
               <option value="">Select Leg or Node</option>
               {legs.map(leg => (
-                <option key={`leg-${leg.id}`} value={leg.id} data-type="leg">
+                <option key={`leg-${leg.id}`} value={`leg-${leg.id}`}>
                   Leg: {leg.type} from {leg.start_node_name} to {leg.end_node_name}
                 </option>
               ))}
               {nodes.map(node => (
-                <option key={`node-${node.id}`} value={node.id} data-type="node">
+                <option key={`node-${node.id}`} value={`node-${node.id}`}>
                   Node: {node.name}
                 </option>
               ))}
@@ -182,10 +177,7 @@ function UpdateStop() {
               onPlaceSelect={(place) => {
                 setFormData(prev => ({
                   ...prev,
-                  latitude: place.lat,
-                  longitude: place.lon,
-                  osmName: place.name,
-                  osmID: place.osm_id
+                  ...placeToOsmFields(place)
                 }));
               }}
             />
@@ -219,13 +211,9 @@ function UpdateStop() {
             Once you delete a stop, there is no going back.
           </Text>
           <div>
-            <Button
-              onClick={handleDeleteStop}
-              variant="danger"
-              disabled={deleting}
-            >
-              {deleting ? 'Deleting...' : 'Delete Stop'}
-            </Button>
+            <ConfirmDeleteButton onConfirm={handleDeleteStop}>
+              Delete Stop
+            </ConfirmDeleteButton>
           </div>
         </DangerZone>
     </div>

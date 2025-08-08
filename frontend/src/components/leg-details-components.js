@@ -181,3 +181,69 @@ export const CarDetails = ({
     </div>
   );
 };
+
+// Haversine distance in miles
+export function haversineMiles(lat1, lon1, lat2, lon2) {
+  const toRad = (deg) => (deg * Math.PI) / 180;
+  const R = 3958.7613; // Earth radius miles
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  const c = 2 * Math.asin(Math.sqrt(a));
+  return R * c;
+}
+
+export const FlightDetails = ({
+  start,
+  end,
+  onAutoFill,
+  initialFlightNumber,
+  initialAirline,
+  initialStartAirport,
+  initialEndAirport,
+}) => {
+  const [flightNumber, setFlightNumber] = useState(initialFlightNumber || '');
+  const [airline, setAirline] = useState(initialAirline || '');
+  const [startAirport, setStartAirport] = useState(initialStartAirport || '');
+  const [endAirport, setEndAirport] = useState(initialEndAirport || '');
+
+  // Auto-calc miles when coords available
+  useEffect(() => {
+    if (start?.lat && start?.lon && end?.lat && end?.lon) {
+      const miles = haversineMiles(Number(start.lat), Number(start.lon), Number(end.lat), Number(end.lon));
+      // Propagate up so parent can set leg miles
+      onAutoFill?.({ miles });
+    }
+  }, [start?.lat, start?.lon, end?.lat, end?.lon, onAutoFill]);
+
+  // Push field edits upwards so they can be saved
+  useEffect(() => {
+    onAutoFill?.({ flight_number: flightNumber, airline, start_airport: startAirport, end_airport: endAirport });
+  }, [flightNumber, airline, startAirport, endAirport, onAutoFill]);
+
+  return (
+    <div>
+      <Text variant="secondary">Flight details</Text>
+      <Inline>
+        <FormGroup>
+          <Label htmlFor="flightNumber">Flight Number</Label>
+          <Input id="flightNumber" value={flightNumber} onChange={(e) => setFlightNumber(e.target.value)} />
+        </FormGroup>
+        <FormGroup>
+          <Label htmlFor="airline">Airline</Label>
+          <Input id="airline" value={airline} onChange={(e) => setAirline(e.target.value)} />
+        </FormGroup>
+      </Inline>
+      <Inline>
+        <FormGroup>
+          <Label htmlFor="startAirport">Start Airport</Label>
+          <Input id="startAirport" value={startAirport} onChange={(e) => setStartAirport(e.target.value)} />
+        </FormGroup>
+        <FormGroup>
+          <Label htmlFor="endAirport">End Airport</Label>
+          <Input id="endAirport" value={endAirport} onChange={(e) => setEndAirport(e.target.value)} />
+        </FormGroup>
+      </Inline>
+    </div>
+  );
+};

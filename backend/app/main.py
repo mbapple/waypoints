@@ -7,6 +7,7 @@ from routers import nodes
 from routers import legs
 from routers import stops
 from routers import car_details
+from routers import flight_details
 
 
 app = FastAPI()
@@ -26,3 +27,4 @@ app.include_router(nodes.router)
 app.include_router(legs.router)
 app.include_router(stops.router)
 app.include_router(car_details.router)
+app.include_router(flight_details.router)

@@ -4,9 +4,9 @@ import {FormCard} from "../../components/input-components";
 import {PageHeader} from "../../components/page-components";
 import { Button, Text, Flex, Form, FormGroup, Label, Input, Select } from "../../styles/components";
 import { PlaceSearchInput } from "../../components/map-integration-components";
-import { CarDetails } from "../../components/leg-details-components";
+import { CarDetails, FlightDetails } from "../../components/leg-details-components";
 import { listNodesByTrip } from "../../api/nodes";
-import { createLeg, createCarDetails } from "../../api/legs";
+import { createLeg, createCarDetails, createFlightDetails } from "../../api/legs";
 import { placeToLegStart, placeToLegEnd } from "../../utils/places";
 
 function AddLeg() {
@@ -29,6 +29,11 @@ function AddLeg() {
     end_osm_name: "",
     end_osm_id: "",
     miles: "",
+    // flight fields
+    flight_number: "",
+    airline: "",
+    start_airport: "",
+    end_airport: "",
   });
 
   const [loading, setLoading] = useState(false);
@@ -75,6 +80,15 @@ function AddLeg() {
                     polyline: carAutoFill.polyline ?? null,
                 });
             }
+            if (formData.type === 'flight' && newLegId) {
+                await createFlightDetails({
+                    leg_id: newLegId,
+                    flight_number: formData.flight_number || null,
+                    airline: formData.airline || null,
+                    start_airport: formData.start_airport || null,
+                    end_airport: formData.end_airport || null,
+                });
+            }
         // Redirect back to trip details  
         navigate(`/trip/${tripID}`);
     } catch (err) {
@@ -101,7 +115,7 @@ React.useEffect(() => {
             setNodes(response);
         } catch (err) {
             console.error('Failed to fetch nodes:', err);
-        }
+    }
     };
     
     if (tripID) {
@@ -118,7 +132,7 @@ useEffect(() => {
             start_longitude: selectedFromNode.longitude ?? prev.start_longitude,
             start_osm_name: selectedFromNode.osm_name ?? prev.start_osm_name,
             start_osm_id: selectedFromNode.osm_id ?? prev.start_osm_id,
-        date: prev.date || (selectedFromNode.departure_date || ''),
+            date: prev.date || (selectedFromNode.departure_date || ''),
         }));
     }
 }, [selectedFromNode]);
@@ -263,10 +277,33 @@ return (
                                         />
                                     </FormGroup>
                                 )}
-                                <FormGroup>
+                                                                <FormGroup>
                                     <Label htmlFor="miles">Miles</Label>
                                     <Input id="miles" name="miles" type="number" step="0.1" value={formData.miles} onChange={handleChange} />
                                 </FormGroup>
+                                                                {formData.type === 'flight' && (
+                                                                    <FormGroup>
+                                                                        <FlightDetails
+                                                                            start={{ lat: Number(formData.start_latitude), lon: Number(formData.start_longitude) }}
+                                                                            end={{ lat: Number(formData.end_latitude), lon: Number(formData.end_longitude) }}
+                                                                            onAutoFill={(data) => {
+                                                                                if (typeof data.miles === 'number') {
+                                                                                    setFormData(prev => ({ ...prev, miles: data.miles.toFixed(1) }));
+                                                                                }
+                                                                                const { flight_number, airline, start_airport, end_airport } = data;
+                                                                                if (flight_number !== undefined || airline !== undefined || start_airport !== undefined || end_airport !== undefined) {
+                                                                                    setFormData(prev => ({
+                                                                                        ...prev,
+                                                                                        flight_number: flight_number ?? prev.flight_number,
+                                                                                        airline: airline ?? prev.airline,
+                                                                                        start_airport: start_airport ?? prev.start_airport,
+                                                                                        end_airport: end_airport ?? prev.end_airport,
+                                                                                    }));
+                                                                                }
+                                                                            }}
+                                                                        />
+                                                                    </FormGroup>
+                                                                )}
                                 <FormGroup>
                                     <Label htmlFor="notes">Notes</Label>
                                     <Input

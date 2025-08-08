@@ -61,7 +61,8 @@ CREATE TABLE flight_details (
     flight_number TEXT,
     airline TEXT,
     start_airport TEXT,
-    end_airport TEXT
+    end_airport TEXT,
+    flight_time INT
 );
 
 -- ===================

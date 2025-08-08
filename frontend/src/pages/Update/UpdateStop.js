@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useParams, Link } from "react-router-dom";
-import { FormCard } from "../../components/input-components";
+import { FormCard, DangerZone } from "../../components/input-components";
 import { PageHeader } from "../../components/page-components";
 import { PlaceSearchInput } from "../../components/map-integration-components";
 import { Button, Text, Flex, Form, FormGroup, Label, Input, Select } from "../../styles/components";
@@ -27,6 +27,23 @@ function UpdateStop() {
   const [legs, setLegs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDeleteStop = async () => {
+    if (!window.confirm("Are you sure you want to delete this stop? This action cannot be undone.")) {
+      return;
+    }
+
+    setDeleting(true);
+    try {
+      await axios.delete(`http://localhost:3001/api/stops/${stopID}`);
+      window.location.href = `/trip/${tripID}`;
+    } catch (err) {
+      alert("Failed to delete stop.");
+      console.error(err);
+      setDeleting(false);
+    }
+  };
 
   useEffect(() => {
     const load = async () => {
@@ -196,6 +213,21 @@ function UpdateStop() {
           </Button>
         </Form>
       </FormCard>
+
+       <DangerZone>
+          <Text variant="danger" size="lg" style={{ marginBottom: '1rem' }}>
+            Once you delete a stop, there is no going back.
+          </Text>
+          <div>
+            <Button
+              onClick={handleDeleteStop}
+              variant="danger"
+              disabled={deleting}
+            >
+              {deleting ? 'Deleting...' : 'Delete Stop'}
+            </Button>
+          </div>
+        </DangerZone>
     </div>
   );
 }

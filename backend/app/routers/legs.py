@@ -153,6 +153,7 @@ def delete_leg(leg_id: int):
     cur.execute("""
         DELETE FROM legs
         WHERE id = %s
+        RETURNING id
     """, (leg_id,))
     deleted = cur.fetchone()
     conn.commit()

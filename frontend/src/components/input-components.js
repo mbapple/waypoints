@@ -3,12 +3,12 @@
 import styled from 'styled-components';
 import { Card } from '../styles/components';
 
-const FormCard = styled(Card)`
+export const FormCard = styled(Card)`
     max-width: 600px;
     margin: 0 auto;
 `;
 
-const ButtonGroup = styled.div`
+export const ButtonGroup = styled.div`
     display: flex;
     gap: ${props => props.theme.space[3]};
     justify-content: flex-end;
@@ -19,4 +19,8 @@ const ButtonGroup = styled.div`
     }
 `;
 
-export {FormCard, ButtonGroup};
+export const DangerZone = styled(Card)`
+  border-color: ${props => props.theme.colors.danger};
+  background: rgba(239, 68, 68, 0.05);
+  margin-top: ${props => props.theme.space[8]};
+`;

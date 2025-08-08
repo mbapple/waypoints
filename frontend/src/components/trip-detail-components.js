@@ -33,12 +33,6 @@ export const ActionButtons = styled(Flex)`
   }
 `;
 
-export const DangerZone = styled(Card)`
-  border-color: ${props => props.theme.colors.danger};
-  background: rgba(239, 68, 68, 0.05);
-  margin-top: ${props => props.theme.space[8]};
-`;
-
 export const EmptyState = styled.div`
   text-align: center;
   padding: ${props => props.theme.space[12]} ${props => props.theme.space[8]};

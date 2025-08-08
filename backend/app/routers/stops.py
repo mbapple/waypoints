@@ -205,3 +205,22 @@ def update_stop(stop_id: int, update: StopUpdate):
         raise HTTPException(status_code=404, detail="Stop not found")
 
     return {"message": f"Stop {stop_id} updated"}
+
+@router.delete("/{stop_id}")
+def delete_stop(stop_id: int):
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("""
+        DELETE FROM stops
+        WHERE id = %s
+        RETURNING id
+    """, (stop_id,))
+    deleted = cur.fetchone()
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    if deleted:
+        return {"message": "Stop deleted successfully"}
+    else:
+        raise HTTPException(status_code=404, detail="Stop not found")

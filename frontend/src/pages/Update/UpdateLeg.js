@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import { useParams, Link } from "react-router-dom";
-import { FormCard } from "../../components/input-components";
+import { FormCard, DangerZone } from "../../components/input-components";
 import { PageHeader } from "../../components/page-components";
 import { Button, Text, Flex, Form, FormGroup, Label, Input, Select } from "../../styles/components";
 import { PlaceSearchInput } from "../../components/map-integration-components";
@@ -32,6 +32,25 @@ function UpdateLeg() {
   const [nodes, setNodes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+
+  const handleDeleteLeg = async () => {
+    if (!window.confirm("Are you sure you want to delete this leg? This action cannot be undone.")) {
+      return;
+    }
+    
+    setDeleting(true);
+    try {
+      await axios.delete(`http://localhost:3001/api/legs/${legID}`);
+      window.location.href = "/";
+    } catch (err) {
+      alert("Failed to delete leg.");
+      console.error(err);
+      setDeleting(false);
+    }
+  };
+
 
   useEffect(() => {
     const load = async () => {
@@ -266,7 +285,22 @@ function UpdateLeg() {
           <Button type="submit" variant="primary" disabled={saving}>{saving ? 'Saving...' : 'Save Changes'}</Button>
         </Form>
       </FormCard>
+      <DangerZone>
+        <Text variant="danger" size="lg" style={{ marginBottom: '1rem' }}>
+          Once you delete a leg, there is no going back. This will delete the leg and all associated stops.
+        </Text>
+        <div>
+          <Button
+            onClick={handleDeleteLeg}
+            variant="danger"
+            disabled={deleting}
+          >
+            {deleting ? 'Deleting...' : 'Delete Leg'}
+          </Button>
+        </div>
+      </DangerZone>
     </div>
+    
   );
 }
 

@@ -3,7 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import axios from "axios";
 import { PageHeader } from "../components/page-components";
 import { getPlaceLink } from "../components/map-integration-components";
-import { TripInfoCard, NodeCard, DangerZone, ActionButtons, EmptyState, StopCard } from "../components/trip-detail-components";
+import { TripInfoCard, NodeCard, ActionButtons, EmptyState, StopCard } from "../components/trip-detail-components";
 import { Button, Text, Grid, Flex, Badge } from "../styles/components";
 
 function TripDetails() {
@@ -15,7 +15,6 @@ function TripDetails() {
   const [stops, setStops] = useState([]);
   const [miles, setMiles] = useState(0);
   // const [legsAndNodes, setLegsAndNodes] = useState([]);
-  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     const fetchTripData = async () => {
@@ -47,22 +46,6 @@ function TripDetails() {
     
     fetchTripData();
   }, [tripID]);
-
-  const handleDeleteTrip = async () => {
-    if (!window.confirm("Are you sure you want to delete this trip? This action cannot be undone.")) {
-      return;
-    }
-    
-    setDeleting(true);
-    try {
-      await axios.delete(`http://localhost:3001/api/trips/${tripID}`);
-      window.location.href = "/";
-    } catch (err) {
-      alert("Failed to delete trip.");
-      console.error(err);
-      setDeleting(false);
-    }
-  };
 
   if (loading) {
     return (
@@ -355,22 +338,6 @@ function TripDetails() {
           + Add Stop
         </Button>
       </ActionButtons>
-
-      <DangerZone>
-        <h3 style={{ color: '#ef4444', marginBottom: '1rem' }}>Danger Zone</h3>
-        <Text variant="muted" style={{ marginBottom: '1rem' }}>
-          Once you delete a trip, there is no going back. This will delete the trip and all associated nodes, legs, and stops.
-        </Text>
-        <div>
-          <Button
-            onClick={handleDeleteTrip}
-            variant="danger"
-            disabled={deleting}
-          >
-            {deleting ? 'Deleting...' : 'Delete Trip'}
-          </Button>
-        </div>
-      </DangerZone>
     </div>
   );
 }

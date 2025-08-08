@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { Button, Input, Form, FormGroup, Label, Text, Flex } from "../../styles/components";
 import { PageHeader } from "../../components/page-components";
-import { FormCard, ButtonGroup } from "../../components/input-components";
+import { FormCard, ButtonGroup, DangerZone } from "../../components/input-components";
 import { useParams, Link } from "react-router-dom";
 import { PlaceSearchInput } from "../../components/map-integration-components";
 
@@ -24,6 +24,23 @@ function UpdateNode() {
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDeleteNode = async () => {
+      if (!window.confirm("Are you sure you want to delete this leg? This action cannot be undone.")) {
+        return;
+      }
+      
+      setDeleting(true);
+      try {
+        await axios.delete(`http://localhost:3001/api/legs/${nodeID}`);
+        window.location.href = "/";
+      } catch (err) {
+        alert("Failed to delete node.");
+        console.error(err);
+        setDeleting(false);
+      }
+    };
 
   useEffect(() => {
     const loadNode = async () => {
@@ -160,6 +177,21 @@ function UpdateNode() {
           </ButtonGroup>
         </Form>
       </FormCard>
+
+       <DangerZone>
+        <Text variant="danger" size="lg" style={{ marginBottom: '1rem' }}>
+          Once you delete a node, there is no going back. This will delete the node and all associated stops.
+        </Text>
+        <div>
+          <Button
+            onClick={handleDeleteNode}
+            variant="danger"
+            disabled={deleting}
+          >
+            {deleting ? 'Deleting...' : 'Delete Leg'}
+          </Button>
+        </div>
+      </DangerZone>
     </div>
   );
 }

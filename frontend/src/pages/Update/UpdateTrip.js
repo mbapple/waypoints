@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { Button, Input, Form, FormGroup, Label, Text } from "../../styles/components";
 import { PageHeader } from "../../components/page-components";
-import { FormCard, ButtonGroup } from "../../components/input-components";
+import { FormCard, ButtonGroup, DangerZone } from "../../components/input-components";
 import { useParams, Link } from "react-router-dom";
 
 function UpdateTrip() {
@@ -15,6 +15,23 @@ function UpdateTrip() {
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDeleteTrip = async () => {
+    if (!window.confirm("Are you sure you want to delete this trip? This action cannot be undone.")) {
+      return;
+    }
+
+    setDeleting(true);
+    try {
+      await axios.delete(`http://localhost:3001/api/trips/${tripID}`);
+      window.location.href = `/trips`;
+    } catch (err) {
+      alert("Failed to delete trip.");
+      console.error(err);
+      setDeleting(false);
+    }
+  };
 
   useEffect(() => {
     const loadTrip = async () => {
@@ -103,6 +120,20 @@ function UpdateTrip() {
           </ButtonGroup>
         </Form>
       </FormCard>
+
+      <DangerZone>
+        <Text variant="danger" size="lg" style={{ marginBottom: '1rem' }}>
+          Danger Zone
+        </Text>
+        <Text variant="muted" style={{ marginBottom: '1rem' }}>
+          Once you delete a trip, there is no going back. This will delete the trip and all associated legs, nodes, and stops.
+        </Text>
+        <div>
+          <Button variant="danger" onClick={handleDeleteTrip} disabled={deleting}>
+            {deleting ? "Deleting..." : "Delete Trip"}
+          </Button>
+        </div>
+      </DangerZone>
     </div>
   );
 }

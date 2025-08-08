@@ -7,8 +7,8 @@ import {
     LoadingSpinner 
 } from '../styles/components';
 
-export const PlaceSearchInput = ({ onPlaceSelect, placeholder = "Search for a place...", className = "" }) => {
-    const [query, setQuery] = useState('');
+export const PlaceSearchInput = ({ onPlaceSelect, placeholder = "Search for a place...", className = "", value, onChange }) => {
+    const [query, setQuery] = useState(value || '');
     const [results, setResults] = useState([]);
     const [isOpen, setIsOpen] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -73,10 +73,14 @@ export const PlaceSearchInput = ({ onPlaceSelect, placeholder = "Search for a pl
                 osm_id: `${place.osm_type.charAt(0).toUpperCase()}${place.osm_id}`,
             });
         }
+        if (onChange) {
+            onChange({ target: { value: place.display_name } });
+        }
     };
 
     const handleInputChange = (e) => {
         setQuery(e.target.value);
+        if (onChange) onChange(e);
         if (e.target.value.length <= 2) {
             setIsOpen(false);
         }
@@ -87,7 +91,7 @@ export const PlaceSearchInput = ({ onPlaceSelect, placeholder = "Search for a pl
             <Input
                 ref={inputRef}
                 type="text"
-                value={query}
+                value={value !== undefined ? value : query}
                 onChange={handleInputChange}
                 placeholder={placeholder}
             />

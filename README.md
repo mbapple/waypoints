@@ -57,17 +57,17 @@ Stops:
 - [X] Clean up order in API, database, and add pages to make consistent
 - [X] Make legs/nodes a drop down to reveal stops
 - [X] Make legs display correctly
-- [ ] Add ability to update trips/legs/nodes
+- [X] Add ability to update trips/legs/nodes
 - [ ] Add ability to add photos
 - [ ] Add features to API and implement on frontend:
-	- [ ] Total miles of a given trip
+	- [X] Total miles of a given trip
 	- [ ] Total destination count
 - [ ] Add flights/trains/etc. to API
 	- [ ] On AddLeg, add a box that appears below to get all this info
 - [ ] Integrate into a map view with Leaflet
 - [ ] Integrate into online services 
 	- [ ] Flight data
-	- [ ] Driving distance
+	- [X] Driving distance
 - [ ] Provide statistics about travel: distances, destination lists
 - [ ] Fine tune styling
 - [ ] Figure out how to update database without breaking

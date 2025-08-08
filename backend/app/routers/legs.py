@@ -85,6 +85,7 @@ def create_leg(leg: Leg):
     cur.execute("""
         INSERT INTO legs (trip_id, type, notes, date, start_node_id, end_node_id, start_latitude, start_longitude, end_latitude, end_longitude, start_osm_name, start_osm_id, end_osm_name, end_osm_id, miles)
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        RETURNING id
     """, (
         leg.trip_id,
         leg.type,
@@ -102,11 +103,12 @@ def create_leg(leg: Leg):
         leg.end_osm_id,
         leg.miles if leg.miles is not None else None
     ))
+    new_row = cur.fetchone()
     conn.commit()
     cur.close()
     conn.close()
 
-    return {"message": "Leg created successfully"}
+    return {"message": "Leg created successfully", "id": new_row["id"]}
 
 # Return a specific leg by ID
 @router.get("/{leg_id}")

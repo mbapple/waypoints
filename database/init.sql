@@ -68,7 +68,9 @@ CREATE TABLE flight_details (
 -- CAR DETAILS (Only for legs with type = 'car')
 -- ===================
 CREATE TABLE car_details (
-    leg_id INTEGER PRIMARY KEY REFERENCES legs(id) ON DELETE CASCADE
+    leg_id INTEGER PRIMARY KEY REFERENCES legs(id) ON DELETE CASCADE,
+    driving_time_seconds INT,
+    polyline TEXT
 );
 
 -- ===================

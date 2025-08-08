@@ -1,9 +1,11 @@
-import React, {useState} from "react";
+import React, {useEffect, useMemo, useState} from "react";
 import axios from "axios";
 import { useParams, Link } from "react-router-dom";
 import {FormCard} from "../../components/input-components";
 import {PageHeader} from "../../components/page-components";
 import { Button, Text, Flex, Form, FormGroup, Label, Input, Select } from "../../styles/components";
+import { PlaceSearchInput } from "../../components/map-integration-components";
+import { CarDetails } from "../../components/leg-details-components";
 
 function AddLeg() {
   const { tripID } = useParams();
@@ -14,6 +16,16 @@ function AddLeg() {
     toNode: "",
     date: "",
     notes: "",
+    // locations (overrideable)
+    start_latitude: "",
+    start_longitude: "",
+    end_latitude: "",
+    end_longitude: "",
+    start_osm_name: "",
+    start_osm_id: "",
+    end_osm_name: "",
+    end_osm_id: "",
+    miles: "",
   });
 
   const [loading, setLoading] = useState(false);
@@ -26,28 +38,40 @@ function AddLeg() {
         }));
     }
 
-  const handleSubmit = async (e) => {
+    const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-    console.log('Form data values:', {
-      trip_id: tripID,
-      type: formData.type,
-      start_node_id: formData.fromNode,
-      end_node_id: formData.toNode,
-    //   notes: formData.notes,
-      date: formData.date,
-    });
+            const payload = {
+                trip_id: Number(tripID),
+                type: formData.type,
+                start_node_id: formData.fromNode ? Number(formData.fromNode) : null,
+                end_node_id: formData.toNode ? Number(formData.toNode) : null,
+                notes: formData.notes || null,
+                date: formData.date,
+                start_latitude: formData.start_latitude ? Number(formData.start_latitude) : null,
+                start_longitude: formData.start_longitude ? Number(formData.start_longitude) : null,
+                end_latitude: formData.end_latitude ? Number(formData.end_latitude) : null,
+                end_longitude: formData.end_longitude ? Number(formData.end_longitude) : null,
+                start_osm_name: formData.start_osm_name || null,
+                start_osm_id: formData.start_osm_id || null,
+                end_osm_name: formData.end_osm_name || null,
+                end_osm_id: formData.end_osm_id || null,
+                miles: formData.miles ? Number(formData.miles) : null,
+            };
 
-    await axios.post("http://localhost:3001/api/legs", {
-      trip_id: tripID,
-      type: formData.type,
-      start_node_id: formData.fromNode,
-      end_node_id: formData.toNode,
-      notes: formData.notes,
-      date: formData.date,
-    });
+            const legRes = await axios.post("http://localhost:3001/api/legs", payload);
+            const newLegId = legRes?.data?.id;
+
+            if (formData.type === 'car' && newLegId && carAutoFill) {
+                // Save car_details once
+                await axios.post("http://localhost:3001/api/car_details", {
+                    leg_id: newLegId,
+                    driving_time_seconds: carAutoFill.driving_time_seconds ?? null,
+                    polyline: carAutoFill.polyline ?? null,
+                });
+            }
         // Redirect back to trip details  
         window.location.href = `/trip/${tripID}`;
     } catch (err) {
@@ -60,6 +84,11 @@ function AddLeg() {
 
 
 const [nodes, setNodes] = useState([]);
+const selectedFromNode = useMemo(() => nodes.find(n => String(n.id) === String(formData.fromNode)), [nodes, formData.fromNode]);
+const selectedToNode = useMemo(() => nodes.find(n => String(n.id) === String(formData.toNode)), [nodes, formData.toNode]);
+
+// Track car autofill to submit car_details once
+const [carAutoFill, setCarAutoFill] = useState(null);
 
 // Fetch nodes for this trip
 React.useEffect(() => {
@@ -76,6 +105,32 @@ React.useEffect(() => {
         fetchNodes();
     }
 }, [tripID]);
+
+// When nodes change selection, prefill locations but allow override
+useEffect(() => {
+    if (selectedFromNode) {
+        setFormData(prev => ({
+            ...prev,
+            start_latitude: selectedFromNode.latitude ?? prev.start_latitude,
+            start_longitude: selectedFromNode.longitude ?? prev.start_longitude,
+            start_osm_name: selectedFromNode.osm_name ?? prev.start_osm_name,
+            start_osm_id: selectedFromNode.osm_id ?? prev.start_osm_id,
+        date: prev.date || (selectedFromNode.departure_date || ''),
+        }));
+    }
+}, [selectedFromNode]);
+
+useEffect(() => {
+    if (selectedToNode) {
+        setFormData(prev => ({
+            ...prev,
+            end_latitude: selectedToNode.latitude ?? prev.end_latitude,
+            end_longitude: selectedToNode.longitude ?? prev.end_longitude,
+            end_osm_name: selectedToNode.osm_name ?? prev.end_osm_name,
+            end_osm_id: selectedToNode.osm_id ?? prev.end_osm_id,
+        }));
+    }
+}, [selectedToNode]);
 
 return (
     <div>
@@ -151,6 +206,42 @@ return (
                     </Select>
                 </FormGroup>
                 <FormGroup>
+                    <Label htmlFor="fromLocation">From Location</Label>
+                    <PlaceSearchInput
+                        placeholder="Search for a start location..."
+                        value={formData.start_osm_name || ''}
+                        onChange={(e) => setFormData(prev => ({ ...prev, start_osm_name: e.target.value }))}
+                        onPlaceSelect={(place) => {
+                            setFormData(prev => ({
+                                ...prev,
+                                start_latitude: place.lat,
+                                start_longitude: place.lon,
+                                start_osm_name: place.name,
+                                start_osm_id: place.osm_id,
+                            }));
+                        }}
+                    />
+                    <small>Autofilled from node; you can override.</small>
+                </FormGroup>
+                <FormGroup>
+                    <Label htmlFor="toLocation">To Location</Label>
+                    <PlaceSearchInput
+                        placeholder="Search for a destination..."
+                        value={formData.end_osm_name || ''}
+                        onChange={(e) => setFormData(prev => ({ ...prev, end_osm_name: e.target.value }))}
+                        onPlaceSelect={(place) => {
+                            setFormData(prev => ({
+                                ...prev,
+                                end_latitude: place.lat,
+                                end_longitude: place.lon,
+                                end_osm_name: place.name,
+                                end_osm_id: place.osm_id,
+                            }));
+                        }}
+                    />
+                    <small>Autofilled from node; you can override.</small>
+                </FormGroup>
+                <FormGroup>
                     <Label htmlFor = "date">Date *</Label>
                     <Input
                         id="date"
@@ -162,18 +253,35 @@ return (
                     />
                 </FormGroup>
 
-                <FormGroup>
-                    <Label htmlFor="notes">Notes</Label>
-                    <Input
-                        id="notes" 
-                        name="notes"
-                        as="textarea"
-                        rows={4}
-                        placeholder="Any additional notes about this leg..."
-                        value={formData.notes}
-                        onChange={handleChange}
-                    />
-                </FormGroup>
+                                {formData.type === 'car' && (
+                                    <FormGroup>
+                                        <CarDetails
+                                            start={{ lat: Number(formData.start_latitude), lon: Number(formData.start_longitude) }}
+                                            end={{ lat: Number(formData.end_latitude), lon: Number(formData.end_longitude) }}
+                                            initialMiles={formData.miles ? Number(formData.miles) : undefined}
+                                            onAutoFill={({ miles, driving_time_seconds, polyline }) => {
+                                                setFormData(prev => ({ ...prev, miles }));
+                                                setCarAutoFill({ driving_time_seconds, polyline });
+                                            }}
+                                        />
+                                    </FormGroup>
+                                )}
+                                <FormGroup>
+                                    <Label htmlFor="miles">Miles</Label>
+                                    <Input id="miles" name="miles" type="number" step="0.1" value={formData.miles} onChange={handleChange} />
+                                </FormGroup>
+                                <FormGroup>
+                                    <Label htmlFor="notes">Notes</Label>
+                                    <Input
+                                            id="notes" 
+                                            name="notes"
+                                            as="textarea"
+                                            rows={4}
+                                            placeholder="Any additional notes about this leg..."
+                                            value={formData.notes}
+                                            onChange={handleChange}
+                                    />
+                                </FormGroup>
 
                 <Button 
                     type="submit" 

@@ -23,6 +23,24 @@ class Leg(BaseModel):
     end_osm_id: str | None = None
     miles: float | None = None
 
+# Leg update model (all fields optional)
+class LegUpdate(BaseModel):
+    trip_id: int | None = None
+    type: str | None = None
+    notes: str | None = None
+    date: str | None = None
+    start_node_id: int | None = None
+    end_node_id: int | None = None
+    start_latitude: float | None = None
+    start_longitude: float | None = None
+    end_latitude: float | None = None
+    end_longitude: float | None = None
+    start_osm_name: str | None = None
+    start_osm_id: str | None = None
+    end_osm_name: str | None = None
+    end_osm_id: str | None = None
+    miles: float | None = None
+
 @router.get("/by_trip/{trip_id}")
 def get_legs_by_node(trip_id: int):
     conn = get_db()
@@ -144,4 +162,29 @@ def delete_leg(leg_id: int):
     else:
         raise HTTPException(status_code=404, detail="Leg not found")
     
+
+@router.put("/{leg_id}")
+def update_leg(leg_id: int, update: LegUpdate):
+    data = update.model_dump(exclude_unset=True) if hasattr(update, "model_dump") else update.dict(exclude_unset=True)
+    allowed = {"trip_id", "type", "notes", "date", "start_node_id", "end_node_id", "start_latitude", "start_longitude", "end_latitude", "end_longitude", "start_osm_name", "start_osm_id", "end_osm_name", "end_osm_id", "miles"}
+    data = {k: v for k, v in data.items() if k in allowed}
+    if not data:
+        raise HTTPException(status_code=400, detail="No fields provided for update")
+
+    set_clauses = ", ".join([f"{col} = %s" for col in data.keys()])
+    params = list(data.values()) + [leg_id]
+
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute(f"UPDATE legs SET {set_clauses} WHERE id = %s RETURNING id", params)
+    row = cur.fetchone()
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    if not row:
+        raise HTTPException(status_code=404, detail="Leg not found")
+
+    return {"message": f"Leg {leg_id} updated"}
+
 

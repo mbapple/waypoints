@@ -115,7 +115,7 @@ Get the total miles of all legs in a trip.
 **Response:**
 ```json
 {
-    "miles": 1903
+  "total_miles": 1903
 }
 
 ## Nodes API (`/api/nodes`)
@@ -202,6 +202,30 @@ Delete a node by ID.
 
 **Error Responses:**
 - `404` - Node not found
+
+### PUT `/api/nodes/{node_id}`
+Update an existing node. Only provided fields are updated.
+
+**Request Body (any subset):**
+```json
+{
+  "name": "New Node Name",
+  "trip_id": 1,
+  "description": "Updated description",
+  "notes": "Updated notes",
+  "arrival_date": "2025-07-02",
+  "departure_date": "2025-07-04",
+  "latitude": 41.0,
+  "longitude": -73.9,
+  "osm_name": "Some Place",
+  "osm_id": "999"
+}
+```
+
+**Response:**
+```json
+{ "message": "Node {node_id} updated" }
+```
 
 ## Legs API (`/api/legs`)
 
@@ -291,6 +315,26 @@ Get a specific leg by ID.
 **Error Responses:**
 - `404` - Leg not found
 
+### PUT `/api/legs/{leg_id}`
+Update an existing leg. Only provided fields are updated.
+
+**Request Body (any subset):**
+```json
+{
+  "type": "car",
+  "notes": "Shorter route",
+  "date": "2025-07-03",
+  "start_node_id": 2,
+  "end_node_id": 3,
+  "miles": 123.4
+}
+```
+
+**Response:**
+```json
+{ "message": "Leg {leg_id} updated" }
+```
+
 ### DELETE `/api/legs/{leg_id}`
 Delete a leg by ID.
 
@@ -373,7 +417,7 @@ Geat all stops for a specific trip, ordered by id.
 ]
 ```
 
-### POST `/
+### POST `/api/stops/`
 Create a new stop.
 
 **Request Body:**
@@ -397,6 +441,43 @@ Create a new stop.
 {
   "message": "Stop created successfully"
 }
+```
+
+### PUT `/api/stops/{stop_id}`
+Update an existing stop. Only provided fields are updated.
+
+**Request Body (any subset):**
+```json
+{
+  "name": "Hotel California",
+  "category": "hotel",
+  "notes": "Updated notes"
+}
+```
+
+**Response:**
+```json
+{ "message": "Stop {stop_id} updated" }
+```
+
+## Trips API (continued)
+
+### PUT `/api/trips/{trip_id}`
+Update an existing trip. Only provided fields are updated.
+
+**Request Body (any subset):**
+```json
+{
+  "name": "Updated Trip Name",
+  "start_date": "2025-07-01",
+  "end_date": "2025-07-15",
+  "description": "New description"
+}
+```
+
+**Response:**
+```json
+{ "message": "Trip {trip_id} updated" }
 ```
 
 ### GET `/api/stops/{stop_id}`

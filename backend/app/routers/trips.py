@@ -12,6 +12,13 @@ class Trip(BaseModel):
     end_date: str
     description: str | None = None
 
+# Trip update model (all fields optional; only provided fields are updated)
+class TripUpdate(BaseModel):
+    name: str | None = None
+    start_date: str | None = None
+    end_date: str | None = None
+    description: str | None = None
+
 
 # Return a list of all trips in order by start date
 @router.get("/")
@@ -58,6 +65,30 @@ def get_trip(trip_id: int):
     else:
         raise HTTPException(status_code=404, detail="Trip not found")
     
+
+@router.put("/{trip_id}")
+def update_trip(trip_id: int, update: TripUpdate):
+    data = update.model_dump(exclude_unset=True) if hasattr(update, "model_dump") else update.dict(exclude_unset=True)
+    allowed = {"name", "start_date", "end_date", "description"}
+    data = {k: v for k, v in data.items() if k in allowed}
+    if not data:
+        raise HTTPException(status_code=400, detail="No fields provided for update")
+
+    set_clauses = ", ".join([f"{col} = %s" for col in data.keys()])
+    params = list(data.values()) + [trip_id]
+
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute(f"UPDATE trips SET {set_clauses} WHERE id = %s RETURNING id", params)
+    row = cur.fetchone()
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    if not row:
+        raise HTTPException(status_code=404, detail="Trip not found")
+
+    return {"message": f"Trip {trip_id} updated"}
 
 @router.delete("/{trip_id}")
 def delete_trip(trip_id: int):

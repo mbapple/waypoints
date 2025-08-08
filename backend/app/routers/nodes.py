@@ -18,6 +18,19 @@ class Node(BaseModel):
     osm_name: str | None = None
     osm_id: str | None = None
 
+# Node update model (all fields optional)
+class NodeUpdate(BaseModel):
+    name: str | None = None
+    trip_id: int | None = None
+    description: str | None = None
+    notes: str | None = None
+    arrival_date: str | None = None
+    departure_date: str | None = None
+    latitude: float | None = None
+    longitude: float | None = None
+    osm_name: str | None = None
+    osm_id: str | None = None
+
 # Return a list of all nodes corresponding to a specific trip
 @router.get("/by_trip/{trip_id}")
 def get_nodes_by_trip(trip_id: int):
@@ -120,3 +133,28 @@ def delete_node(node_id: int):
         return {"message": "Node deleted"}
     else:
         raise HTTPException(status_code=404, detail="Node not found")
+
+
+@router.put("/{node_id}")
+def update_node(node_id: int, update: NodeUpdate):
+    data = update.model_dump(exclude_unset=True) if hasattr(update, "model_dump") else update.dict(exclude_unset=True)
+    allowed = {"name", "trip_id", "description", "notes", "arrival_date", "departure_date", "latitude", "longitude", "osm_name", "osm_id"}
+    data = {k: v for k, v in data.items() if k in allowed}
+    if not data:
+        raise HTTPException(status_code=400, detail="No fields provided for update")
+
+    set_clauses = ", ".join([f"{col} = %s" for col in data.keys()])
+    params = list(data.values()) + [node_id]
+
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute(f"UPDATE nodes SET {set_clauses} WHERE id = %s RETURNING id", params)
+    row = cur.fetchone()
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    if not row:
+        raise HTTPException(status_code=404, detail="Node not found")
+
+    return {"message": f"Node {node_id} updated"}

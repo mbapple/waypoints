@@ -170,7 +170,12 @@ function TripDetails() {
 
       {/* Trip information Card */}
       <TripInfoCard>
-        <h3>Trip Information</h3>
+        <Flex justify="space-between" align="flex-start">
+          <h3>Trip Information</h3>
+          <Button as={Link} to={`/trip/${tripID}/update`} variant="ghost" size="sm" aria-label="Edit Trip">
+            Edit
+          </Button>
+        </Flex>
         <Text variant="secondary">
           <strong>Description:</strong> {trip.description || "No description provided."}
         </Text>
@@ -203,7 +208,18 @@ function TripDetails() {
                 <NodeCard>
                   {item.type === 'node' ? (
                     <>
-                      <h4>{item.data.name}</h4>
+                      <Flex justify="space-between" align="flex-start">
+                        <h4>{item.data.name}</h4>
+                        <Button
+                          as={Link}
+                          to={`/trip/${tripID}/update-node?nodeID=${item.data.id}`}
+                          variant="ghost"
+                          size="sm"
+                          aria-label={`Edit node ${item.data.name}`}
+                        >
+                          Edit
+                        </Button>
+                      </Flex>
                       {item.data.description && (
                         <Text variant="secondary" size="sm" style={{ marginBottom: '0.75rem' }}>
                           {item.data.description}
@@ -222,7 +238,18 @@ function TripDetails() {
                     </>
                   ) : (
                     <>
-                      <h4>{item.data.name || `${getTransportTypeLabel(item.data.type)} ${getNodeName(item.data.start_node_id)} to ${getNodeName(item.data.end_node_id)}`}</h4>
+                      <Flex justify="space-between" align="flex-start">
+                        <h4>{item.data.name || `${getTransportTypeLabel(item.data.type)} ${getNodeName(item.data.start_node_id)} to ${getNodeName(item.data.end_node_id)}`}</h4>
+                        <Button
+                          as={Link}
+                          to={`/trip/${tripID}/update-leg?legID=${item.data.id}`}
+                          variant="ghost"
+                          size="sm"
+                          aria-label={`Edit leg ${item.data.id}`}
+                        >
+                          Edit
+                        </Button>
+                      </Flex>
                       {item.data.description && (
                         <Text variant="secondary" size="sm" style={{ marginBottom: '0.75rem' }}>
                           {item.data.description}
@@ -240,7 +267,20 @@ function TripDetails() {
                 {item.type === 'node' ? 
                   getStopsForNode(item.data.id).map(stop => (
                     <StopCard key={stop.id}>
-                      <h5>{stop.name}   <Badge variant="info">{stop.category}</Badge></h5>
+                      <Flex justify="space-between" align="center">
+                        <h5>
+                          {stop.name}   <Badge variant="info">{stop.category}</Badge>
+                        </h5>
+                        <Button
+                          as={Link}
+                          to={`/trip/${tripID}/update-stop?stopID=${stop.id}`}
+                          variant="ghost"
+                          size="sm"
+                          aria-label={`Edit stop ${stop.name}`}
+                        >
+                          Edit
+                        </Button>
+                      </Flex>
                       <Link to={getPlaceLink(stop.osm_id, stop.osm_name)} target="_blank" rel="noopener noreferrer">
                         <Text variant="muted" size="sm">
                           <strong>Location:</strong> (OSM: {stop.osm_name || 'N/A'})
@@ -257,7 +297,20 @@ function TripDetails() {
                   )) :
                   getStopsForLeg(item.data.id).map(stop => (
                     <StopCard key={stop.id}>
-                      <h5>{stop.name}   <Badge variant="info">{stop.category}</Badge></h5>
+                      <Flex justify="space-between" align="center">
+                        <h5>
+                          {stop.name}   <Badge variant="info">{stop.category}</Badge>
+                        </h5>
+                        <Button
+                          as={Link}
+                          to={`/trip/${tripID}/update-stop?stopID=${stop.id}`}
+                          variant="ghost"
+                          size="sm"
+                          aria-label={`Edit stop ${stop.name}`}
+                        >
+                          Edit
+                        </Button>
+                      </Flex>
                       <Link to={getPlaceLink(stop.osm_id, stop.osm_name)} target="_blank" rel="noopener noreferrer">
                         <Text variant="muted" size="sm">
                           <strong>Location:</strong> (OSM: {stop.osm_name || 'N/A'})

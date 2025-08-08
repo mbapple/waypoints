@@ -19,6 +19,20 @@ class Stop(BaseModel):
     osm_name: str | None = None
     osm_id: str | None = None
 
+# Stop update model (all fields optional)
+class StopUpdate(BaseModel):
+    name: str | None = None
+    trip_id: int | None = None
+    leg_id: int | None = None
+    node_id: int | None = None
+    description: str | None = None
+    category: str | None = None
+    notes: str | None = None
+    latitude: float | None = None
+    longitude: float | None = None
+    osm_name: str | None = None
+    osm_id: str | None = None
+
 # Return a list of all stops corresponding to a specific leg
 @router.get("/by_leg/{leg_id}")
 def get_stops_by_leg(leg_id: int):
@@ -166,3 +180,28 @@ def get_stop_by_id(stop_id: int):
         }
     else:
         raise HTTPException(status_code=404, detail="Stop not found")
+
+
+@router.put("/{stop_id}")
+def update_stop(stop_id: int, update: StopUpdate):
+    data = update.model_dump(exclude_unset=True) if hasattr(update, "model_dump") else update.dict(exclude_unset=True)
+    allowed = {"name", "trip_id", "leg_id", "node_id", "category", "notes", "latitude", "longitude", "osm_name", "osm_id"}
+    data = {k: v for k, v in data.items() if k in allowed}
+    if not data:
+        raise HTTPException(status_code=400, detail="No fields provided for update")
+
+    set_clauses = ", ".join([f"{col} = %s" for col in data.keys()])
+    params = list(data.values()) + [stop_id]
+
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute(f"UPDATE stops SET {set_clauses} WHERE id = %s RETURNING id", params)
+    row = cur.fetchone()
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    if not row:
+        raise HTTPException(status_code=404, detail="Stop not found")
+
+    return {"message": f"Stop {stop_id} updated"}

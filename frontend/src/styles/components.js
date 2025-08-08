@@ -9,7 +9,7 @@ export const GlobalStyles = createGlobalStyle`
   }
   
   html {
-    font-size: 16px;
+  font-size: calc(16px * var(--font-scale, 1));
     scroll-behavior: smooth;
   }
   

@@ -1,8 +1,10 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "styled-components";
-import { theme } from "./styles/theme";
+import { themes } from "./styles/theme";
+import { SettingsProvider, useSettings } from "./context/SettingsContext";
 import { GlobalStyles, Container } from "./styles/components";
+import Map from "./pages/Map";
 import Navigation from "./components/Navigation";
 import TripList from "./pages/TripList";
 import CreateTrip from "./pages/Create/CreateTrip";
@@ -17,14 +19,22 @@ import UpdateLeg from "./pages/Update/UpdateLeg";
 import UpdateStop from "./pages/Update/UpdateStop";
 
 
-function App() {
+const ThemedApp = () => {
+  const { settings } = useSettings();
+  const theme = themes[settings.theme] || themes.dark;
+  useEffect(() => {
+    try {
+      document.documentElement.style.setProperty('--font-scale', String(settings.fontScale ?? 1));
+    } catch {}
+  }, [settings.fontScale]);
   return (
     <ThemeProvider theme={theme}>
-      <GlobalStyles />
+        <GlobalStyles />
       <Router>
         <Navigation />
         <Container>
           <Routes>
+            <Route path="/map" element={<Map />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/" element={<TripList />} />
             <Route path="/create" element={<CreateTrip />} />
@@ -36,12 +46,18 @@ function App() {
             <Route path="/trip/:tripID/update-node" element={<UpdateNode />} />
             <Route path="/trip/:tripID/update-leg" element={<UpdateLeg />} />
             <Route path="/trip/:tripID/update-stop" element={<UpdateStop />} />
-          
-            {/* Add more routes as needed */}
           </Routes>
         </Container>
       </Router>
     </ThemeProvider>
+  );
+}
+
+function App() {
+  return (
+    <SettingsProvider>
+      <ThemedApp />
+    </SettingsProvider>
   );
 }
 

@@ -57,6 +57,12 @@ const Navigation = () => {
         <Flex justify="space-between" align="center">
           <NavBrand to="/">Travel Tracker</NavBrand>
           <NavLinks>
+            <NavLink
+              to="/map"
+              className={location.pathname === '/map' ? 'active' : ''}
+            >
+              Map
+            </NavLink>
             <NavLink 
               to="/" 
               className={location.pathname === '/' ? 'active' : ''}
@@ -68,6 +74,12 @@ const Navigation = () => {
               className={location.pathname === '/create' ? 'active' : ''}
             >
               Create Trip
+            </NavLink>
+            <NavLink 
+              to="/settings" 
+              className={location.pathname === '/settings' ? 'active' : ''}
+            >
+              Settings
             </NavLink>
           </NavLinks>
         </Flex>

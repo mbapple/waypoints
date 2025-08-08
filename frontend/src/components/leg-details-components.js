@@ -2,6 +2,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { Input, Label, FormGroup, Text, Button, Flex } from '../styles/components';
+import { useSettings } from '../context/SettingsContext';
 
 const Inline = styled.div`
   display: grid;
@@ -88,7 +89,8 @@ export const CarDetails = ({
   initialDurationSeconds,
   initialPolyline
 }) => {
-  const [apiKey, setApiKey] = useState('');
+  const { settings } = useSettings();
+  const [apiKey, setApiKey] = useState(settings.orsApiKey || '');
   const [miles, setMiles] = useState(initialMiles ?? '');
   const [duration, setDuration] = useState(initialDurationSeconds ?? ''); // seconds internally
   const [polyline, setPolyline] = useState(initialPolyline ?? '');
@@ -97,10 +99,11 @@ export const CarDetails = ({
   const [autoFetched, setAutoFetched] = useState(false);
 
   useEffect(() => {
-    // Optionally pull ORS key from env if exposed to client
-    const k = window?.env?.REACT_APP_ORS_API_KEY || process.env.REACT_APP_ORS_API_KEY;
-    if (k) setApiKey(k);
-  }, []);
+    if (settings.orsApiKey && settings.orsApiKey !== apiKey) {
+      setApiKey(settings.orsApiKey);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [settings.orsApiKey, apiKey]);
 
   const doFetch = useCallback(async () => {
     if (!canFetch) return;

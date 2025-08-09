@@ -117,6 +117,18 @@ Get the total miles of all legs in a trip.
 {
   "total_miles": 1903
 }
+```
+
+### GET `/api/statistics`
+Get some statistics about all trips.
+
+**Response:**
+```json
+{
+  "all_trip_miles": 1903,
+  "unique_destination_count": 3
+}
+```
 
 ## Nodes API (`/api/nodes`)
 

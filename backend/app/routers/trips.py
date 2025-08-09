@@ -216,3 +216,20 @@ def get_total_miles(trip_id: int):
 
     total_miles = row["total_miles"] if row and row["total_miles"] is not None else 0
     return {"total_miles": total_miles}
+
+@router.get("/data/statistics")
+def get_trip_statistics():
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("SELECT SUM(miles) AS all_trip_miles FROM legs")
+    miles_row = cur.fetchone()
+    all_trip_miles = miles_row["all_trip_miles"] if miles_row and miles_row["all_trip_miles"] is not None else 0
+
+    cur.execute("SELECT COUNT(DISTINCT osm_id) AS unique_destination_count FROM nodes WHERE osm_id IS NOT NULL")
+    destinations_row = cur.fetchone()
+    unique_destination_count = destinations_row["unique_destination_count"] if destinations_row and destinations_row["unique_destination_count"] is not None else 0
+
+    cur.close()
+    conn.close()
+
+    return {"all_trip_miles": all_trip_miles, "unique_destination_count": unique_destination_count}

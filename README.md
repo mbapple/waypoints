@@ -13,23 +13,25 @@ The goal of this is to provide a solution to track any and all types of travel. 
 
 # Stack:
 ```
-database/
-├── PostgreSQL
-backend/
-├── FastAPI
-frontend/
-├── React app 
-├── Styled with styled-components 
+datbase container/
+└── PostgreSQL
+app container
+└──backend/
+	└── FastAPI
+└──frontend/
+	└── React app
+		├── Leaflet Integration
+		└── Styled with styled-components 
 ```
 
 # Postgre Data Scheme:
-Trips: 
+**Trips:** 
 - Entire trip that consists of legs and nodes
-Legs: 
+**Legs:**
 - Long distances of travel between nodes, i.e. flights, car trips, trains
-Nodes: 
+**Nodes:** 
 - Major destinations i.e. Cities
-Stops:
+**Stops:**
 - Attached to either a leg or a node
 - Destinations such as restaurants, hotels, parks
 
@@ -59,23 +61,25 @@ Stops:
 - [X] Make legs display correctly
 - [X] Add ability to update trips/legs/nodes
 - [ ] Add ability to add photos
-- [ ] Add features to API and implement on frontend:
+- [X] Add features to API and implement on frontend:
 	- [X] Total miles of a given trip
-	- [ ] Total destination count
+	- [X] Total destination count
 - [ ] Add flights/trains/etc. to API
 	- [X] On AddLeg, add a box that appears below to get all this info
-- [ ] Integrate into a map view with Leaflet
-- [ ] Integrate into online services 
-	- [ ] Flight data
+- [X] Integrate into a map view with Leaflet
+- [X] Integrate into online services 
+	- [X] Flight data
 	- [X] Driving distance
 - [ ] Provide statistics about travel: distances, destination lists
 - [ ] Fine tune styling
 - [ ] Figure out how to update database without breaking
 - [ ] Figure out how to backup database
-- [ ] Organize page files
-- [ ] Pull out redundant functions into separate file
-- [ ] Add ability to customize style and light/dark mode
+- [X] Organize page files
+- [X] Pull out redundant functions into separate file
+- [X] Add ability to customize style and light/dark mode
 - [ ] Add create trip by flight numbers feature
 - [ ] Add create trip by cruise
-
+- [ ] Make a list of general cleanup to do
+- [ ] Fix bugs with updating components, particularly if you change transportation type of leg
+- [ ] Add maps of individual trips
 

@@ -77,6 +77,7 @@ def create_node(node: Node):
     cur.execute("""
         INSERT INTO nodes (trip_id, name, description, notes, arrival_date, departure_date, latitude, longitude, osm_name, osm_id, osm_country, osm_state)
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        RETURNING id
     """, (
         node.trip_id,
         node.name,
@@ -91,10 +92,11 @@ def create_node(node: Node):
         node.osm_country,
         node.osm_state
     ))
+    row = cur.fetchone()
     conn.commit()
     cur.close()
     conn.close()
-    return {"message": "Node created"}
+    return {"message": "Node created", "id": row["id"]}
 
 # Return a specific single node
 @router.get("/{node_id}")

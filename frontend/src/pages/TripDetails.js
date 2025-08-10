@@ -4,6 +4,7 @@ import { PageHeader } from "../components/page-components";
 import { getPlaceLink } from "../components/map-integration-components";
 import { TripInfoCard, NodeCard, ActionButtons, EmptyState, StopCard } from "../components/trip-detail-components";
 import { Button, Text, Grid, Flex, Badge } from "../styles/components";
+import TripMiniMap from "../components/TripMiniMap";
 import { getTrip, getTripMiles } from "../api/trips";
 import { listNodesByTrip } from "../api/nodes";
 import { listLegsByTrip } from "../api/legs";
@@ -141,6 +142,15 @@ function TripDetails() {
           </Button>
         </Flex>
       </PageHeader>
+
+      {/* Mini Map */}
+      <div style={{ marginBottom: '1.25rem' }}>
+        <Flex justify="space-between" align="center" style={{ marginBottom: '0.5rem' }}>
+          <h3 style={{ margin: 0 }}>Map preview</h3>
+          <Button as={Link} to={`/trip/${tripID}/map`} variant="ghost" size="sm">Open full map →</Button>
+        </Flex>
+        <TripMiniMap tripID={tripID} nodes={nodes} legs={legs} />
+      </div>
 
       {/* Trip information Card */}
       <TripInfoCard>

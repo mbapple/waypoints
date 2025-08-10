@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import styled from "styled-components";
 import { Card, Button, Input, Form, FormGroup, Label, Text } from "../../styles/components";
 import { createTrip } from "../../api/trips";
@@ -76,6 +76,7 @@ function CreateTrip() {
 
       <FormCard>
         <Form onSubmit={handleSubmit}>
+          <Text variant="secondary">Prefer a single form to outline nodes and legs? <Link to="/create/quick">Use Quick Create</Link>.</Text>
           <FormGroup>
             <Label htmlFor="name">Trip Name *</Label>
             <Input

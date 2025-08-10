@@ -42,13 +42,14 @@ def create_trip(trip: Trip):
     conn = get_db()
     cur = conn.cursor()
     cur.execute(
-        "INSERT INTO trips (name, start_date, end_date, description) VALUES (%s, %s, %s, %s)",
+        "INSERT INTO trips (name, start_date, end_date, description) VALUES (%s, %s, %s, %s) RETURNING id",
         (trip.name, trip.start_date, trip.end_date, trip.description),
     )
+    row = cur.fetchone()
     conn.commit()
     cur.close()
     conn.close()
-    return {"message": "Trip created"}
+    return {"message": "Trip created", "id": row["id"]}
 
 
 @router.get("/{trip_id}")

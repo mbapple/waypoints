@@ -76,6 +76,12 @@ const Navigation = () => {
               Create Trip
             </NavLink>
             <NavLink 
+              to="/create/quick" 
+              className={location.pathname === '/create/quick' ? 'active' : ''}
+            >
+              Quick Create
+            </NavLink>
+            <NavLink 
               to="/settings" 
               className={location.pathname === '/settings' ? 'active' : ''}
             >

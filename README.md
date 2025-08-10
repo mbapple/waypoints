@@ -70,7 +70,7 @@ app container
 - [X] Integrate into online services 
 	- [X] Flight data
 	- [X] Driving distance
-- [ ] Provide statistics about travel: distances, destination lists
+- [X] Provide statistics about travel: distances, destination lists
 - [ ] Fine tune styling
 - [ ] Figure out how to update database without breaking
 - [ ] Figure out how to backup database

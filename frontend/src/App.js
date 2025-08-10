@@ -8,7 +8,9 @@ import Map from "./pages/Map";
 import Navigation from "./components/Navigation";
 import TripList from "./pages/TripList";
 import CreateTrip from "./pages/Create/CreateTrip";
+import CreateTripQuick from "./pages/Create/CreateTripQuick";
 import TripDetails from "./pages/TripDetails";
+import TripMap from "./pages/TripMap";
 import AddNode from "./pages/Create/AddNode";
 import AddLeg from "./pages/Create/AddLeg";
 import AddStop from "./pages/Create/AddStop";
@@ -38,7 +40,9 @@ const ThemedApp = () => {
             <Route path="/settings" element={<Settings />} />
             <Route path="/" element={<TripList />} />
             <Route path="/create" element={<CreateTrip />} />
+            <Route path="/create/quick" element={<CreateTripQuick />} />
             <Route path="/trip/:tripID" element={<TripDetails />} />
+            <Route path="/trip/:tripID/map" element={<TripMap />} />
             <Route path="/trip/:tripID/add-node" element={<AddNode />} />
             <Route path="/trip/:tripID/add-leg" element={<AddLeg />} />
             <Route path="/trip/:tripID/add-stop" element={<AddStop />} />

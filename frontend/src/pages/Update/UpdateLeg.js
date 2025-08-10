@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { FormCard, DangerZone } from "../../components/input-components";
 import { PageHeader } from "../../components/page-components";
@@ -29,8 +29,12 @@ function UpdateLeg() {
   end_longitude: "",
   start_osm_name: "",
   start_osm_id: "",
+  start_osm_country: "",
+  start_osm_state: "",
   end_osm_name: "",
   end_osm_id: "",
+  end_osm_country: "",
+  end_osm_state: "",
   miles: "",
   // flight fields
   flight_number: "",
@@ -42,6 +46,31 @@ function UpdateLeg() {
   const [nodes, setNodes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [carAutoFill, setCarAutoFill] = useState(null);
+
+  // Stable autofill callbacks to avoid child effect loops
+  const handleCarAutoFill = useCallback(({ miles, driving_time_seconds, polyline }) => {
+    setFormData(prev => ({
+      ...prev,
+      ...(typeof miles === 'number' ? { miles: miles.toFixed(1) } : {}),
+    }));
+    setCarAutoFill({
+      ...(driving_time_seconds !== undefined ? { driving_time_seconds } : {}),
+      ...(polyline !== undefined ? { polyline } : {}),
+    });
+  }, []);
+
+  const handleFlightAutoFill = useCallback((data) => {
+    const { miles, flight_number, airline, start_airport, end_airport } = data || {};
+    setFormData(prev => ({
+      ...prev,
+      ...(typeof miles === 'number' ? { miles: miles.toFixed(1) } : {}),
+      ...(flight_number !== undefined ? { flight_number } : {}),
+      ...(airline !== undefined ? { airline } : {}),
+      ...(start_airport !== undefined ? { start_airport } : {}),
+      ...(end_airport !== undefined ? { end_airport } : {}),
+    }));
+  }, []);
 
 
   const handleDeleteLeg = async () => {
@@ -79,8 +108,12 @@ function UpdateLeg() {
           end_longitude: l.end_longitude || "",
           start_osm_name: l.start_osm_name || "",
           start_osm_id: l.start_osm_id || "",
+          start_osm_country: l.start_osm_country || "",
+          start_osm_state: l.start_osm_state || "",
           end_osm_name: l.end_osm_name || "",
           end_osm_id: l.end_osm_id || "",
+          end_osm_country: l.end_osm_country || "",
+          end_osm_state: l.end_osm_state || "",
           miles: l.miles || "",
           flight_number: flightData?.flight_number || "",
           airline: flightData?.airline || "",
@@ -121,8 +154,12 @@ function UpdateLeg() {
         end_longitude: formData.end_longitude ? Number(formData.end_longitude) : null,
         start_osm_name: formData.start_osm_name || null,
         start_osm_id: formData.start_osm_id || null,
+        start_osm_country: formData.start_osm_country || null,
+        start_osm_state: formData.start_osm_state || null,
         end_osm_name: formData.end_osm_name || null,
         end_osm_id: formData.end_osm_id || null,
+        end_osm_country: formData.end_osm_country || null,
+        end_osm_state: formData.end_osm_state || null,
         miles: formData.miles ? Number(formData.miles) : null,
       });
 
@@ -155,7 +192,7 @@ function UpdateLeg() {
 
   const selectedFromNode = useMemo(() => nodes.find(n => String(n.id) === String(formData.fromNode)), [nodes, formData.fromNode]);
   const selectedToNode = useMemo(() => nodes.find(n => String(n.id) === String(formData.toNode)), [nodes, formData.toNode]);
-  const [carAutoFill, setCarAutoFill] = useState(null);
+  
 
   useEffect(() => {
     if (selectedFromNode) {
@@ -260,16 +297,13 @@ function UpdateLeg() {
             />
           </FormGroup>
 
-          {formData.type === 'car' && (
+      {formData.type === 'car' && (
             <FormGroup>
               <CarDetails
                 start={{ lat: Number(formData.start_latitude), lon: Number(formData.start_longitude) }}
                 end={{ lat: Number(formData.end_latitude), lon: Number(formData.end_longitude) }}
                 initialMiles={formData.miles ? Number(formData.miles) : undefined}
-                onAutoFill={({ miles, driving_time_seconds, polyline }) => {
-                  setFormData(prev => ({ ...prev, miles }));
-                  setCarAutoFill({ driving_time_seconds, polyline });
-                }}
+        onAutoFill={handleCarAutoFill}
               />
             </FormGroup>
           )}
@@ -279,7 +313,7 @@ function UpdateLeg() {
             <Input id="miles" name="miles" type="number" step="0.1" value={formData.miles} onChange={handleChange} />
           </FormGroup>
 
-          {formData.type === 'flight' && (
+      {formData.type === 'flight' && (
             <FormGroup>
               <FlightDetails
                 start={{ lat: Number(formData.start_latitude), lon: Number(formData.start_longitude) }}
@@ -288,21 +322,7 @@ function UpdateLeg() {
                 initialAirline={formData.airline}
                 initialStartAirport={formData.start_airport}
                 initialEndAirport={formData.end_airport}
-                onAutoFill={(data) => {
-                  if (typeof data.miles === 'number') {
-                    setFormData(prev => ({ ...prev, miles: data.miles.toFixed(1) }));
-                  }
-                  const { flight_number, airline, start_airport, end_airport } = data;
-                  if (flight_number !== undefined || airline !== undefined || start_airport !== undefined || end_airport !== undefined) {
-                    setFormData(prev => ({
-                      ...prev,
-                      flight_number: flight_number ?? prev.flight_number,
-                      airline: airline ?? prev.airline,
-                      start_airport: start_airport ?? prev.start_airport,
-                      end_airport: end_airport ?? prev.end_airport,
-                    }));
-                  }
-                }}
+        onAutoFill={handleFlightAutoFill}
               />
             </FormGroup>
           )}

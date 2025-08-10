@@ -24,6 +24,8 @@ function AddStop() {
         longitude: "",
         osmName: "",
         osmID: "",
+        osmCountry: "",
+        osmState: ""
     });
 
     const [loading, setLoading] = useState(false);
@@ -52,6 +54,8 @@ function AddStop() {
                 longitude: formData.longitude,
                 osm_name: formData.osmName,
                 osm_id: formData.osmID,
+                osm_country: formData.osmCountry,
+                osm_state: formData.osmState
             });
             
             // Redirect back to trip details

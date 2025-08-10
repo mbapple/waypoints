@@ -229,7 +229,19 @@ def get_trip_statistics():
     destinations_row = cur.fetchone()
     unique_destination_count = destinations_row["unique_destination_count"] if destinations_row and destinations_row["unique_destination_count"] is not None else 0
 
+    cur.execute("SELECT SUM(miles) AS all_flight_miles FROM legs WHERE type = 'flight'")
+    flight_miles_row = cur.fetchone()
+    all_flight_miles = flight_miles_row["all_flight_miles"] if flight_miles_row and flight_miles_row["all_flight_miles"] is not None else 0
+
+    cur.execute("SELECT SUM(miles) AS all_car_miles FROM legs WHERE type = 'car'")
+    drive_miles_row = cur.fetchone()
+    all_car_miles = drive_miles_row["all_car_miles"] if drive_miles_row and drive_miles_row["all_car_miles"] is not None else 0
+
+    cur.execute("SELECT COUNT(DISTINCT osm_country) AS country_count FROM nodes WHERE osm_country IS NOT NULL")
+    country_row = cur.fetchone()
+    country_count = country_row["country_count"] if country_row and country_row["country_count"] is not None else 0
+
     cur.close()
     conn.close()
 
-    return {"all_trip_miles": all_trip_miles, "unique_destination_count": unique_destination_count}
+    return {"all_trip_miles": all_trip_miles, "unique_destination_count": unique_destination_count, "all_flight_miles": all_flight_miles, "all_car_miles": all_car_miles, "country_count": country_count}

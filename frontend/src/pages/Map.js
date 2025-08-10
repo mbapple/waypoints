@@ -77,6 +77,7 @@ function MapPage() {
 	const [carPolylineByLeg, setCarPolylineByLeg] = useState({});
 	const [totalMiles, setTotalMiles] = useState(0);
 	const [totalDestinations, setTotalDestinations] = useState(0);
+	const [totalCountries, setTotalCountries] = useState(0);
 
 	useEffect(() => {
 		let cancelled = false;
@@ -91,6 +92,7 @@ function MapPage() {
 					if (!cancelled) {
 						setTotalMiles(stats?.all_trip_miles ?? 0);
 						setTotalDestinations(stats?.unique_destination_count ?? 0);
+						setTotalCountries(stats?.country_count ?? 0);
 					}
 				} catch {}
 
@@ -231,7 +233,7 @@ function MapPage() {
 			<PageHeader>
 				<Flex justify="space-between" align="center">
 					<h1>Your Trips</h1>
-					<Text variant="muted">{loading ? "Loading trips…" : `${trips.length} trips, ${totalMiles} miles, ${totalDestinations} destinations`}</Text>
+					<Text variant="muted">{loading ? "Loading trips…" : `${trips.length} trips, ${totalMiles} miles, ${totalCountries} countries, ${totalDestinations} destinations`}</Text>
 				</Flex>
 			</PageHeader>
 

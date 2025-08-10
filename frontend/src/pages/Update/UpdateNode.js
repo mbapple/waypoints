@@ -24,6 +24,8 @@ function UpdateNode() {
     longitude: "",
     osmName: "",
     osmID: "",
+    osmCountry: "",
+    osmState: "",
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -52,6 +54,8 @@ function UpdateNode() {
           longitude: n.longitude || "",
           osmName: n.osm_name || "",
           osmID: n.osm_id || "",
+          osmCountry: n.osm_country || "",
+          osmState: n.osm_state || "",
         });
       } catch (e) {
         console.error(e);
@@ -83,6 +87,8 @@ function UpdateNode() {
         longitude: formData.longitude || null,
         osm_name: formData.osmName || null,
         osm_id: formData.osmID || null,
+        osm_country: formData.osmCountry || null,
+        osm_state: formData.osmState || null,
       };
   await apiUpdateNode(nodeID, payload);
   navigate(`/trip/${tripID}`);

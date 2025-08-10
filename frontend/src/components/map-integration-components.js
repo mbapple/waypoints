@@ -62,6 +62,7 @@ export const PlaceSearchInput = ({ onPlaceSelect, placeholder = "Search for a pl
     const handleSelectPlace = (place) => {
         setQuery(place.display_name);
         setIsOpen(false);
+        console.log(place);
         if (onPlaceSelect) {
             onPlaceSelect({
                 name: place.display_name,
@@ -71,6 +72,8 @@ export const PlaceSearchInput = ({ onPlaceSelect, placeholder = "Search for a pl
                 type: place.type,
                 address: place.address,
                 osm_id: `${place.osm_type.charAt(0).toUpperCase()}${place.osm_id}`,
+                osm_country: place.address.country,
+                osm_state: place.address.state,
             });
         }
         if (onChange) {

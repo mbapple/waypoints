@@ -26,6 +26,8 @@ function UpdateStop() {
     longitude: "",
     osmName: "",
     osmID: "",
+    osmCountry: "",
+    osmState: "",
   });
 
   const [nodes, setNodes] = useState([]);
@@ -65,6 +67,8 @@ function UpdateStop() {
           longitude: s.longitude || "",
           osmName: s.osm_name || "",
           osmID: s.osm_id || "",
+          osmCountry: s.osm_country || "",
+          osmState: s.osm_state || "",
         });
       } catch (e) {
         console.error(e);

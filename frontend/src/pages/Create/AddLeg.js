@@ -1,4 +1,4 @@
-import React, {useEffect, useMemo, useState} from "react";
+import React, {useCallback, useEffect, useMemo, useState} from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import {FormCard} from "../../components/input-components";
 import {PageHeader} from "../../components/page-components";
@@ -26,17 +26,45 @@ function AddLeg() {
     end_longitude: "",
     start_osm_name: "",
     start_osm_id: "",
+    start_osm_country: "",
+    start_osm_state: "",
     end_osm_name: "",
     end_osm_id: "",
+    end_osm_country: "",
+    end_osm_state: "",
     miles: "",
     // flight fields
     flight_number: "",
     airline: "",
     start_airport: "",
     end_airport: "",
+    driving_time_seconds: "",
+    polyline: ""
   });
 
   const [loading, setLoading] = useState(false);
+
+    // Stable callbacks to avoid infinite render loops in child effects
+    const handleCarAutoFill = useCallback(({ miles, driving_time_seconds, polyline }) => {
+        setFormData(prev => ({
+            ...prev,
+            ...(typeof miles === 'number' ? { miles: miles.toFixed(1) } : {}),
+            ...(driving_time_seconds !== undefined ? { driving_time_seconds } : {}),
+            ...(polyline !== undefined ? { polyline } : {}),
+        }));
+    }, []);
+
+    const handleFlightAutoFill = useCallback((data) => {
+        const { miles, flight_number, airline, start_airport, end_airport } = data || {};
+        setFormData(prev => ({
+            ...prev,
+            ...(typeof miles === 'number' ? { miles: miles.toFixed(1) } : {}),
+            ...(flight_number !== undefined ? { flight_number } : {}),
+            ...(airline !== undefined ? { airline } : {}),
+            ...(start_airport !== undefined ? { start_airport } : {}),
+            ...(end_airport !== undefined ? { end_airport } : {}),
+        }));
+    }, []);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -51,6 +79,7 @@ function AddLeg() {
     setLoading(true);
 
     try {
+            console.log("Creating leg", formData)
             const payload = {
                 trip_id: Number(tripID),
                 type: formData.type,
@@ -64,20 +93,24 @@ function AddLeg() {
                 end_longitude: formData.end_longitude ? Number(formData.end_longitude) : null,
                 start_osm_name: formData.start_osm_name || null,
                 start_osm_id: formData.start_osm_id || null,
+                start_osm_country: formData.start_osm_country || null,
+                start_osm_state: formData.start_osm_state || null,
                 end_osm_name: formData.end_osm_name || null,
                 end_osm_id: formData.end_osm_id || null,
+                end_osm_country: formData.end_osm_country || null,
+                end_osm_state: formData.end_osm_state || null,
                 miles: formData.miles ? Number(formData.miles) : null,
             };
 
             const legRes = await createLeg(payload);
             const newLegId = legRes?.id;
 
-            if (formData.type === 'car' && newLegId && carAutoFill) {
+            if (formData.type === 'car' && newLegId) {
                 // Save car_details once
                 await createCarDetails({
                     leg_id: newLegId,
-                    driving_time_seconds: carAutoFill.driving_time_seconds ?? null,
-                    polyline: carAutoFill.polyline ?? null,
+                    driving_time_seconds: formData.driving_time_seconds ?? null,
+                    polyline: formData.polyline ?? null,
                 });
             }
             if (formData.type === 'flight' && newLegId) {
@@ -104,8 +137,6 @@ const [nodes, setNodes] = useState([]);
 const selectedFromNode = useMemo(() => nodes.find(n => String(n.id) === String(formData.fromNode)), [nodes, formData.fromNode]);
 const selectedToNode = useMemo(() => nodes.find(n => String(n.id) === String(formData.toNode)), [nodes, formData.toNode]);
 
-// Track car autofill to submit car_details once
-const [carAutoFill, setCarAutoFill] = useState(null);
 
 // Fetch nodes for this trip
 React.useEffect(() => {
@@ -126,18 +157,22 @@ React.useEffect(() => {
 // When nodes change selection, prefill locations but allow override
 useEffect(() => {
     if (selectedFromNode) {
+        console.log('Selected from node:', selectedFromNode);
         setFormData(prev => ({
             ...prev,
             start_latitude: selectedFromNode.latitude ?? prev.start_latitude,
             start_longitude: selectedFromNode.longitude ?? prev.start_longitude,
             start_osm_name: selectedFromNode.osm_name ?? prev.start_osm_name,
             start_osm_id: selectedFromNode.osm_id ?? prev.start_osm_id,
+            start_osm_country: selectedFromNode.osm_country ?? prev.start_osm_country,
+            start_osm_state: selectedFromNode.osm_state ?? prev.start_osm_state,
             date: prev.date || (selectedFromNode.departure_date || ''),
         }));
     }
 }, [selectedFromNode]);
 
 useEffect(() => {
+    console.log("Selected to node: ", selectedToNode)
     if (selectedToNode) {
         setFormData(prev => ({
             ...prev,
@@ -145,6 +180,8 @@ useEffect(() => {
             end_longitude: selectedToNode.longitude ?? prev.end_longitude,
             end_osm_name: selectedToNode.osm_name ?? prev.end_osm_name,
             end_osm_id: selectedToNode.osm_id ?? prev.end_osm_id,
+            end_osm_country: selectedToNode.osm_country ?? prev.end_osm_country,
+            end_osm_state: selectedToNode.osm_state ?? prev.end_osm_state,
         }));
     }
 }, [selectedToNode]);
@@ -270,37 +307,20 @@ return (
                                             start={{ lat: Number(formData.start_latitude), lon: Number(formData.start_longitude) }}
                                             end={{ lat: Number(formData.end_latitude), lon: Number(formData.end_longitude) }}
                                             initialMiles={formData.miles ? Number(formData.miles) : undefined}
-                                            onAutoFill={({ miles, driving_time_seconds, polyline }) => {
-                                                setFormData(prev => ({ ...prev, miles }));
-                                                setCarAutoFill({ driving_time_seconds, polyline });
-                                            }}
+                                            onAutoFill={handleCarAutoFill}
                                         />
                                     </FormGroup>
                                 )}
                                                                 <FormGroup>
                                     <Label htmlFor="miles">Miles</Label>
-                                    <Input id="miles" name="miles" type="number" step="0.1" value={formData.miles} onChange={handleChange} />
+                                    <Input id="miles" name="miles" type="number" value={formData.miles} onChange={handleChange} />
                                 </FormGroup>
                                                                 {formData.type === 'flight' && (
                                                                     <FormGroup>
                                                                         <FlightDetails
                                                                             start={{ lat: Number(formData.start_latitude), lon: Number(formData.start_longitude) }}
                                                                             end={{ lat: Number(formData.end_latitude), lon: Number(formData.end_longitude) }}
-                                                                            onAutoFill={(data) => {
-                                                                                if (typeof data.miles === 'number') {
-                                                                                    setFormData(prev => ({ ...prev, miles: data.miles.toFixed(1) }));
-                                                                                }
-                                                                                const { flight_number, airline, start_airport, end_airport } = data;
-                                                                                if (flight_number !== undefined || airline !== undefined || start_airport !== undefined || end_airport !== undefined) {
-                                                                                    setFormData(prev => ({
-                                                                                        ...prev,
-                                                                                        flight_number: flight_number ?? prev.flight_number,
-                                                                                        airline: airline ?? prev.airline,
-                                                                                        start_airport: start_airport ?? prev.start_airport,
-                                                                                        end_airport: end_airport ?? prev.end_airport,
-                                                                                    }));
-                                                                                }
-                                                                            }}
+                                                                            onAutoFill={handleFlightAutoFill}
                                                                         />
                                                                     </FormGroup>
                                                                 )}

@@ -28,7 +28,9 @@ CREATE TABLE nodes (
     latitude DOUBLE PRECISION,
     longitude DOUBLE PRECISION,
     osm_name TEXT,  -- Optional OpenStreetMap name
-    osm_id TEXT    -- Optional OpenStreetMap ID
+    osm_id TEXT,    -- Optional OpenStreetMap ID
+    osm_country TEXT,
+    osm_state TEXT
 );
 
 -- ===================
@@ -48,8 +50,12 @@ CREATE TABLE legs (
     end_longitude DOUBLE PRECISION,
     start_osm_name TEXT,  -- Optional OpenStreetMap name for start
     start_osm_id TEXT,    -- Optional OpenStreetMap ID for start
+    start_osm_country TEXT,
+    start_osm_state TEXT,
     end_osm_name TEXT,    -- Optional OpenStreetMap name for end
     end_osm_id TEXT,      -- Optional OpenStreetMap ID for end
+    end_osm_country TEXT,
+    end_osm_state TEXT,
     miles DOUBLE PRECISION
 );
 
@@ -101,6 +107,8 @@ CREATE TABLE stops (
     longitude DOUBLE PRECISION,
     osm_name TEXT,
     osm_id TEXT,
+    osm_country TEXT,
+    osm_state TEXT,
     time TIMESTAMP
 );
 

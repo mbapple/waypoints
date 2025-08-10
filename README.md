@@ -80,6 +80,8 @@ app container
 - [ ] Add create trip by flight numbers feature
 - [ ] Add create trip by cruise
 - [ ] Make a list of general cleanup to do
+	- [ ] Fix loading page issues
+	- [ ] Fix miles when adding/updating a car leg
 - [ ] Fix bugs with updating components, particularly if you change transportation type of leg
 - [ ] Add maps of individual trips
 

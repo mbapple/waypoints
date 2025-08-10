@@ -39,6 +39,8 @@ function AddNode() {
     longitude: "",
     osmName: "",
     osmID: "",
+    osmCountry: "",
+    osmState: ""
   });
   const [loading, setLoading] = useState(false);
 
@@ -55,7 +57,7 @@ function AddNode() {
     setLoading(true);
     
     try {
-      await createNode({
+      const nodeData = {
         name: formData.name,
         trip_id: Number(tripID),
         description: formData.description,
@@ -66,7 +68,13 @@ function AddNode() {
         longitude: formData.longitude,
         osm_name: formData.osmName,
         osm_id: formData.osmID,
-      });
+        osm_country: formData.osmCountry,
+        osm_state: formData.osmState
+      };
+
+      console.log("Creating node with data:", nodeData);
+
+      await createNode(nodeData);
       
       // Redirect back to trip details
       navigate(`/trip/${tripID}`);

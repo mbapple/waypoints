@@ -126,7 +126,10 @@ Get some statistics about all trips.
 ```json
 {
   "all_trip_miles": 1903,
-  "unique_destination_count": 3
+  "unique_destination_count": 3,
+  "all_flight_miles": 1000,
+  "all_car_miles": 903,
+  "country_count": 2
 }
 ```
 
@@ -149,7 +152,9 @@ Get all nodes for a specific trip, ordered by arrival date.
     "latitude": 40.7128,
     "longitude": -74.0060,
     "osm_name": "Downtown Hotel, City Center, State, Country",
-    "osm_id": 12345
+    "osm_id": 12345,
+    "osm_coutnry": "United States",
+    "osm_state": "Illinois"
   }
 ]
 ```
@@ -169,7 +174,9 @@ Create a new node.
   "latitude": 41.8933203,
   "longitude": 12.4829321,
   "osm_name": "Rome, Roma Capitale, Lazio, Italy",
-  "osm_id": 41485
+  "osm_id": 41485,
+  "osm_coutnry": "United States",
+  "osm_state": "Illinois"
 }
 ```
 
@@ -195,8 +202,10 @@ Get a specific node by ID.
   "departure_date": "2025-07-03",
   "latitude": 40.7128,
   "longitude": -74.0060,
-  "osm_name": "Downtown Hotel, City Center, State, Country"
-}
+  "osm_name": "Downtown Hotel, City Center, State, Country",
+  "osm_coutnry": "United States",
+  "osm_state": "Illinois"
+} 
 ```
 
 **Error Responses:**
@@ -230,7 +239,9 @@ Update an existing node. Only provided fields are updated.
   "latitude": 41.0,
   "longitude": -73.9,
   "osm_name": "Some Place",
-  "osm_id": "999"
+  "osm_id": "999",
+  "osm_coutnry": "United States",
+  "osm_state": "Illinois"
 }
 ```
 
@@ -261,8 +272,12 @@ Get all legs for a specific trip, ordered by ID.
     "end_longitude": -71.0589,
     "start_osm_name": "New York, NY, USA",
     "start_osm_id": 175905,
+    "start_osm_country": "United States",
+    "start_osm_state": "New York",
     "end_osm_name": "Boston, MA, USA",
     "end_osm_id": 61443,
+    "end_osm_country": "United States",
+    "end_osm_state": "Massachusetts",
     "miles": 250.5
   }
 ]
@@ -286,8 +301,12 @@ Create a new leg.
   "end_longitude": -71.0589,
   "start_osm_name": "New York, NY, USA",
   "start_osm_id": 175905,
+  "start_osm_country": "United States",
+  "start_osm_state": "New York",
   "end_osm_name": "Boston, MA, USA",
   "end_osm_id": 61443,
+  "end_osm_country": "United States",
+  "end_osm_state": "Massachusetts",
   "miles": 250.5
 }
 ```
@@ -318,8 +337,12 @@ Get a specific leg by ID.
   "end_longitude": -71.0589,
   "start_osm_name": "New York, NY, USA",
   "start_osm_id": 175905,
+  "start_osm_country": "United States",
+  "start_osm_state": "New York",
   "end_osm_name": "Boston, MA, USA",
   "end_osm_id": 61443,
+  "end_osm_country": "United States",
+  "end_osm_state": "Massachusetts",
   "miles": 250.5
 }
 ```
@@ -379,7 +402,9 @@ Get all stops for a specific leg, ordered by creation time.
     "longitude": -30.193093,
     "description": "Fuel stop",
     "osm_name": "Shell Station, 381 Main Street",
-    "osm_id": 1901914
+    "osm_id": 1901914,
+    "osm_coutnry": "United States",
+  "osm_state": "Illinois"
   }
 ]
 ```
@@ -401,7 +426,9 @@ Get all stops for a specific node, ordered by creation time.
     "longitude": -30.193093,
     "description": "Fuel stop",
     "osm_name": "Shell Station, 381 Main Street",
-    "osm_id": 1901914
+    "osm_id": 1901914,
+    "osm_coutnry": "United States",
+    "osm_state": "Illinois"
   }
 ]
 ```
@@ -424,7 +451,9 @@ Geat all stops for a specific trip, ordered by id.
     "longitude": -30.193093,
     "description": "Fuel stop",
     "osm_name": "Shell Station, 381 Main Street",
-    "osm_id": 1901914
+    "osm_id": 1901914,
+    "osm_coutnry": "United States",
+    "osm_state": "Illinois" 
   }
 ]
 ```
@@ -444,7 +473,9 @@ Create a new stop.
   "latitude": 40.7128,
   "longitude": -74.0060,
   "osm_name": "Gas Station, Street Name, City, State",
-  "osm_id": 98765
+  "osm_id": 98765,
+  "osm_coutnry": "United States",
+  "osm_state": "Illinois"
 }
 ```
 
@@ -508,7 +539,9 @@ Get a specific stop by ID.
   "latitude": 40.7128,
   "longitude": -74.0060,
   "osm_name": "Gas Station, Street Name, City, State",
-  "osm_id": 98765
+  "osm_id": 98765,
+  "osm_coutnry": "United States",
+  "osm_state": "Illinois"
 }
 ```
 
@@ -539,7 +572,9 @@ Get a specific stop by ID.
   "latitude": "float (optional)",
   "longitude": "float (optional)",
   "osm_name": "string (optional)",
-  "osm_id": "integer (optional)"
+  "osm_id": "integer (optional)",
+  "osm_coutnry": "United States",
+  "osm_state": "Illinois",
 }
 ```
 
@@ -558,8 +593,12 @@ Get a specific stop by ID.
   "end_longitude": "float (optional)",
   "start_osm_name": "string (optional)",
   "start_osm_id": "integer (optional)",
+  "start_osm_country": "string (optional)",
+  "start_osm_state": "string (optional)",
   "end_osm_name": "string (optional)",
   "end_osm_id": "integer (optional)",
+  "end_osm_country": "string (optional)",
+  "end_osm_state": "string (optional)",
   "miles": "float (optional)"
 }
 ```
@@ -577,7 +616,9 @@ Get a specific stop by ID.
   "latitude": "float (optional)",
   "longitude": "float (optional)",
   "osm_name": "string (optional)",
-  "osm_id": "integer (optional)"
+  "osm_id": "integer (optional)",
+  "osm_coutnry": "string (optional)",
+  "osm_state": "string (optional)"
 }
 ```
 

@@ -19,8 +19,12 @@ class Leg(BaseModel):
     end_longitude: float | None = None
     start_osm_name: str | None = None
     start_osm_id: str | None = None
+    start_osm_country: str | None = None
+    start_osm_state: str | None = None
     end_osm_name: str | None = None
     end_osm_id: str | None = None
+    end_osm_country: str | None = None
+    end_osm_state: str | None = None
     miles: float | None = None
 
 # Leg update model (all fields optional)
@@ -37,8 +41,12 @@ class LegUpdate(BaseModel):
     end_longitude: float | None = None
     start_osm_name: str | None = None
     start_osm_id: str | None = None
+    start_osm_country: str | None = None
+    start_osm_state: str | None = None
     end_osm_name: str | None = None
     end_osm_id: str | None = None
+    end_osm_country: str | None = None
+    end_osm_state: str | None = None
     miles: float | None = None
 
 @router.get("/by_trip/{trip_id}")
@@ -46,7 +54,7 @@ def get_legs_by_node(trip_id: int):
     conn = get_db()
     cur = conn.cursor()
     cur.execute("""
-        SELECT id, trip_id, type, notes, date, start_node_id, end_node_id, start_latitude, start_longitude, end_latitude, end_longitude, start_osm_name, start_osm_id, end_osm_name, end_osm_id, miles
+        SELECT id, trip_id, type, notes, date, start_node_id, end_node_id, start_latitude, start_longitude, end_latitude, end_longitude, start_osm_name, start_osm_id, start_osm_country, start_osm_state, end_osm_name, end_osm_id, end_osm_country, end_osm_state, miles
         FROM legs
         WHERE trip_id = %s
         ORDER BY id
@@ -70,8 +78,12 @@ def get_legs_by_node(trip_id: int):
             "end_longitude": r["end_longitude"],
             "start_osm_name": r["start_osm_name"],
             "start_osm_id": r["start_osm_id"],
+            "start_osm_country": r["start_osm_country"],
+            "start_osm_state": r["start_osm_state"],
             "end_osm_name": r["end_osm_name"],
             "end_osm_id": r["end_osm_id"],
+            "end_osm_country": r["end_osm_country"],
+            "end_osm_state": r["end_osm_state"],
             "miles": r["miles"]
         }
         for r in rows
@@ -83,8 +95,8 @@ def create_leg(leg: Leg):
     conn = get_db()
     cur = conn.cursor()
     cur.execute("""
-        INSERT INTO legs (trip_id, type, notes, date, start_node_id, end_node_id, start_latitude, start_longitude, end_latitude, end_longitude, start_osm_name, start_osm_id, end_osm_name, end_osm_id, miles)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        INSERT INTO legs (trip_id, type, notes, date, start_node_id, end_node_id, start_latitude, start_longitude, end_latitude, end_longitude, start_osm_name, start_osm_id, start_osm_country, start_osm_state, end_osm_name, end_osm_id, end_osm_country, end_osm_state, miles)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         RETURNING id
     """, (
         leg.trip_id,
@@ -99,8 +111,12 @@ def create_leg(leg: Leg):
         leg.end_longitude,
         leg.start_osm_name,
         leg.start_osm_id,
+        leg.start_osm_country,
+        leg.start_osm_state,
         leg.end_osm_name,
         leg.end_osm_id,
+        leg.end_osm_country,
+        leg.end_osm_state,
         leg.miles if leg.miles is not None else None
     ))
     new_row = cur.fetchone()
@@ -116,7 +132,7 @@ def get_leg_by_id(leg_id: int):
     conn = get_db()
     cur = conn.cursor()
     cur.execute("""
-        SELECT id, trip_id, type, notes, date, start_node_id, end_node_id, start_latitude, start_longitude, end_latitude, end_longitude, start_osm_name, start_osm_id, end_osm_name, end_osm_id, miles
+        SELECT id, trip_id, type, notes, date, start_node_id, end_node_id, start_latitude, start_longitude, end_latitude, end_longitude, start_osm_name, start_osm_id, start_osm_country, start_osm_state, end_osm_name, end_osm_id, end_osm_country, end_osm_state, miles
         FROM legs
         WHERE id = %s
     """, (leg_id,))
@@ -141,8 +157,12 @@ def get_leg_by_id(leg_id: int):
         "end_longitude": row["end_longitude"],
         "start_osm_name": row["start_osm_name"],
         "start_osm_id": row["start_osm_id"],
+        "start_osm_country": row["start_osm_country"],
+        "start_osm_state": row["start_osm_state"],
         "end_osm_name": row["end_osm_name"],
         "end_osm_id": row["end_osm_id"],
+        "end_osm_country": row["end_osm_country"],
+        "end_osm_state": row["end_osm_state"],
         "miles": row["miles"]
     }
 
@@ -169,7 +189,7 @@ def delete_leg(leg_id: int):
 @router.put("/{leg_id}")
 def update_leg(leg_id: int, update: LegUpdate):
     data = update.model_dump(exclude_unset=True) if hasattr(update, "model_dump") else update.dict(exclude_unset=True)
-    allowed = {"trip_id", "type", "notes", "date", "start_node_id", "end_node_id", "start_latitude", "start_longitude", "end_latitude", "end_longitude", "start_osm_name", "start_osm_id", "end_osm_name", "end_osm_id", "miles"}
+    allowed = {"trip_id", "type", "notes", "date", "start_node_id", "end_node_id", "start_latitude", "start_longitude", "end_latitude", "end_longitude", "start_osm_name", "start_osm_id", "start_osm_country", "start_osm_state", "end_osm_name", "end_osm_id", "end_osm_country", "end_osm_state", "miles"}
     data = {k: v for k, v in data.items() if k in allowed}
     if not data:
         raise HTTPException(status_code=400, detail="No fields provided for update")

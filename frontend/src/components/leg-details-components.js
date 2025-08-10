@@ -169,10 +169,10 @@ export const CarDetails = ({
       </Flex>
 
       <Inline>
-        <FormGroup>
+        {/* <FormGroup>
           <Label htmlFor="miles">Miles</Label>
           <Input id="miles" type="number" step="0.1" value={miles} onChange={e => setMiles(e.target.value)} />
-        </FormGroup>
+        </FormGroup> */}
         <FormGroup>
           <Label>Duration (hh:mm)</Label>
           <Flex gap={3}>

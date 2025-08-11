@@ -55,7 +55,7 @@ const Navigation = () => {
     <NavContainer>
       <Container>
         <Flex justify="space-between" align="center">
-          <NavBrand to="/">Travel Tracker</NavBrand>
+          <NavBrand to="/">Waypoints</NavBrand>
           <NavLinks>
             <NavLink
               to="/map"
@@ -74,12 +74,6 @@ const Navigation = () => {
               className={location.pathname === '/create' ? 'active' : ''}
             >
               Create Trip
-            </NavLink>
-            <NavLink 
-              to="/create/quick" 
-              className={location.pathname === '/create/quick' ? 'active' : ''}
-            >
-              Quick Create
             </NavLink>
             <NavLink 
               to="/settings" 

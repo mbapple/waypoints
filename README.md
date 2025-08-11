@@ -5,15 +5,27 @@ uvicorn main:app --host 0.0.0.0 --port 3001 --reload
 
 
 
-# Travel Tracker App
-The goal of this is to provide a solution to track any and all types of travel. It will be a web app designed to be self hosted, providing a place for a user to log trips and destinations. It is an all inclusive solution for tracking distances traveled, locations visitied, and destinations stopped at.
+#  Waypoints
+Waypoints is a self hosted travel tracking solution. It is an all in one solution to log trips and destinations. Waypoints helps you to visualize your travel providing a detailed map view of your past journeys. It is also data driven, providing overall travel statistics, tracking locations, and more.
 
-# Goals:
+# Database Schema
+In Waypoints, travel is tracked in 4 components.
+- `Trips`: Just that, representing a trip be it one night or 2 weeks. The trip stores the dates of travel.
+- `Nodes`: These are the destinations of your trip, usually starting and ending with your home. These are the cities, campsites, wherever you would say you are going.
+- `Legs`: These are the travel between your nodes: flights, road trips, etc. 
+- `Stops`: Stops allow you to track anywhere you want to remember. Be it the hotel you stayed in, a restaurant you stopped at along the way, etc. Stops are attached to either nodes or legs and are meant to be a journal of sorts.
+
+Nodes, Legs, and Stops are attached to places in Open Street Maps so that their coordinates can automatically be saved to contribute to the map of all your travels.
+
+Photos can also be uploaded and are attached to Trips themselves or any of the other types.
+
+# Installation:
+Waypoints runs in two docker containers, one to handle the postgres database and one to handle the web app itself.
 
 
-# Stack:
+# Tech Stack:
 ```
-datbase container/
+datbase container
 └── PostgreSQL
 app container
 └──backend/
@@ -23,26 +35,17 @@ app container
 		├── Leaflet Integration
 		└── Styled with styled-components 
 ```
+**Integrations:**
+- [Nominatim](https://nominatim.org/): API used to search for places in Open Street Map.
+- [Open Route Service](https://openrouteservice.org): Automatically fetch driving path and distance between locations in a leg. Set the API key in settings.
 
-# Postgre Data Scheme:
-**Trips:** 
-- Entire trip that consists of legs and nodes
-**Legs:**
-- Long distances of travel between nodes, i.e. flights, car trips, trains
-**Nodes:** 
-- Major destinations i.e. Cities
-**Stops:**
-- Attached to either a leg or a node
-- Destinations such as restaurants, hotels, parks
 
-# Implementations:
-- [ ] PostgreSQL Database
-- [ ] PostGIS integration for location data
-- [ ] React and Leaflet frontend
-- [ ] Online integrations for:
-	- [ ] Flight data
-	- [ ] Driving distances
-	- [ ] Place markers
+# License:
+     This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation,version 3 of the license.
+
+    This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 
 # To Do:

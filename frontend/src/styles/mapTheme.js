@@ -42,10 +42,58 @@ export function getTripColor(tripId) {
   return `hsl(${hue} 70% 55%)`;
 }
 
+// Emoji per stop category
+export function getStopEmoji(category) {
+  switch ((category || '').toLowerCase()) {
+    case 'hotel':
+      return '🏨';
+    case 'restaurant':
+      return '🍽️';
+    case 'attraction':
+      return '📍';
+    case 'park':
+      return '🌳';
+    default:
+      return '📌';
+  }
+}
+
+// Create a Leaflet DivIcon for a stop, with emoji and optional color border
+export function createStopDivIcon(category, color) {
+  const emoji = getStopEmoji(category);
+  const safeColor = color || '#888';
+  const html = `<span class="stop-emoji" style="border-color:${safeColor}; background-color:${safeColor}22">${emoji}</span>`;
+  return L.divIcon({
+    className: 'stop-emoji-icon',
+    html,
+    iconSize: [22, 22],
+    iconAnchor: [11, 11],
+    popupAnchor: [0, -12],
+    tooltipAnchor: [0, -12],
+  });
+}
+
 // Global Leaflet popup theming so popups align with app theme
 export const MapGlobalStyles = createGlobalStyle`
   .leaflet-container {
     background: ${p => p.theme.colors.backgroundSecondary};
+  }
+  .leaflet-div-icon.stop-emoji-icon {
+    background: transparent;
+    border: none;
+  }
+  .stop-emoji {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    font-size: 13px;
+    line-height: 1;
+    border: 1px solid currentColor;
+    box-shadow: ${p => p.theme.shadows.sm};
+    user-select: none;
   }
   .leaflet-popup-content-wrapper {
     background: ${p => p.theme.colors.card};

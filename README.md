@@ -91,4 +91,7 @@ app container
 - [X] Add maps of individual trips
 - [ ] Come up with actual name for project
 - [ ] Design logo
+- [ ] Complete docker-compose.yml and install script so that it can be installed with one command and mount relevant volumes
+- [ ] Add detailed statistics page
+- [ ] Timeline view and route replay
 

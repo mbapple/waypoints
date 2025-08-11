@@ -8,11 +8,12 @@ import { listStopsByTrip } from "../api/stops";
 import { listLegsByTrip, getCarDetails } from "../api/legs";
 import { useSettings } from "../context/SettingsContext";
 import { useTheme } from "styled-components";
-import { MapContainer, TileLayer, Marker, CircleMarker, Polyline, Popup, Tooltip, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Polyline, Popup, Tooltip, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import polylineCodec from "@mapbox/polyline";
-import { applyLeafletDefaultIconFix, getTileLayerConfig, getTripColor, MapGlobalStyles } from "../styles/mapTheme";
+import { applyLeafletDefaultIconFix, getTileLayerConfig, getTripColor, MapGlobalStyles, createStopDivIcon } from "../styles/mapTheme";
+import HighlightLayer from "../components/HighlightLayer";
 
 applyLeafletDefaultIconFix();
 
@@ -65,6 +66,7 @@ function TripMap() {
   const [legs, setLegs] = useState([]);
   const [stops, setStops] = useState([]);
   const [carPolylineByLeg, setCarPolylineByLeg] = useState({});
+  const [highlightMode, setHighlightMode] = useState("off"); // off | countries | states
 
   useEffect(() => {
     let cancelled = false;
@@ -109,11 +111,13 @@ function TripMap() {
     };
   }, [tripID]);
 
-  const { markers, stopMarkers, polylines, bounds, nodeById } = useMemo(() => {
+  const { markers, stopMarkers, polylines, bounds, nodeById, visitedCountries, visitedStates } = useMemo(() => {
     const allMarkers = [];
     const allStopMarkers = [];
     const allLines = [];
     const latlngsForBounds = [];
+    const visitedCountries = new Set();
+    const visitedStates = new Set();
 
     const nodeById = {};
     (nodes || []).forEach((n) => {
@@ -122,18 +126,22 @@ function TripMap() {
         allMarkers.push({ id: n.id, name: n.name, pos: [n.latitude, n.longitude] });
         latlngsForBounds.push([n.latitude, n.longitude]);
       }
+      if (n.osm_country) visitedCountries.add(n.osm_country);
+      if (n.osm_state) visitedStates.add(n.osm_state);
     });
 
     const legById = {};
     (legs || []).forEach((l) => { if (l?.id) legById[l.id] = l; });
 
-    (stops || []).forEach((s) => {
+  (stops || []).forEach((s) => {
       if (isFinite(s.latitude) && isFinite(s.longitude)) {
         let visited = null;
         if (s.leg_id && legById[s.leg_id]?.date) visited = legById[s.leg_id].date;
         else if (s.node_id && nodeById[s.node_id]?.arrival_date) visited = nodeById[s.node_id].arrival_date;
         allStopMarkers.push({ id: s.id, name: s.name, category: s.category, pos: [s.latitude, s.longitude], visited, notes: s.notes });
         latlngsForBounds.push([s.latitude, s.longitude]);
+    if (s.osm_country) visitedCountries.add(s.osm_country);
+    if (s.osm_state) visitedStates.add(s.osm_state);
       }
     });
 
@@ -179,7 +187,7 @@ function TripMap() {
     });
 
     const mapBounds = latlngsForBounds.length ? L.latLngBounds(latlngsForBounds) : L.latLngBounds([[20, 0], [50, 30]]);
-    return { markers: allMarkers, stopMarkers: allStopMarkers, polylines: allLines, bounds: mapBounds, nodeById };
+  return { markers: allMarkers, stopMarkers: allStopMarkers, polylines: allLines, bounds: mapBounds, nodeById, visitedCountries, visitedStates };
   }, [nodes, legs, stops, carPolylineByLeg, tripID]);
 
   return (
@@ -194,6 +202,12 @@ function TripMap() {
       <div style={{ height: "70vh", width: "100%", borderRadius: 12, overflow: "hidden" }}>
         <MapContainer style={{ height: "100%", width: "100%" }} center={[20, 0]} zoom={2} scrollWheelZoom>
           <TileLayer {...getTileLayerConfig(isDark)} />
+          <HighlightLayer
+            mode={highlightMode}
+            visitedCountries={visitedCountries}
+            visitedStates={visitedStates}
+            styleColors={{ fill: theme.colors.accent || '#22c55e', stroke: theme.colors.accent || '#16a34a' }}
+          />
 
           {markers.map((m) => (
             <Marker key={`node-${m.id}`} position={m.pos}>
@@ -224,7 +238,7 @@ function TripMap() {
           ))}
 
           {stopMarkers.map((s) => (
-            <CircleMarker key={`stop-${s.id}`} center={s.pos} radius={4} pathOptions={{ color: "#ffffff", weight: 1, fillColor: getTripColor(Number(tripID)), fillOpacity: 0.9 }}>
+            <Marker key={`stop-${s.id}`} position={s.pos} icon={createStopDivIcon(s.category, getTripColor(Number(tripID)))}>
               <Tooltip direction="top" offset={[0, -8]} opacity={1} permanent={false} sticky>
                 <span>
                   <strong>{s.name}</strong>
@@ -249,7 +263,7 @@ function TripMap() {
                   </div>
                 </div>
               </Popup>
-            </CircleMarker>
+            </Marker>
           ))}
 
           {polylines.map((line, idx) => (
@@ -261,6 +275,12 @@ function TripMap() {
       </div>
 
       <MapGlobalStyles />
+      <Flex gap={2} style={{ marginTop: 8, alignItems: "center" }}>
+        <Text variant="muted">Highlight:</Text>
+        <button onClick={() => setHighlightMode("off")} disabled={highlightMode === "off"}>Off</button>
+        <button onClick={() => setHighlightMode("countries")} disabled={highlightMode === "countries"}>Countries</button>
+        <button onClick={() => setHighlightMode("states")} disabled={highlightMode === "states"}>States</button>
+      </Flex>
 
       <Flex gap={2} style={{ marginTop: 12, flexWrap: "wrap" }}>
         {trip && (

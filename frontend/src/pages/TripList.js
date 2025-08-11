@@ -3,6 +3,8 @@ import { Link } from "react-router-dom";
 import styled from "styled-components";
 import { Card, Button, Text, Grid, Flex, Badge } from "../styles/components";
 import { listTrips } from "../api/trips";
+import { listPhotosByTrip } from "../api/photos";
+import PhotoSlideshowSmall from "../components/photos/PhotoSlideshowSmall";
 
 const PageHeader = styled.div`
   margin: ${props => props.theme.space[8]} 0 ${props => props.theme.space[6]} 0;
@@ -47,21 +49,27 @@ const EmptyState = styled.div`
 function TripList() {
   const [trips, setTrips] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [tripPhotos, setTripPhotos] = useState({});
   
   useEffect(() => {
     fetchTrips();
   }, []);
 
-  const fetchTrips = () => {
-    listTrips()
-      .then((res) => {
-        setTrips(res);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error(err);
-        setLoading(false);
-      });
+  const fetchTrips = async () => {
+    try {
+      const res = await listTrips();
+      setTrips(res);
+      // Fetch photos for each trip in parallel (first 5 for speed)
+      const photoPromises = res.map(t => listPhotosByTrip(t.id).then(p => ({ id: t.id, photos: p.slice(0, 5) })).catch(() => ({ id: t.id, photos: [] })));
+      const photoResults = await Promise.all(photoPromises);
+      const grouped = {};
+      photoResults.forEach(r => { grouped[r.id] = r.photos; });
+      setTripPhotos(grouped);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (loading) {
@@ -113,6 +121,11 @@ function TripList() {
           {trips.map(trip => (
             <TripLink key={trip.id} to={`/trip/${trip.id}`}>
               <TripCard>
+                {tripPhotos[trip.id] && tripPhotos[trip.id].length > 0 && (
+                  <div style={{ marginBottom: '0.75rem' }}>
+                    <PhotoSlideshowSmall photos={tripPhotos[trip.id]} />
+                  </div>
+                )}
                 <TripTitle>{trip.name}</TripTitle>
                 <DateRange variant="secondary">
                   <Badge variant="primary">{trip.start_date}</Badge>

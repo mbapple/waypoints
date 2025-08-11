@@ -10,6 +10,10 @@ import { listNodesByTrip } from "../api/nodes";
 import { listLegsByTrip } from "../api/legs";
 import { listStopsByTrip } from "../api/stops";
 import { getTransportTypeLabel } from "../utils/format";
+import { listPhotosByTrip, listPhotosByLeg, listPhotosByNode, listPhotosByStop } from "../api/photos";
+import PhotoSlideshowLarge from "../components/photos/PhotoSlideshowLarge";
+import PhotoSlideshowSmall from "../components/photos/PhotoSlideshowSmall";
+import PhotoUploadButton from "../components/photos/PhotoUploadButton";
 
 function TripDetails() {
   const { tripID } = useParams();
@@ -18,23 +22,28 @@ function TripDetails() {
   const [nodes, setNodes] = useState([]);
   const [legs, setLegs] = useState([]);
   const [stops, setStops] = useState([]);
-  // const [legsAndNodes, setLegsAndNodes] = useState([]);
+  const [tripPhotos, setTripPhotos] = useState([]);
+  const [entityPhotos, setEntityPhotos] = useState({}); // cache by type:id
+  const [expanded, setExpanded] = useState({}); // key: type:id -> bool
+  const [uploadTarget, setUploadTarget] = useState(""); // e.g. node:3 / leg:5 / stop:7
 
   const [miles, setMiles] = useState(0);
 
   useEffect(() => {
     const fetchTripData = async () => {
       try {
-        const [tripData, nodesData, legsData, stopsData] = await Promise.all([
+        const [tripData, nodesData, legsData, stopsData, photosData] = await Promise.all([
           getTrip(tripID),
           listNodesByTrip(tripID),
           listLegsByTrip(tripID),
           listStopsByTrip(tripID),
+          listPhotosByTrip(tripID)
         ]);
         setTrip(tripData);
         setNodes(nodesData);
         setLegs(legsData);
         setStops(stopsData);
+        setTripPhotos(photosData);
 
         // Fetch miles separately
         try {
@@ -143,6 +152,13 @@ function TripDetails() {
         </Flex>
       </PageHeader>
 
+      {/* Large slideshow above the map */}
+      {tripPhotos && tripPhotos.length > 0 && (
+        <div style={{ marginBottom: '1rem' }}>
+          <PhotoSlideshowLarge photos={tripPhotos} />
+        </div>
+      )}
+
       {/* Mini Map */}
       <div style={{ marginBottom: '1.25rem' }}>
         <Flex justify="space-between" align="center" style={{ marginBottom: '0.5rem' }}>
@@ -204,21 +220,55 @@ function TripDetails() {
                           Edit
                         </Button>
                       </Flex>
-                      {item.data.description && (
-                        <Text variant="secondary" size="sm" style={{ marginBottom: '0.75rem' }}>
-                          {item.data.description}
-                        </Text>
+                      {/* View photos dropdown and upload */}
+                      {/* Collapsible: name + date visible, details/photos on expand */}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div>
+                          <Text variant="muted" size="sm">{item.data.arrival_date}</Text>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={async () => {
+                            const key = `node:${item.data.id}`;
+                            setExpanded(prev => ({ ...prev, [key]: !prev[key] }));
+                            if (!entityPhotos[key]) {
+                              try {
+                                const p = await listPhotosByNode(item.data.id);
+                                setEntityPhotos(prev => ({ ...prev, [key]: p }));
+                              } catch {}
+                            }
+                          }}
+                        >
+                          {expanded[`node:${item.data.id}`] ? '▴ Collapse' : '▾ Expand'}
+                        </Button>
+                      </div>
+                      {expanded[`node:${item.data.id}`] && (
+                        <div style={{ marginTop: '0.75rem' }}>
+                          {entityPhotos[`node:${item.data.id}`] && entityPhotos[`node:${item.data.id}`].length > 0 && (
+                            <div style={{ marginBottom: '0.75rem' }}>
+                              <PhotoSlideshowSmall photos={entityPhotos[`node:${item.data.id}`]} />
+                            </div>
+                          )}
+                          {item.data.description && (
+                            <Text variant="secondary" size="sm" style={{ marginBottom: '0.75rem' }}>
+                              {item.data.description}
+                            </Text>
+                          )}
+                          {item.data.notes && (
+                            <Text variant="muted" size="sm">
+                              <strong>Notes:</strong> {item.data.notes}
+                            </Text>
+                          )}
+                        </div>
                       )}
+                      {/* description shown in expanded section */}
                       <Flex gap={2} align="center" style={{ marginBottom: '0.5rem' }}>
                         <Badge variant="success">{item.data.arrival_date}</Badge>
                         <Text variant="muted" size="xs">to</Text>
                         <Badge variant="warning">{item.data.departure_date}</Badge>
                       </Flex>
-                      {item.data.notes && (
-                        <Text variant="muted" size="sm">
-                          <strong>Notes:</strong> {item.data.notes}
-                        </Text>
-                      )}
+                      {/* notes shown in expanded section */}
                     </>
                   ) : (
                     <>
@@ -234,16 +284,49 @@ function TripDetails() {
                           Edit
                         </Button>
                       </Flex>
-                      {item.data.description && (
-                        <Text variant="secondary" size="sm" style={{ marginBottom: '0.75rem' }}>
-                          {item.data.description}
-                        </Text>
+                      {/* View photos dropdown and upload */}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div>
+                          <Text variant="muted" size="sm">{item.data.date}</Text>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={async () => {
+                            const key = `leg:${item.data.id}`;
+                            setExpanded(prev => ({ ...prev, [key]: !prev[key] }));
+                            if (!entityPhotos[key]) {
+                              try {
+                                const p = await listPhotosByLeg(item.data.id);
+                                setEntityPhotos(prev => ({ ...prev, [key]: p }));
+                              } catch {}
+                            }
+                          }}
+                        >
+                          {expanded[`leg:${item.data.id}`] ? '▴ Collapse' : '▾ Expand'}
+                        </Button>
+                      </div>
+                      {expanded[`leg:${item.data.id}`] && (
+                        <div style={{ marginTop: '0.75rem' }}>
+                          {entityPhotos[`leg:${item.data.id}`] && entityPhotos[`leg:${item.data.id}`].length > 0 && (
+                            <div style={{ marginBottom: '0.75rem' }}>
+                              <PhotoSlideshowSmall photos={entityPhotos[`leg:${item.data.id}`]} />
+                            </div>
+                          )}
+                          {item.data.description && (
+                            <Text variant="secondary" size="sm" style={{ marginBottom: '0.75rem' }}>
+                              {item.data.description}
+                            </Text>
+                          )}
+                          {item.data.notes && (
+                            <Text variant="muted" size="sm">
+                              <strong>Notes:</strong> {item.data.notes}
+                            </Text>
+                          )}
+                        </div>
                       )}
-                      {item.data.notes && (
-                        <Text variant="muted" size="sm">
-                          <strong>Notes:</strong> {item.data.notes}
-                        </Text>
-                      )}
+                      {/* description shown in expanded section */}
+                      {/* notes shown in expanded section */}
                     </>
                   )}
                 </NodeCard>
@@ -270,13 +353,38 @@ function TripDetails() {
                           <strong>Location:</strong> (OSM: {stop.osm_name || 'N/A'})
                         </Text>
                       </Link>
-                      <div>
-                        {stop.notes && (
-                          <Text variant="muted" size="sm">
-                            <strong>Notes:</strong> {stop.notes}
-                          </Text>
-                        )}
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginTop: '0.5rem' }}>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={async () => {
+                            const key = `stop:${stop.id}`;
+                            setExpanded(prev => ({ ...prev, [key]: !prev[key] }));
+                            if (!entityPhotos[key]) {
+                              try {
+                                const p = await listPhotosByStop(stop.id);
+                                setEntityPhotos(prev => ({ ...prev, [key]: p }));
+                              } catch {}
+                            }
+                          }}
+                        >
+                          {expanded[`stop:${stop.id}`] ? '▴ Collapse' : '▾ Expand'}
+                        </Button>
                       </div>
+                      {expanded[`stop:${stop.id}`] && (
+                        <div style={{ marginTop: '0.5rem' }}>
+                          {entityPhotos[`stop:${stop.id}`] && entityPhotos[`stop:${stop.id}`].length > 0 && (
+                            <div style={{ marginBottom: '0.5rem' }}>
+                              <PhotoSlideshowSmall photos={entityPhotos[`stop:${stop.id}`]} />
+                            </div>
+                          )}
+                          {stop.notes && (
+                            <Text variant="muted" size="sm">
+                              <strong>Notes:</strong> {stop.notes}
+                            </Text>
+                          )}
+                        </div>
+                      )}
                     </StopCard>
                   )) :
                   getStopsForLeg(item.data.id).map(stop => (
@@ -300,13 +408,38 @@ function TripDetails() {
                           <strong>Location:</strong> (OSM: {stop.osm_name || 'N/A'})
                         </Text>
                       </Link>
-                      <div>
-                        {stop.notes && (
-                          <Text variant="muted" size="sm">
-                            <strong>Notes:</strong> {stop.notes}
-                          </Text>
-                      )}
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginTop: '0.5rem' }}>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={async () => {
+                            const key = `stop:${stop.id}`;
+                            setExpanded(prev => ({ ...prev, [key]: !prev[key] }));
+                            if (!entityPhotos[key]) {
+                              try {
+                                const p = await listPhotosByStop(stop.id);
+                                setEntityPhotos(prev => ({ ...prev, [key]: p }));
+                              } catch {}
+                            }
+                          }}
+                        >
+                          {expanded[`stop:${stop.id}`] ? '▴ Collapse' : '▾ Expand'}
+                        </Button>
                       </div>
+                      {expanded[`stop:${stop.id}`] && (
+                        <div style={{ marginTop: '0.5rem' }}>
+                          {entityPhotos[`stop:${stop.id}`] && entityPhotos[`stop:${stop.id}`].length > 0 && (
+                            <div style={{ marginBottom: '0.5rem' }}>
+                              <PhotoSlideshowSmall photos={entityPhotos[`stop:${stop.id}`]} />
+                            </div>
+                          )}
+                          {stop.notes && (
+                            <Text variant="muted" size="sm">
+                              <strong>Notes:</strong> {stop.notes}
+                            </Text>
+                          )}
+                        </div>
+                      )}
                     </StopCard>
                   ))
                 }
@@ -315,6 +448,58 @@ function TripDetails() {
           </Grid>
         )}
       </div>
+
+      {/* Bottom unified upload container */}
+      <TripInfoCard>
+        <h3 style={{ marginTop: 0 }}>Upload Photos</h3>
+        <Text variant="muted" size="sm" style={{ marginBottom: '0.5rem' }}>
+          Choose a Node, Leg, or Stop to attach new photos.
+        </Text>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <select value={uploadTarget} onChange={e => setUploadTarget(e.target.value)}>
+            <option value="">Select target…</option>
+            {nodes.map(n => (
+              <option key={`node:${n.id}`} value={`node:${n.id}`}>Node: {n.name}</option>
+            ))}
+            {legs.map(l => (
+              <option key={`leg:${l.id}`} value={`leg:${l.id}`}>Leg: {getTransportTypeLabel(l.type)} {getNodeName(l.start_node_id)} → {getNodeName(l.end_node_id)}</option>
+            ))}
+            {stops.map(s => (
+              <option key={`stop:${s.id}`} value={`stop:${s.id}`}>Stop: {s.name}</option>
+            ))}
+          </select>
+          <PhotoUploadButton
+            tripId={tripID}
+            nodeId={uploadTarget.startsWith('node:') ? Number(uploadTarget.split(':')[1]) : undefined}
+            legId={uploadTarget.startsWith('leg:') ? Number(uploadTarget.split(':')[1]) : undefined}
+            stopId={uploadTarget.startsWith('stop:') ? Number(uploadTarget.split(':')[1]) : undefined}
+            onUploaded={async () => {
+              try {
+                const p = await listPhotosByTrip(tripID);
+                setTripPhotos(p);
+                // Refresh cache for selected entity
+                if (uploadTarget) {
+                  const [type, idStr] = uploadTarget.split(':');
+                  const id = Number(idStr);
+                  if (type === 'node') {
+                    setEntityPhotos(prev => ({ ...prev, [`node:${id}`]: undefined }));
+                    const ph = await listPhotosByNode(id);
+                    setEntityPhotos(prev => ({ ...prev, [`node:${id}`]: ph }));
+                  } else if (type === 'leg') {
+                    setEntityPhotos(prev => ({ ...prev, [`leg:${id}`]: undefined }));
+                    const ph = await listPhotosByLeg(id);
+                    setEntityPhotos(prev => ({ ...prev, [`leg:${id}`]: ph }));
+                  } else if (type === 'stop') {
+                    setEntityPhotos(prev => ({ ...prev, [`stop:${id}`]: undefined }));
+                    const ph = await listPhotosByStop(id);
+                    setEntityPhotos(prev => ({ ...prev, [`stop:${id}`]: ph }));
+                  }
+                }
+              } catch {}
+            }}
+          />
+        </div>
+      </TripInfoCard>
 
       <ActionButtons>
         <Button 

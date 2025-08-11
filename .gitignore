@@ -1,7 +1,9 @@
+uploads/
 __pycache__/
 *.pyc
 pgdata/
 *.db
 .env
 node_modules/
+uploads/
 

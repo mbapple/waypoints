@@ -80,16 +80,20 @@ CREATE TABLE car_details (
     polyline TEXT
 );
 
--- ===================
--- PHOTOS (Attachable to trip, node, or leg)
--- ===================
 CREATE TABLE photos (
     id SERIAL PRIMARY KEY,
     trip_id INTEGER REFERENCES trips(id) ON DELETE CASCADE,
     leg_id INTEGER REFERENCES legs(id) ON DELETE CASCADE,
     node_id INTEGER REFERENCES nodes(id) ON DELETE CASCADE,
+    stop_id INTEGER REFERENCES stops(id) ON DELETE CASCADE,
     url TEXT NOT NULL,
     description TEXT
+);
+
+-- Ensure at least one of trip_id, leg_id, node_id, or stop_id is present
+ALTER TABLE photos ADD CONSTRAINT photos_check_any_link
+CHECK (
+    trip_id IS NOT NULL OR leg_id IS NOT NULL OR node_id IS NOT NULL OR stop_id IS NOT NULL
 );
 
 -- ===================

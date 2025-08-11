@@ -1,5 +1,6 @@
 # backend/main.py
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 
 from routers import trips
@@ -8,6 +9,7 @@ from routers import legs
 from routers import stops
 from routers import car_details
 from routers import flight_details
+from routers import photos
 
 
 app = FastAPI()
@@ -28,3 +30,7 @@ app.include_router(legs.router)
 app.include_router(stops.router)
 app.include_router(car_details.router)
 app.include_router(flight_details.router)
+app.include_router(photos.router)
+
+# Serve uploaded photos statically
+app.mount("/uploads", StaticFiles(directory="/workspaces/src/uploads"), name="uploads")

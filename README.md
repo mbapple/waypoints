@@ -71,7 +71,7 @@ app container
 	- [X] Flight data
 	- [X] Driving distance
 - [X] Provide statistics about travel: distances, destination lists
-- [ ] Fine tune styling
+- [X] Fine tune styling
 - [ ] Figure out how to update database without breaking
 - [ ] Figure out how to backup database
 - [X] Organize page files
@@ -80,8 +80,15 @@ app container
 - [ ] Add create trip by flight numbers feature
 - [ ] Add create trip by cruise
 - [ ] Make a list of general cleanup to do
-	- [ ] Fix loading page issues
-	- [ ] Fix miles when adding/updating a car leg
+	- [X] Fix loading page issues
+	- [X] Fix miles when adding/updating a car leg
+	- [ ] Fix rounding with miles
+	- [ ] Add icons for stops onto map rather than just points
+	- [ ] Fix light mode color scheme
+	- [ ] General cleanup of code and pulling out functions/reused components
+	- [ ] Clean up what is show on TripDetails page
 - [ ] Fix bugs with updating components, particularly if you change transportation type of leg
-- [ ] Add maps of individual trips
+- [X] Add maps of individual trips
+- [ ] Come up with actual name for project
+- [ ] Design logo
 

@@ -15,7 +15,7 @@ if [[ -z "${DATABASE_URL:-}" ]]; then
 fi
 
 # Wait for DB to be ready
-until pg_isready -h "${DB_HOST:-db}" -p "${DB_PORT:-5432}" -U "${DB_USER:-user}" >/dev/null 2>&1; do
+until pg_isready -h "${DB_HOST:-db}" -p "${DB_PORT:-5432}" -U "${DB_USER:-user}" -d "${DB_NAME:-travel_database}" >/dev/null 2>&1; do
   echo "Waiting for database..."
   sleep 1
 done

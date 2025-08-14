@@ -11,52 +11,52 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - db_data:/home/matthew/Data/GitHub/TravelTracker/postgresql/data
+      - db_data:/var/lib/postgresql/data
       - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
-# TODO: Uncomment and configure container for the app (front end and backend)
-  # app:
-  #   image: node:18
-  #   container_name: travel_tracker_app
-  #   restart: always
-  #   working_dir: /app
-  #   volumes:
-  #     - ./app:/app
-  #   ports:
-  #     - "3000:3000"
-  #   environment:
-  #     - CHOKIDAR_USEPOLLING=true
-  #   command: npm start
-  #   depends_on:
-  #     - db
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: waypoints_backend
+    restart: always
+    depends_on:
+      - db
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: travel_database
+      DB_USER: user
+      DB_PASS: password
+      # Optional CORS setting for production
+      ALLOWED_ORIGINS: http://localhost:3000
+    ports:
+      - "3001:3001"
+    volumes:
+  - .:/workspaces/src
+  - ./uploads:/workspaces/src/uploads
+  command: ["bash", "-lc", "chmod +x /workspaces/src/backend/app/start.sh && /workspaces/src/backend/app/start.sh"]
 
- 
-  # backend:
-  #   build: ./backend 
-  #   depends_on:
-  #     - db
-  #   environment:
-  #     PGHOST: db
-  #     PGUSER: user
-  #     PGPASSWORD: password
-  #     PGDATABASE: travel_database 
-  #     PGPORT: 5431
-  #   ports:
-  #     - "3000:3001"
-  #   volumes:
-  #     - ./backend:/app
-  #   command: node index.js
-
-  # frontend:
-  #   build: ./frontend
-  #   ports:
-  #     - "2999:3000"
-  #   volumes:
-  #     - "./frontend:/app"
-  #   environment:
-  #     - CHOKIDAR_USEPOLLING=true
-  #   depends_on:
-  #     - backend
+  frontend:
+    image: node:20
+    container_name: waypoints_frontend
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+      - REACT_APP_API_BASE_URL=http://localhost:3001/api
+    volumes:
+      - ./frontend:/app
+    working_dir: /app
+    command: ["bash", "-lc", "npm ci && npm start"]
+    depends_on:
+      - backend
 
 volumes:
   db_data:

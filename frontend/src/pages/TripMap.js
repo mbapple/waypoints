@@ -110,9 +110,9 @@ function TripMap() {
       {/* Selection for highlighting countries/states */}
       <Flex gap={2} style={{ marginTop: 8, alignItems: "center" }}>
         <Text variant="muted">Highlight:</Text>
-        <Button  variant="primary" onClick={() => setHighlightMode("off")} disabled={highlightMode === "off"}>Off</Button>
-        <Button  variant="primary" onClick={() => setHighlightMode("countries")} disabled={highlightMode === "countries"}>Countries</Button>
-        <Button  variant="primary" onClick={() => setHighlightMode("states")} disabled={highlightMode === "states"}>States</Button>
+        <Button  variant="ghost" onClick={() => setHighlightMode("off")} disabled={highlightMode === "off"}>Off</Button>
+        <Button  variant="ghost" onClick={() => setHighlightMode("countries")} disabled={highlightMode === "countries"}>Countries</Button>
+        <Button  variant="ghost" onClick={() => setHighlightMode("states")} disabled={highlightMode === "states"}>States</Button>
       </Flex>
     </div>
   );

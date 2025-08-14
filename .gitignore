@@ -6,4 +6,5 @@ pgdata/
 .env
 node_modules/
 uploads/
+backups/
 

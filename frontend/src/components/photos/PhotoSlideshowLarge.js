@@ -4,7 +4,7 @@ import { API_ORIGIN } from '../../api/client';
 
 const SliderContainer = styled.div`
   width: 100%;
-  height: 420px;
+  height: ${p => p.image_height || 420}px;
   border-radius: 12px;
   overflow: hidden;
   background: #0f172a;
@@ -60,7 +60,7 @@ const Dot = styled.button`
   background: ${p => (p.active ? '#6366f1' : 'rgba(255,255,255,0.4)')};
 `;
 
-export default function PhotoSlideshowLarge({ photos = [] }) {
+export default function PhotoSlideshowLarge({ photos = [], image_height }) {
   const [index, setIndex] = useState(0);
 
   useEffect(() => {
@@ -72,7 +72,7 @@ export default function PhotoSlideshowLarge({ photos = [] }) {
   const next = () => setIndex(i => (i + 1) % photos.length);
 
   return (
-    <SliderContainer>
+    <SliderContainer image_height={image_height}>
       {photos.map((p, i) => (
         <Slide key={p.id || p.url || i} active={i === index}>
           <Img src={p.url.startsWith('http') ? p.url : `${API_ORIGIN}${p.url}`} alt={p.description || `Photo ${i+1}`} />

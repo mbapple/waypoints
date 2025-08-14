@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { Button, Input, Form, FormGroup, Label, Text } from "../../styles/components";
+import { Text } from "../../styles/components";
 import { PageHeader } from "../../components/page-components";
-import { FormCard, ButtonGroup, DangerZone } from "../../components/input-components";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { FormCard, DangerZone } from "../../components/input-components";
+import { useParams, useNavigate } from "react-router-dom";
 import { getTrip, updateTrip as apiUpdateTrip, deleteTrip as apiDeleteTrip } from "../../api/trips";
 import ConfirmDeleteButton from "../../components/common/ConfirmDeleteButton";
+import TripForm from "../../components/forms/TripForm";
 
 function UpdateTrip() {
   const { tripID } = useParams();
@@ -48,23 +49,19 @@ function UpdateTrip() {
     loadTrip();
   }, [tripID]);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
+  // Field updates handled inside TripForm
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (data) => {
     setSaving(true);
     try {
       const payload = {
-        name: formData.name,
-        start_date: formData.startDate,
-        end_date: formData.endDate,
-        description: formData.description,
+        name: data.name,
+        start_date: data.startDate,
+        end_date: data.endDate,
+        description: data.description,
       };
-  await apiUpdateTrip(tripID, payload);
-  navigate(`/trip/${tripID}`);
+      await apiUpdateTrip(tripID, payload);
+      navigate(`/trip/${tripID}`);
     } catch (err) {
       console.error(err);
       alert("Failed to update trip.");
@@ -91,28 +88,13 @@ function UpdateTrip() {
       </PageHeader>
 
       <FormCard>
-        <Form onSubmit={handleSubmit}>
-          <FormGroup>
-            <Label htmlFor="name">Trip Name *</Label>
-            <Input id="name" name="name" type="text" value={formData.name} onChange={handleChange} required />
-          </FormGroup>
-          <FormGroup>
-            <Label htmlFor="startDate">Start Date *</Label>
-            <Input id="startDate" name="startDate" type="date" value={formData.startDate} onChange={handleChange} required />
-          </FormGroup>
-          <FormGroup>
-            <Label htmlFor="endDate">End Date *</Label>
-            <Input id="endDate" name="endDate" type="date" value={formData.endDate} onChange={handleChange} required min={formData.startDate} />
-          </FormGroup>
-          <FormGroup>
-            <Label htmlFor="description">Description</Label>
-            <Input id="description" name="description" as="textarea" rows={4} value={formData.description} onChange={handleChange} />
-          </FormGroup>
-          <ButtonGroup>
-            <Button as={Link} to={`/trip/${tripID}`} variant="outline">Cancel</Button>
-            <Button type="submit" variant="primary" disabled={saving}>{saving ? "Saving..." : "Save Changes"}</Button>
-          </ButtonGroup>
-        </Form>
+        <TripForm
+          initialValues={formData}
+          onSubmit={handleSubmit}
+          onCancel={() => navigate(`/trip/${tripID}`)}
+          submitLabel={saving ? "Saving..." : "Save Changes"}
+          saving={saving}
+        />
       </FormCard>
 
       <DangerZone>

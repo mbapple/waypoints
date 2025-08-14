@@ -1,353 +1,112 @@
-import React, {useCallback, useEffect, useMemo, useState} from "react";
+// using shared LegForm; previous inline form and helpers removed
+
+import React, { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import {FormCard} from "../../components/input-components";
-import {PageHeader} from "../../components/page-components";
-import { Button, Text, Flex, Form, FormGroup, Label, Input, Select } from "../../styles/components";
-import { PlaceSearchInput } from "../../components/map-integration-components";
-import { CarDetails, FlightDetails } from "../../components/leg-details-components";
+import { FormCard } from "../../components/input-components";
+import { PageHeader } from "../../components/page-components";
+import { Button, Text, Flex } from "../../styles/components";
 import { listNodesByTrip } from "../../api/nodes";
 import { createLeg, createCarDetails, createFlightDetails } from "../../api/legs";
-import { placeToLegStart, placeToLegEnd } from "../../utils/places";
+import LegForm from "../../components/forms/LegForm";
 
 function AddLeg() {
-  const { tripID } = useParams();
+    const { tripID } = useParams();
     const navigate = useNavigate();
+    const [loading, setLoading] = useState(false);
+    const [nodes, setNodes] = useState([]);
 
-  const [formData, setFormData] = useState({
-    type: "",
-    fromNode: "",
-    toNode: "",
-    date: "",
-    notes: "",
-    // locations (overrideable)
-    start_latitude: "",
-    start_longitude: "",
-    end_latitude: "",
-    end_longitude: "",
-    start_osm_name: "",
-    start_osm_id: "",
-    start_osm_country: "",
-    start_osm_state: "",
-    end_osm_name: "",
-    end_osm_id: "",
-    end_osm_country: "",
-    end_osm_state: "",
-    miles: "",
-    // flight fields
-    flight_number: "",
-    airline: "",
-    start_airport: "",
-    end_airport: "",
-    driving_time_seconds: "",
-    polyline: ""
-  });
+    useEffect(() => {
+        const fetchNodes = async () => {
+            try {
+                const response = await listNodesByTrip(tripID);
+                setNodes(response);
+            } catch (err) {
+                console.error("Failed to fetch nodes:", err);
+            }
+        };
+        if (tripID) fetchNodes();
+    }, [tripID]);
 
-  const [loading, setLoading] = useState(false);
-
-    // Stable callbacks to avoid infinite render loops in child effects
-    const handleCarAutoFill = useCallback(({ miles, driving_time_seconds, polyline }) => {
-        setFormData(prev => ({
-            ...prev,
-            ...(typeof miles === 'number' ? { miles: miles.toFixed(1) } : {}),
-            ...(driving_time_seconds !== undefined ? { driving_time_seconds } : {}),
-            ...(polyline !== undefined ? { polyline } : {}),
-        }));
-    }, []);
-
-    const handleFlightAutoFill = useCallback((data) => {
-        const { miles, flight_number, airline, start_airport, end_airport } = data || {};
-        setFormData(prev => ({
-            ...prev,
-            ...(typeof miles === 'number' ? { miles: miles.toFixed(1) } : {}),
-            ...(flight_number !== undefined ? { flight_number } : {}),
-            ...(airline !== undefined ? { airline } : {}),
-            ...(start_airport !== undefined ? { start_airport } : {}),
-            ...(end_airport !== undefined ? { end_airport } : {}),
-        }));
-    }, []);
-
-    const handleChange = (e) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: value
-        }));
-    }
-
-    const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-
-    try {
-            console.log("Creating leg", formData)
+    const handleSubmit = async (data) => {
+        setLoading(true);
+        try {
             const payload = {
                 trip_id: Number(tripID),
-                type: formData.type,
-                start_node_id: formData.fromNode ? Number(formData.fromNode) : null,
-                end_node_id: formData.toNode ? Number(formData.toNode) : null,
-                notes: formData.notes || null,
-                date: formData.date,
-                start_latitude: formData.start_latitude ? Number(formData.start_latitude) : null,
-                start_longitude: formData.start_longitude ? Number(formData.start_longitude) : null,
-                end_latitude: formData.end_latitude ? Number(formData.end_latitude) : null,
-                end_longitude: formData.end_longitude ? Number(formData.end_longitude) : null,
-                start_osm_name: formData.start_osm_name || null,
-                start_osm_id: formData.start_osm_id || null,
-                start_osm_country: formData.start_osm_country || null,
-                start_osm_state: formData.start_osm_state || null,
-                end_osm_name: formData.end_osm_name || null,
-                end_osm_id: formData.end_osm_id || null,
-                end_osm_country: formData.end_osm_country || null,
-                end_osm_state: formData.end_osm_state || null,
-                miles: formData.miles ? Number(formData.miles) : null,
+                type: data.type,
+                start_node_id: data.fromNode ? Number(data.fromNode) : null,
+                end_node_id: data.toNode ? Number(data.toNode) : null,
+                notes: data.notes || null,
+                date: data.date,
+                start_latitude: data.start_latitude ? Number(data.start_latitude) : null,
+                start_longitude: data.start_longitude ? Number(data.start_longitude) : null,
+                end_latitude: data.end_latitude ? Number(data.end_latitude) : null,
+                end_longitude: data.end_longitude ? Number(data.end_longitude) : null,
+                start_osm_name: data.start_osm_name || null,
+                start_osm_id: data.start_osm_id || null,
+                start_osm_country: data.start_osm_country || null,
+                start_osm_state: data.start_osm_state || null,
+                end_osm_name: data.end_osm_name || null,
+                end_osm_id: data.end_osm_id || null,
+                end_osm_country: data.end_osm_country || null,
+                end_osm_state: data.end_osm_state || null,
+                miles: data.miles ? Number(data.miles) : null,
             };
 
             const legRes = await createLeg(payload);
             const newLegId = legRes?.id;
 
-            if (formData.type === 'car' && newLegId) {
-                // Save car_details once
+            if (data.type === "car" && newLegId) {
                 await createCarDetails({
                     leg_id: newLegId,
-                    driving_time_seconds: formData.driving_time_seconds ?? null,
-                    polyline: formData.polyline ?? null,
+                    driving_time_seconds: data.driving_time_seconds ?? null,
+                    polyline: data.polyline ?? null,
                 });
             }
-            if (formData.type === 'flight' && newLegId) {
+            if (data.type === "flight" && newLegId) {
                 await createFlightDetails({
                     leg_id: newLegId,
-                    flight_number: formData.flight_number || null,
-                    airline: formData.airline || null,
-                    start_airport: formData.start_airport || null,
-                    end_airport: formData.end_airport || null,
+                    flight_number: data.flight_number || null,
+                    airline: data.airline || null,
+                    start_airport: data.start_airport || null,
+                    end_airport: data.end_airport || null,
                 });
             }
-        // Redirect back to trip details  
-        navigate(`/trip/${tripID}`);
-    } catch (err) {
-      console.error(err);
-      alert("Failed to create travel leg. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-
-const [nodes, setNodes] = useState([]);
-const selectedFromNode = useMemo(() => nodes.find(n => String(n.id) === String(formData.fromNode)), [nodes, formData.fromNode]);
-const selectedToNode = useMemo(() => nodes.find(n => String(n.id) === String(formData.toNode)), [nodes, formData.toNode]);
-
-
-// Fetch nodes for this trip
-React.useEffect(() => {
-    const fetchNodes = async () => {
-        try {
-            const response = await listNodesByTrip(tripID);
-            setNodes(response);
+            navigate(`/trip/${tripID}`);
         } catch (err) {
-            console.error('Failed to fetch nodes:', err);
-    }
+            console.error(err);
+            alert("Failed to create travel leg. Please try again.");
+        } finally {
+            setLoading(false);
+        }
     };
-    
-    if (tripID) {
-        fetchNodes();
-    }
-}, [tripID]);
 
-// When nodes change selection, prefill locations but allow override
-useEffect(() => {
-    if (selectedFromNode) {
-        console.log('Selected from node:', selectedFromNode);
-        setFormData(prev => ({
-            ...prev,
-            start_latitude: selectedFromNode.latitude ?? prev.start_latitude,
-            start_longitude: selectedFromNode.longitude ?? prev.start_longitude,
-            start_osm_name: selectedFromNode.osm_name ?? prev.start_osm_name,
-            start_osm_id: selectedFromNode.osm_id ?? prev.start_osm_id,
-            start_osm_country: selectedFromNode.osm_country ?? prev.start_osm_country,
-            start_osm_state: selectedFromNode.osm_state ?? prev.start_osm_state,
-            date: prev.date || (selectedFromNode.departure_date || ''),
-        }));
-    }
-}, [selectedFromNode]);
+    return (
+        <div>
+            <PageHeader>
+                <Flex justify="space-between" align="flex-start" wrap>
+                    <div>
+                        <h1>Add Travel Leg</h1>
+                        <Text variant="secondary" size="lg">
+                            Add transportation between destinations
+                        </Text>
+                    </div>
+                    <Button as={Link} to={`/trip/${tripID}`} variant="outline">
+                        ← Back to Trip
+                    </Button>
+                </Flex>
+            </PageHeader>
 
-useEffect(() => {
-    console.log("Selected to node: ", selectedToNode)
-    if (selectedToNode) {
-        setFormData(prev => ({
-            ...prev,
-            end_latitude: selectedToNode.latitude ?? prev.end_latitude,
-            end_longitude: selectedToNode.longitude ?? prev.end_longitude,
-            end_osm_name: selectedToNode.osm_name ?? prev.end_osm_name,
-            end_osm_id: selectedToNode.osm_id ?? prev.end_osm_id,
-            end_osm_country: selectedToNode.osm_country ?? prev.end_osm_country,
-            end_osm_state: selectedToNode.osm_state ?? prev.end_osm_state,
-        }));
-    }
-}, [selectedToNode]);
-
-return (
-    <div>
-        <PageHeader>
-            <Flex justify="space-between" align="flex-start" wrap>
-                <div>
-                    <h1>Add Travel Leg</h1>
-                    <Text variant="secondary" size="lg">
-                        Add transportation between destinations
-                    </Text>
-                </div>
-                <Button as={Link} to={`/trip/${tripID}`} variant="outline">
-                    ← Back to Trip
-                </Button>
-            </Flex>
-        </PageHeader>
-
-        <FormCard>
-            <Form onSubmit={handleSubmit}>
-                <FormGroup>
-                    <Label htmlFor="type">Transport Type *</Label>
-                    <Select
-                        id="type"
-                        name="type"
-                        value={formData.type}
-                        onChange={handleChange}
-                        required
-                        
-                    >
-                        <option value="">Select Transport Type</option>
-                        <option value="flight">Flight</option>
-                        <option value="car">Car</option>
-                        <option value="train">Train</option>
-                        <option value="bus">Bus</option>
-                        <option value="boat">Boat</option>
-                        <option value="other">Other</option>
-                    </Select>
-                </FormGroup>
-                <FormGroup>
-                    <Label htmlFor="fromNode">From Node *</Label>
-                    <Select
-                        id="fromNode"
-                        name="fromNode"
-                        value={formData.fromNode}
-                        onChange={handleChange}
-                        required
-                        
-                    >
-                        <option value="">Select starting node</option>
-                        {nodes.map(node => (
-                            <option key={node.id} value={node.id}>
-                                {node.name}
-                            </option>
-                        ))}
-                    </Select>
-                </FormGroup>
-                <FormGroup>
-                    <Label htmlFor="toNode">To Node *</Label>
-                    <Select
-                        id="toNode"
-                        name="toNode"
-                        value={formData.toNode}
-                        onChange={handleChange}
-                        required
-                        
-                    >
-                        <option value="">Select destination node</option>
-                        {nodes.map(node => (
-                            <option key={node.id} value={node.id}>
-                                {node.name}
-                            </option>
-                        ))}
-                    </Select>
-                </FormGroup>
-                <FormGroup>
-                    <Label htmlFor="fromLocation">From Location</Label>
-                    <PlaceSearchInput
-                        placeholder="Search for a start location..."
-                        value={formData.start_osm_name || ''}
-                        onChange={(e) => setFormData(prev => ({ ...prev, start_osm_name: e.target.value }))}
-                        onPlaceSelect={(place) => {
-                            setFormData(prev => ({
-                                ...prev,
-                                ...placeToLegStart(place)
-                            }));
-                        }}
-                    />
-                    <small>Autofilled from node; you can override.</small>
-                </FormGroup>
-                <FormGroup>
-                    <Label htmlFor="toLocation">To Location</Label>
-                    <PlaceSearchInput
-                        placeholder="Search for a destination..."
-                        value={formData.end_osm_name || ''}
-                        onChange={(e) => setFormData(prev => ({ ...prev, end_osm_name: e.target.value }))}
-                        onPlaceSelect={(place) => {
-                            setFormData(prev => ({
-                                ...prev,
-                                ...placeToLegEnd(place)
-                            }));
-                        }}
-                    />
-                    <small>Autofilled from node; you can override.</small>
-                </FormGroup>
-                <FormGroup>
-                    <Label htmlFor = "date">Date *</Label>
-                    <Input
-                        id="date"
-                        name="date"
-                        type="date"
-                        value={formData.date}
-                        onChange={handleChange}
-                        required
-                    />
-                </FormGroup>
-
-                                {formData.type === 'car' && (
-                                    <FormGroup>
-                                        <CarDetails
-                                            start={{ lat: Number(formData.start_latitude), lon: Number(formData.start_longitude) }}
-                                            end={{ lat: Number(formData.end_latitude), lon: Number(formData.end_longitude) }}
-                                            initialMiles={formData.miles ? Number(formData.miles) : undefined}
-                                            onAutoFill={handleCarAutoFill}
-                                        />
-                                    </FormGroup>
-                                )}
-                                                                <FormGroup>
-                                    <Label htmlFor="miles">Miles</Label>
-                                    <Input id="miles" name="miles" type="number" value={formData.miles} onChange={handleChange} />
-                                </FormGroup>
-                                                                {formData.type === 'flight' && (
-                                                                    <FormGroup>
-                                                                        <FlightDetails
-                                                                            start={{ lat: Number(formData.start_latitude), lon: Number(formData.start_longitude) }}
-                                                                            end={{ lat: Number(formData.end_latitude), lon: Number(formData.end_longitude) }}
-                                                                            onAutoFill={handleFlightAutoFill}
-                                                                        />
-                                                                    </FormGroup>
-                                                                )}
-                                <FormGroup>
-                                    <Label htmlFor="notes">Notes</Label>
-                                    <Input
-                                            id="notes" 
-                                            name="notes"
-                                            as="textarea"
-                                            rows={4}
-                                            placeholder="Any additional notes about this leg..."
-                                            value={formData.notes}
-                                            onChange={handleChange}
-                                    />
-                                </FormGroup>
-
-                <Button 
-                    type="submit" 
-                    variant="primary" 
-                    disabled={loading}
-                    >
-                    {loading ? 'Adding...' : 'Add Leg'}
-                </Button>
-            </Form>
-        </FormCard>
-    </div>
-);
+            <FormCard>
+                <LegForm
+                    nodes={nodes}
+                    onSubmit={handleSubmit}
+                    onCancel={() => navigate(`/trip/${tripID}`)}
+                    submitLabel={loading ? "Adding..." : "Add Leg"}
+                    saving={loading}
+                />
+            </FormCard>
+        </div>
+    );
 }
 
 export default AddLeg;

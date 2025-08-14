@@ -2,13 +2,12 @@ import React, { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { FormCard, DangerZone } from "../../components/input-components";
 import { PageHeader } from "../../components/page-components";
-import { PlaceSearchInput } from "../../components/map-integration-components";
-import { Button, Text, Flex, Form, FormGroup, Label, Input, Select } from "../../styles/components";
+import { Button, Text, Flex } from "../../styles/components";
 import ConfirmDeleteButton from "../../components/common/ConfirmDeleteButton";
 import { listNodesByTrip } from "../../api/nodes";
 import { listLegsByTrip } from "../../api/legs";
 import { getStop as apiGetStop, updateStop as apiUpdateStop, deleteStop as apiDeleteStop } from "../../api/stops";
-import { placeToOsmFields } from "../../utils/places";
+import StopForm from "../../components/forms/StopForm";
 
 function UpdateStop() {
   const { tripID } = useParams();
@@ -80,27 +79,20 @@ function UpdateStop() {
     if (stopID) load();
   }, [tripID, stopID]);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (data) => {
     setSaving(true);
-
     try {
       await apiUpdateStop(stopID, {
         trip_id: parseInt(tripID, 10),
-        name: formData.name,
-        leg_id: formData.legID || null,
-        node_id: formData.nodeID || null,
-        category: formData.category,
-        notes: formData.notes || null,
-        latitude: formData.latitude || null,
-        longitude: formData.longitude || null,
-        osm_name: formData.osmName || null,
-        osm_id: formData.osmID || null,
+        name: data.name,
+        leg_id: data.legID || null,
+        node_id: data.nodeID || null,
+        category: data.category,
+        notes: data.notes || null,
+        latitude: data.latitude || null,
+        longitude: data.longitude || null,
+        osm_name: data.osmName || null,
+        osm_id: data.osmID || null,
       });
       navigate(`/trip/${tripID}`);
     } catch (err) {
@@ -134,80 +126,15 @@ function UpdateStop() {
       </PageHeader>
 
       <FormCard>
-        <Form onSubmit={handleSubmit}>
-          <FormGroup>
-            <Label htmlFor="name">Stop Name *</Label>
-            <Input id="name" name="name" type="text" value={formData.name} onChange={handleChange} required />
-          </FormGroup>
-
-          <FormGroup>
-            <Label htmlFor="association">Associate this stop to either a Leg or a Node *</Label>
-            <Select
-              id="association"
-              name="association"
-              required
-              value={(formData.legID ? `leg-${formData.legID}` : (formData.nodeID ? `node-${formData.nodeID}` : ""))}
-              onChange={(e) => {
-                const value = e.target.value;
-                if (value.startsWith('leg-')) {
-                  setFormData(prev => ({ ...prev, legID: value.replace('leg-', ''), nodeID: null }));
-                } else if (value.startsWith('node-')) {
-                  setFormData(prev => ({ ...prev, nodeID: value.replace('node-', ''), legID: null }));
-                } else {
-                  setFormData(prev => ({ ...prev, legID: null, nodeID: null }));
-                }
-              }}
-            >
-              <option value="">Select Leg or Node</option>
-              {legs.map(leg => (
-                <option key={`leg-${leg.id}`} value={`leg-${leg.id}`}>
-                  Leg: {leg.type} from {leg.start_node_name} to {leg.end_node_name}
-                </option>
-              ))}
-              {nodes.map(node => (
-                <option key={`node-${node.id}`} value={`node-${node.id}`}>
-                  Node: {node.name}
-                </option>
-              ))}
-            </Select>
-          </FormGroup>
-
-          <FormGroup>
-            <Label htmlFor="location">Location</Label>
-            <PlaceSearchInput
-              id="location"
-              name="location"
-              placeholder="Search for a location..."
-              onPlaceSelect={(place) => {
-                setFormData(prev => ({
-                  ...prev,
-                  ...placeToOsmFields(place)
-                }));
-              }}
-            />
-          </FormGroup>
-
-          <FormGroup>
-            <Label htmlFor="category">Category *</Label>
-            <Select id="category" name="category" value={formData.category} onChange={handleChange} required>
-              <option value="">Select category</option>
-              <option value="hotel">Hotel</option>
-              <option value="restaurant">Restaurant</option>
-              <option value="attraction">Attraction</option>
-              <option value="park">Bus</option>
-              <option value="other">Other</option>
-            </Select>
-          </FormGroup>
-
-          <FormGroup>
-            <Label htmlFor="notes">Notes</Label>
-            <Input id="notes" name="notes" as="textarea" rows={4} value={formData.notes} onChange={handleChange} placeholder="Any additional notes about this stop..." />
-          </FormGroup>
-
-          <Button type="submit" variant="primary" disabled={saving}>
-            {saving ? "Saving..." : "Save Changes"}
-          </Button>
-        </Form>
+        <StopForm
+          nodes={nodes}
+          legs={legs}
+          initialValues={formData}
+          onSubmit={handleSubmit}
+          onCancel={() => navigate(`/trip/${tripID}`)}
+          submitLabel={saving ? 'Saving...' : 'Save Changes'}
+          saving={saving}
+        />
       </FormCard>
 
        <DangerZone>

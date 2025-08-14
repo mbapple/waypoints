@@ -1,10 +1,9 @@
 import React, { useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import styled from "styled-components";
-import {PlaceSearchInput} from "../../components/map-integration-components";
-import { Card, Button, Input, Form, FormGroup, Label, Text, Flex } from "../../styles/components";
+import { Card, Button, Text, Flex } from "../../styles/components";
 import { createNode } from "../../api/nodes";
-import { placeToOsmFields } from "../../utils/places";
+import NodeForm from "../../components/forms/NodeForm";
 
 const PageHeader = styled.div`
   margin: ${props => props.theme.space[8]} 0 ${props => props.theme.space[6]} 0;
@@ -15,68 +14,30 @@ const FormCard = styled(Card)`
   margin: 0 auto;
 `;
 
-const ButtonGroup = styled.div`
-  display: flex;
-  gap: ${props => props.theme.space[3]};
-  justify-content: flex-end;
-  margin-top: ${props => props.theme.space[6]};
-  
-  @media (max-width: ${props => props.theme.breakpoints.sm}) {
-    flex-direction: column;
-  }
-`;
+// Buttons handled in NodeForm
 
 function AddNode() {
   const { tripID } = useParams();
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({
-    name: "",
-    description: "",
-    arrivalDate: "",
-    departureDate: "",
-    notes: "",
-    latitude: "",
-    longitude: "",
-    osmName: "",
-    osmID: "",
-    osmCountry: "",
-    osmState: ""
-  });
   const [loading, setLoading] = useState(false);
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (data) => {
     setLoading(true);
-    
     try {
       const nodeData = {
-        name: formData.name,
+        name: data.name,
         trip_id: Number(tripID),
-        description: formData.description,
-        arrival_date: formData.arrivalDate,
-        departure_date: formData.departureDate,
-        notes: formData.notes,
-        latitude: formData.latitude,
-        longitude: formData.longitude,
-        osm_name: formData.osmName,
-        osm_id: formData.osmID,
-        osm_country: formData.osmCountry,
-        osm_state: formData.osmState
+        description: data.description,
+        arrival_date: data.arrivalDate,
+        departure_date: data.departureDate,
+        notes: data.notes,
+        latitude: data.latitude,
+        longitude: data.longitude,
+        osm_name: data.osmName,
+        osm_id: data.osmID,
+        osm_country: data.osmCountry,
+        osm_state: data.osmState
       };
-
-      console.log("Creating node with data:", nodeData);
-
       await createNode(nodeData);
-      
-      // Redirect back to trip details
       navigate(`/trip/${tripID}`);
     } catch (err) {
       console.error(err);
@@ -103,107 +64,25 @@ function AddNode() {
       </PageHeader>
 
       <FormCard>
-        <Form onSubmit={handleSubmit}>
-          <FormGroup>
-            <Label htmlFor="name">Location Name *</Label>
-            <Input
-              id="name"
-              name="name"
-              type="text"
-              placeholder="e.g., Rome, Italy"
-              value={formData.name}
-              onChange={handleChange}
-              required
-            />
-          </FormGroup>
-
-          <FormGroup>
-              <Label htmlFor="location">Location *</Label>
-        <PlaceSearchInput
-                  id="location"
-                  name="location"
-                  placeholder="Search for a location..."
-                  required
-                  onPlaceSelect={(place) => {
-            setFormData(prev => ({
-              ...prev,
-              ...placeToOsmFields(place)
-            }));
-                  }}
-              />
-          </FormGroup>
-
-
-          <FormGroup>
-            <Label htmlFor="description">Description</Label>
-            <Input
-              id="description"
-              name="description"
-              type="text"
-              placeholder="Brief description of this destination"
-              value={formData.description}
-              onChange={handleChange}
-            />
-          </FormGroup>
-
-          <Flex gap={4}>
-            <FormGroup style={{ flex: 1 }}>
-              <Label htmlFor="arrivalDate">Arrival Date *</Label>
-              <Input
-                id="arrivalDate"
-                name="arrivalDate"
-                type="date"
-                value={formData.arrivalDate}
-                onChange={handleChange}
-                required
-              />
-            </FormGroup>
-
-            <FormGroup style={{ flex: 1 }}>
-              <Label htmlFor="departureDate">Departure Date *</Label>
-              <Input
-                id="departureDate"
-                name="departureDate"
-                type="date"
-                value={formData.departureDate}
-                onChange={handleChange}
-                required
-                min={formData.arrivalDate}
-              />
-            </FormGroup>
-          </Flex>
-
-          <FormGroup>
-            <Label htmlFor="notes">Notes</Label>
-            <Input
-              id="notes"
-              name="notes"
-              as="textarea"
-              rows={4}
-              placeholder="Any additional notes about this destination..."
-              value={formData.notes}
-              onChange={handleChange}
-              style={{ resize: 'vertical', minHeight: '100px' }}
-            />
-          </FormGroup>
-
-          <ButtonGroup>
-            <Button 
-              type="button" 
-              variant="outline" 
-              onClick={() => window.history.back()}
-            >
-              Cancel
-            </Button>
-            <Button 
-              type="submit" 
-              variant="primary" 
-              disabled={loading}
-            >
-              {loading ? 'Adding...' : 'Add Destination'}
-            </Button>
-          </ButtonGroup>
-        </Form>
+        <NodeForm
+          initialValues={{
+            name: "",
+            description: "",
+            arrivalDate: "",
+            departureDate: "",
+            notes: "",
+            latitude: "",
+            longitude: "",
+            osmName: "",
+            osmID: "",
+            osmCountry: "",
+            osmState: "",
+          }}
+          onSubmit={handleSubmit}
+          onCancel={() => window.history.back()}
+          submitLabel={loading ? 'Adding...' : 'Add Destination'}
+          saving={loading}
+        />
       </FormCard>
     </div>
   );

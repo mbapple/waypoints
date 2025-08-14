@@ -1,12 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { Button, Input, Form, FormGroup, Label, Text, Flex } from "../../styles/components";
+import { Button, Text, Flex } from "../../styles/components";
 import { PageHeader } from "../../components/page-components";
-import { FormCard, ButtonGroup, DangerZone } from "../../components/input-components";
+import { FormCard, DangerZone } from "../../components/input-components";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { PlaceSearchInput } from "../../components/map-integration-components";
-import { placeToOsmFields } from "../../utils/places";
 import ConfirmDeleteButton from "../../components/common/ConfirmDeleteButton";
 import { deleteNode as apiDeleteNode, getNode as apiGetNode, updateNode as apiUpdateNode } from "../../api/nodes";
+import NodeForm from "../../components/forms/NodeForm";
 
 function UpdateNode() {
   const { tripID } = useParams();
@@ -67,31 +66,25 @@ function UpdateNode() {
     if (nodeID) loadNode();
   }, [nodeID]);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (data) => {
     setSaving(true);
     try {
       const payload = {
-        name: formData.name,
+        name: data.name,
         trip_id: parseInt(tripID, 10),
-        description: formData.description || null,
-        arrival_date: formData.arrivalDate || null,
-        departure_date: formData.departureDate || null,
-        notes: formData.notes || null,
-        latitude: formData.latitude || null,
-        longitude: formData.longitude || null,
-        osm_name: formData.osmName || null,
-        osm_id: formData.osmID || null,
-        osm_country: formData.osmCountry || null,
-        osm_state: formData.osmState || null,
+        description: data.description || null,
+        arrival_date: data.arrivalDate || null,
+        departure_date: data.departureDate || null,
+        notes: data.notes || null,
+        latitude: data.latitude || null,
+        longitude: data.longitude || null,
+        osm_name: data.osmName || null,
+        osm_id: data.osmID || null,
+        osm_country: data.osmCountry || null,
+        osm_state: data.osmState || null,
       };
-  await apiUpdateNode(nodeID, payload);
-  navigate(`/trip/${tripID}`);
+      await apiUpdateNode(nodeID, payload);
+      navigate(`/trip/${tripID}`);
     } catch (err) {
       console.error(err);
       alert("Failed to update node.");
@@ -127,53 +120,13 @@ function UpdateNode() {
       </PageHeader>
 
       <FormCard>
-        <Form onSubmit={handleSubmit}>
-          <FormGroup>
-            <Label htmlFor="name">Location Name *</Label>
-            <Input id="name" name="name" type="text" value={formData.name} onChange={handleChange} required />
-          </FormGroup>
-
-          <FormGroup>
-            <Label htmlFor="location">Location *</Label>
-            <PlaceSearchInput
-              id="location"
-              name="location"
-              placeholder="Search for a location..."
-              onPlaceSelect={(place) => {
-                setFormData(prev => ({
-                  ...prev,
-                  ...placeToOsmFields(place)
-                }));
-              }}
-            />
-          </FormGroup>
-
-          <FormGroup>
-            <Label htmlFor="description">Description</Label>
-            <Input id="description" name="description" type="text" value={formData.description} onChange={handleChange} />
-          </FormGroup>
-
-          <Flex gap={4}>
-            <FormGroup style={{ flex: 1 }}>
-              <Label htmlFor="arrivalDate">Arrival Date *</Label>
-              <Input id="arrivalDate" name="arrivalDate" type="date" value={formData.arrivalDate} onChange={handleChange} required />
-            </FormGroup>
-            <FormGroup style={{ flex: 1 }}>
-              <Label htmlFor="departureDate">Departure Date *</Label>
-              <Input id="departureDate" name="departureDate" type="date" value={formData.departureDate} onChange={handleChange} required min={formData.arrivalDate} />
-            </FormGroup>
-          </Flex>
-
-          <FormGroup>
-            <Label htmlFor="notes">Notes</Label>
-            <Input id="notes" name="notes" as="textarea" rows={4} value={formData.notes} onChange={handleChange} style={{ resize: 'vertical', minHeight: '100px' }} />
-          </FormGroup>
-
-          <ButtonGroup>
-            <Button as={Link} to={`/trip/${tripID}`} variant="outline">Cancel</Button>
-            <Button type="submit" variant="primary" disabled={saving}>{saving ? 'Saving...' : 'Save Changes'}</Button>
-          </ButtonGroup>
-        </Form>
+        <NodeForm
+          initialValues={formData}
+          onSubmit={handleSubmit}
+          onCancel={() => navigate(`/trip/${tripID}`)}
+          submitLabel={saving ? 'Saving...' : 'Save Changes'}
+          saving={saving}
+        />
       </FormCard>
 
        <DangerZone>

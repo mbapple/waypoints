@@ -63,7 +63,7 @@ app container
 - [X] Make legs/nodes a drop down to reveal stops
 - [X] Make legs display correctly
 - [X] Add ability to update trips/legs/nodes
-- [ ] Add ability to add photos
+- [X] Add ability to add photos
 - [X] Add features to API and implement on frontend:
 	- [X] Total miles of a given trip
 	- [X] Total destination count
@@ -80,13 +80,13 @@ app container
 - [X] Organize page files
 - [X] Pull out redundant functions into separate file
 - [X] Add ability to customize style and light/dark mode
-- [ ] Add create trip by flight numbers feature
+- [X] Add create trip by flight numbers feature
 - [ ] Add create trip by cruise
 - [ ] Make a list of general cleanup to do
 	- [X] Fix loading page issues
 	- [X] Fix miles when adding/updating a car leg
 	- [ ] Fix rounding with miles
-	- [ ] Add icons for stops onto map rather than just points
+	- [X] Add icons for stops onto map rather than just points
 	- [ ] Fix light mode color scheme
 	- [ ] General cleanup of code and pulling out functions/reused components
 	- [ ] Clean up what is show on TripDetails page

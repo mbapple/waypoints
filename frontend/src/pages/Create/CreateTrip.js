@@ -1,8 +1,9 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import styled from "styled-components";
-import { Card, Button, Input, Form, FormGroup, Label, Text } from "../../styles/components";
+import { Card, Text } from "../../styles/components";
 import { createTrip } from "../../api/trips";
+import TripForm from "../../components/forms/TripForm";
 
 const PageHeader = styled.div`
   margin: ${props => props.theme.space[8]} 0 ${props => props.theme.space[6]} 0;
@@ -14,48 +15,21 @@ const FormCard = styled(Card)`
   margin: 0 auto;
 `;
 
-const ButtonGroup = styled.div`
-  display: flex;
-  gap: ${props => props.theme.space[3]};
-  justify-content: flex-end;
-  margin-top: ${props => props.theme.space[6]};
-  
-  @media (max-width: ${props => props.theme.breakpoints.sm}) {
-    flex-direction: column;
-  }
-`;
+// Buttons are handled inside TripForm
 
 function CreateTrip() {
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({
-    name: "",
-    startDate: "",
-    endDate: "",
-    description: "",
-  });
   const [loading, setLoading] = useState(false);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (data) => {
     setLoading(true);
-    
     try {
       await createTrip({
-        name: formData.name,
-        start_date: formData.startDate,
-        end_date: formData.endDate,
-        description: formData.description,
+        name: data.name,
+        start_date: data.startDate,
+        end_date: data.endDate,
+        description: data.description,
       });
-      
-      // Redirect to trips list or show success message
       navigate("/");
     } catch (err) {
       console.error(err);
@@ -75,77 +49,14 @@ function CreateTrip() {
       </PageHeader>
 
       <FormCard>
-        <Form onSubmit={handleSubmit}>
-          <Text variant="secondary">Prefer a single form to outline nodes and legs? <Link to="/create/quick">Use Quick Create</Link>.</Text>
-          <FormGroup>
-            <Label htmlFor="name">Trip Name *</Label>
-            <Input
-              id="name"
-              name="name"
-              type="text"
-              placeholder="e.g., Summer Vacation to Italy"
-              value={formData.name}
-              onChange={handleChange}
-              required
-            />
-          </FormGroup>
-
-          <FormGroup>
-            <Label htmlFor="startDate">Start Date *</Label>
-            <Input
-              id="startDate"
-              name="startDate"
-              type="date"
-              value={formData.startDate}
-              onChange={handleChange}
-              required
-            />
-          </FormGroup>
-
-          <FormGroup>
-            <Label htmlFor="endDate">End Date *</Label>
-            <Input
-              id="endDate"
-              name="endDate"
-              type="date"
-              value={formData.endDate}
-              onChange={handleChange}
-              required
-              min={formData.startDate}
-            />
-          </FormGroup>
-
-          <FormGroup>
-            <Label htmlFor="description">Description</Label>
-            <Input
-              id="description"
-              name="description"
-              as="textarea"
-              rows={4}
-              placeholder="Provide a brief overview of the trip..."
-              value={formData.description}
-              onChange={handleChange}
-              style={{ resize: 'vertical', minHeight: '100px' }}
-            />
-          </FormGroup>
-
-          <ButtonGroup>
-            <Button 
-              type="button" 
-              variant="outline" 
-              onClick={() => window.history.back()}
-            >
-              Cancel
-            </Button>
-            <Button 
-              type="submit" 
-              variant="primary" 
-              disabled={loading}
-            >
-              {loading ? 'Creating...' : 'Create Trip'}
-            </Button>
-          </ButtonGroup>
-        </Form>
+        <Text variant="secondary">Prefer a single form to outline nodes and legs? <Link to="/create/quick">Use Quick Create</Link>.</Text>
+        <TripForm
+          initialValues={{ name: "", startDate: "", endDate: "", description: "" }}
+          onSubmit={handleSubmit}
+          onCancel={() => window.history.back()}
+          submitLabel={loading ? "Creating..." : "Create Trip"}
+          saving={loading}
+        />
       </FormCard>
     </div>
   );

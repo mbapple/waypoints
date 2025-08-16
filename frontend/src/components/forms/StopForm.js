@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Form, FormGroup, Label, Input, Select, Button } from "../../styles/components";
 import { PlaceSearchInput } from "../map-integration-components";
 import { placeToOsmFields } from "../../utils/places";
+import { getTransportTypeLabel } from "../../utils/format";
 
 export default function StopForm({
   nodes = [],
@@ -25,6 +26,13 @@ export default function StopForm({
   saving = false,
 }) {
   const [formData, setFormData] = useState(initialValues);
+
+  const getNodeName = (nodeID) => {
+    const node = nodes.find(n => n.id === nodeID);
+    return node ? node.name : `Node ${nodeID}`;
+  };
+
+
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -60,7 +68,7 @@ export default function StopForm({
           <option value="">Select Leg or Node</option>
           {legs.map(leg => (
             <option key={`leg-${leg.id}`} value={`leg-${leg.id}`}>
-              Leg: {leg.type} from {leg.start_node_name} to {leg.end_node_name}
+              Leg: {leg.name || `${getTransportTypeLabel(leg.type)} ${getNodeName(leg.start_node_id)} to ${getNodeName(leg.end_node_id)}`}
             </option>
           ))}
           {nodes.map(node => (

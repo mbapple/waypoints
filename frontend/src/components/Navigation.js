@@ -11,7 +11,6 @@ const NavContainer = styled.nav`
   top: 0;
   z-index: 100;
   backdrop-filter: blur(10px);
-  background: rgba(30, 41, 59, 0.8);
 `;
 
 const NavBrand = styled(Link)`

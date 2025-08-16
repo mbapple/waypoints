@@ -87,9 +87,6 @@ function TripList() {
     <div>
       <PageHeader>
         <h1>My Trips</h1>
-        <Text variant="secondary" size="lg">
-          Track your adventures and create new memories
-        </Text>
       </PageHeader>
 
       <Flex justify="space-between" align="center" style={{ marginBottom: '2rem' }}>
@@ -104,9 +101,6 @@ function TripList() {
       {trips.length === 0 ? (
         <EmptyState>
           <h3>No trips yet</h3>
-          <Text variant="muted">
-            Start planning your next adventure by creating your first trip!
-          </Text>
           <Button 
             as={Link} 
             to="/create" 

@@ -82,19 +82,26 @@ app container
 - [X] Add ability to customize style and light/dark mode
 - [X] Add create trip by flight numbers feature
 - [ ] Add create trip by cruise
-- [ ] Make a list of general cleanup to do
+- [X] Make a list of general cleanup to do
 	- [X] Fix loading page issues
 	- [X] Fix miles when adding/updating a car leg
-	- [ ] Fix rounding with miles
+	- [X] Fix rounding with miles
 	- [X] Add icons for stops onto map rather than just points
-	- [ ] Fix light mode color scheme
-	- [ ] General cleanup of code and pulling out functions/reused components
-	- [ ] Clean up what is show on TripDetails page
-- [ ] Fix bugs with updating components, particularly if you change transportation type of leg
+	- [X] Fix light mode color scheme
+	- [X] General cleanup of code and pulling out functions/reused components
+	- [X] Clean up what is show on TripDetails page
+	- [ ] Dates not being saved w/ Quick Create
+	- [ ] Make only one date appear on first/last nodes
+	- [ ] Visually separate legs from nodes
+	- [X] Fix styling of dropdown when uploading photo
+	- [X] Fix leg display name when creating stop
+	- [ ] Figure out a way to correctly order stops and nodes that ocurred on same day
+	- [ ] Add pick a random photo
+- [X] Fix bugs with updating components, particularly if you change transportation type of leg
 - [X] Add maps of individual trips
-- [ ] Come up with actual name for project
+- [X] Come up with actual name for project
 - [ ] Design logo
-- [ ] Complete docker-compose.yml and install script so that it can be installed with one command and mount relevant volumes
+- [X] Complete docker-compose.yml and install script so that it can be installed with one command and mount relevant volumes
 - [ ] Add detailed statistics page
 - [ ] Timeline view and route replay
 

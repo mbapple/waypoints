@@ -48,7 +48,7 @@ export function getStopEmoji(category) {
     case 'hotel':
       return '🏨';
     case 'restaurant':
-      return '🍽️';
+      return '🍝';
     case 'attraction':
       return '📍';
     case 'park':
@@ -86,10 +86,10 @@ export const MapGlobalStyles = createGlobalStyle`
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 20px;
-    height: 20px;
+    width: 1.5rem;
+    height: 1.5rem;
     border-radius: 50%;
-    font-size: 13px;
+    font-size: 1.2rem;
     line-height: 1;
     border: 1px solid currentColor;
     box-shadow: ${p => p.theme.shadows.sm};

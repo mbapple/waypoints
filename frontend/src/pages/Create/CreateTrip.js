@@ -1,19 +1,12 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import styled from "styled-components";
-import { Card, Text } from "../../styles/components";
+import { Text, Button } from "../../styles/components";
 import { createTrip } from "../../api/trips";
 import TripForm from "../../components/forms/TripForm";
+import { PageHeader } from "../../components/page-components";
+import { FormCard } from "../../components/input-components";
 
-const PageHeader = styled.div`
-  margin: ${props => props.theme.space[8]} 0 ${props => props.theme.space[6]} 0;
-  text-align: center;
-`;
 
-const FormCard = styled(Card)`
-  max-width: 600px;
-  margin: 0 auto;
-`;
 
 // Buttons are handled inside TripForm
 
@@ -43,13 +36,12 @@ function CreateTrip() {
     <div>
       <PageHeader>
         <h1>Create a New Trip</h1>
-        <Text variant="secondary" size="lg">
-          Plan your next adventure and start tracking your journey
-        </Text>
       </PageHeader>
 
       <FormCard>
-        <Text variant="secondary">Prefer a single form to outline nodes and legs? <Link to="/create/quick">Use Quick Create</Link>.</Text>
+        <Button as={Link} to="/create/quick" variant="outline">
+          Use Quick Create
+        </Button>
         <TripForm
           initialValues={{ name: "", startDate: "", endDate: "", description: "" }}
           onSubmit={handleSubmit}

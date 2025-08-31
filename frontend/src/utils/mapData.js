@@ -16,7 +16,7 @@ export function buildMapLayersForAllTrips({ nodesByTrip, legsByTrip, stopsByTrip
   Object.values(nodesByTrip || {}).forEach((arr) => {
     (arr || []).forEach((n) => {
       nodeById[n.id] = n;
-      if (isFinite(n.latitude) && isFinite(n.longitude)) {
+      if (isFinite(n.latitude) && isFinite(n.longitude) && !n.invisible) {
         markers.push({ id: n.id, name: n.name, pos: [n.latitude, n.longitude], tripId: n.trip_id });
         latlngsForBounds.push([n.latitude, n.longitude]);
       }
@@ -82,7 +82,7 @@ export function buildMapLayersForAllTrips({ nodesByTrip, legsByTrip, stopsByTrip
         polylines.push({ positions: [start, end], color, tripId, type });
         latlngsForBounds.push(start, end);
       } else if (type === "flight") {
-        const curve = curvedFlightPath(start, end, 0.25);
+        const curve = curvedFlightPath(start, end, 128);
         polylines.push({ positions: curve, color, tripId, type });
         latlngsForBounds.push(...curve);
       } else {
@@ -108,7 +108,7 @@ export function buildMapLayersForTrip({ nodes, legs, stops, carPolylineByLeg, tr
   const nodeById = {};
   (nodes || []).forEach((n) => {
     nodeById[n.id] = n;
-    if (isFinite(n.latitude) && isFinite(n.longitude)) {
+    if (isFinite(n.latitude) && isFinite(n.longitude) && !n.invisible) {
       markers.push({ id: n.id, name: n.name, pos: [n.latitude, n.longitude], tripId: Number(tripID) });
       latlngsForBounds.push([n.latitude, n.longitude]);
     }
@@ -163,7 +163,7 @@ export function buildMapLayersForTrip({ nodes, legs, stops, carPolylineByLeg, tr
       polylines.push({ positions: [start, end], color, type });
       latlngsForBounds.push(start, end);
     } else if (type === "flight") {
-      const curve = curvedFlightPath(start, end, 0.25);
+      const curve = curvedFlightPath(start, end, 128);
       polylines.push({ positions: curve, color, type });
       latlngsForBounds.push(...curve);
     } else {

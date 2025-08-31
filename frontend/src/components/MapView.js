@@ -8,13 +8,14 @@ import { FitToBounds } from "../utils/map_helper_functions";
 import PhotoSlideshowLarge from "./photos/PhotoSlideshowLarge";
 import { listPhotosByNode, listPhotosByStop } from "../api/photos";
 
+import { useTheme } from "styled-components"
+import { useSettings } from "../context/SettingsContext";
+
 // Ensure marker icons load correctly
 applyLeafletDefaultIconFix();
 
 
 export default function MapView({
-  isDark,
-  theme,
   markers = [],
   stopMarkers = [],
   polylines = [],
@@ -27,6 +28,10 @@ export default function MapView({
   pathForTripId = (id) => `/trip/${id}`,
   linkLabel = "View trip",
 }) {
+  const { settings } = useSettings();
+  const theme = useTheme();
+  const isDark = (settings?.theme || "dark") === "dark";
+
   // Cache photos by entity so we only fetch once per popup
   const [nodePhotos, setNodePhotos] = useState({});
   const [stopPhotos, setStopPhotos] = useState({});
@@ -52,7 +57,7 @@ export default function MapView({
   }, [stopPhotos]);
 
   return (
-    <div style={{ height: "70vh", width: "100%", borderRadius: 12, overflow: "hidden" }}>
+    <div style={{ height: "100%", width: "100%", borderRadius: 12, overflow: "hidden" }}>
       <MapContainer style={{ height: "100%", width: "100%" }} center={[20, 0]} zoom={2} scrollWheelZoom>
         <TileLayer {...getTileLayerConfig(isDark)} />
         <HighlightLayer
@@ -154,7 +159,11 @@ export default function MapView({
         ))}
 
         {polylines.map((line, idx) => (
-          <Polyline key={`leg-${idx}`} positions={line.positions} pathOptions={{ color: line.color, weight: 3, opacity: 0.9 }} />
+          <Polyline
+            key={`leg-${idx}`}
+            positions={line.positions}
+            pathOptions={{ color: line.color, weight: 3, opacity: 0.9, smoothFactor: 0 }}
+          />
         ))}
 
         {bounds && <FitToBounds bounds={bounds} />}

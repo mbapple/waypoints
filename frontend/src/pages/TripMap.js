@@ -6,17 +6,12 @@ import { getTrip } from "../api/trips";
 import { listNodesByTrip } from "../api/nodes";
 import { listStopsByTrip } from "../api/stops";
 import { listLegsByTrip, getCarDetails } from "../api/legs";
-import { useSettings } from "../context/SettingsContext";
-import { useTheme } from "styled-components";
 import { getTripColor } from "../styles/mapTheme";
 import MapView from "../components/MapView";
 import { buildMapLayersForTrip } from "../utils/mapData";
 
 function TripMap() {
   const { tripID } = useParams();
-  const { settings } = useSettings();
-  const theme = useTheme();
-  const isDark = (settings?.theme || "dark") === "dark";
 
   const [loading, setLoading] = useState(true);
   const [trip, setTrip] = useState(null);
@@ -82,20 +77,20 @@ function TripMap() {
         </Flex>
       </PageHeader>
 
-      <MapView
-        isDark={isDark}
-        theme={theme}
-        markers={markers}
-        stopMarkers={stopMarkers}
-        polylines={polylines}
-        bounds={bounds}
-        highlightMode={highlightMode}
-        nodeById={nodeById}
-  visitedCountries={visitedCountries}
-  visitedStates={visitedStates}
-        pathForTripId={() => `/trip/${tripID}`}
-        linkLabel="View trip details"
-      />
+      <div style={{ height: "70vh" }}>
+        <MapView
+          markers={markers}
+          stopMarkers={stopMarkers}
+          polylines={polylines}
+          bounds={bounds}
+          highlightMode={highlightMode}
+          nodeById={nodeById}
+          visitedCountries={visitedCountries}
+          visitedStates={visitedStates}
+          pathForTripId={() => `/trip/${tripID}`}
+          linkLabel="View trip details"
+        />
+      </div>
      
 
       <Flex gap={2} style={{ marginTop: 12, flexWrap: "wrap" }}>

@@ -147,8 +147,8 @@ function CreateTripQuick() {
           trip_id: Number(tripId),
           name: n.name,
           description: null,
-          arrival_date: null,
-          departure_date: null,
+          arrival_date: n.arrivalDate,
+          departure_date: n.departureDate,
           notes: null,
           latitude: n.latitude ? Number(n.latitude) : null,
           longitude: n.longitude ? Number(n.longitude) : null,
@@ -283,6 +283,19 @@ function CreateTripQuick() {
                   <Button type="button" variant="outline" onClick={() => removeNode(idx)}>Remove</Button>
                 )}
               </Flex>
+              
+              <Flex gap={4}>
+                <FormGroup style={{ flex: 1 }}>
+                  <Label htmlFor="arrivalDate">Arrival Date *</Label>
+                  <Input type="date" value={node.arrivalDate} onChange={(e) => updateNodeField(idx, { name: e.target.value })} required />
+                </FormGroup>
+
+                <FormGroup style={{ flex: 1 }}>
+                  <Label htmlFor="departureDate">Departure Date *</Label>
+                  <Input type="date" value={node.departureDate} onChange={(e) => updateNodeField(idx, { name: e.target.value })} required min={node.departureDate} />
+                </FormGroup>
+              </Flex>
+
               <FormGroup>
                 <Label>Display Name *</Label>
                 <Input value={node.name} onChange={(e) => updateNodeField(idx, { name: e.target.value })} placeholder="e.g., Dallas" required />

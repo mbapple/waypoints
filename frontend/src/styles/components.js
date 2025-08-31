@@ -541,3 +541,63 @@ export const Badge = styled.span`
     }
   }}
 `;
+
+// Checkbox styled to match inputs/buttons
+export const Checkbox = styled.input.attrs({ type: 'checkbox' })`
+  appearance: none;
+  -webkit-appearance: none;
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 2px solid ${props => props.theme.colors.border};
+  border-radius: ${props => props.theme.radii.base};
+  background: ${props => props.theme.colors.surface};
+  position: relative;
+  cursor: pointer;
+  transition: ${props => props.theme.transitions.fast};
+  vertical-align: middle;
+
+  &:hover:not(:disabled) {
+    border-color: ${props => props.theme.colors.borderHover};
+    background: ${props => props.theme.colors.surfaceHover};
+  }
+
+  &:focus-visible {
+    outline: none;
+    border-color: ${props => props.theme.colors.primary};
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  }
+
+  &:checked {
+    background: ${props => props.theme.colors.primary};
+    border-color: ${props => props.theme.colors.primary};
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none'%3e%3cpath d='M5 10.5l3 3 7-7' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 14px 14px;
+  }
+
+  &:indeterminate {
+    background: ${props => props.theme.colors.primary};
+    border-color: ${props => props.theme.colors.primary};
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none'%3e%3cpath d='M5 10h10' stroke='white' stroke-width='2' stroke-linecap='round'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 14px 14px;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+`;
+
+// Optional wrapper to pair checkbox with text
+export const CheckboxLabel = styled.label`
+  display: inline-flex;
+  align-items: center;
+  gap: ${props => props.theme.space[2]};
+  cursor: pointer;
+  color: ${props => props.theme.colors.text};
+  user-select: none;
+`;

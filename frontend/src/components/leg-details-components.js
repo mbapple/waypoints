@@ -117,7 +117,7 @@ export const CarDetails = ({
       setAutoFetched(true);
     } catch (e) {
       console.error(e);
-      alert('Failed to fetch driving details');
+      // alert('Failed to fetch driving details');
     } finally {
       setLoading(false);
     }

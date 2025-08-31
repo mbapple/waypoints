@@ -92,11 +92,14 @@ app container
 	- [X] Clean up what is show on TripDetails page
 	- [ ] Dates not being saved w/ Quick Create
 	- [ ] Make only one date appear on first/last nodes
-	- [ ] Visually separate legs from nodes
+	- [X] Visually separate legs from nodes
 	- [X] Fix styling of dropdown when uploading photo
 	- [X] Fix leg display name when creating stop
 	- [ ] Figure out a way to correctly order stops and nodes that ocurred on same day
 	- [ ] Add pick a random photo
+	- [ ] Hide invisible nodes from map
+	- [ ] Add dropdown to edit invisble nodes
+	- [ ] Filter destination count by unique osm id and first/last destinations
 - [X] Fix bugs with updating components, particularly if you change transportation type of leg
 - [X] Add maps of individual trips
 - [X] Come up with actual name for project
@@ -104,4 +107,15 @@ app container
 - [X] Complete docker-compose.yml and install script so that it can be installed with one command and mount relevant volumes
 - [ ] Add detailed statistics page
 - [ ] Timeline view and route replay
-
+- [X] Fix invisible ndoes: Display in trip list but not on map and do not count towards destination
+- [ ] Make trip list display more distinctly with different colors for different item types
+- [ ] Fix bug over international date line
+- [ ] Make nodes appear smaller on map
+- [ ] Add ability to custom order stops w/in nodes
+- [ ] Add created_at and updated_at timestamps to all datatypes
+- [ ] Clean up API endpoints to only return relevant data on call
+- [ ] Add statistics to statistics: Nights, distances by travel type
+- [ ] Auto fill distances on all leg types
+- [ ] Make browser display name based on current page
+- [ ] Design logo and implement
+- [ ] Fix mess that is MapView getting data from the page itself and in the MapView

@@ -35,7 +35,8 @@ function AddNode() {
         osm_name: data.osmName,
         osm_id: data.osmID,
         osm_country: data.osmCountry,
-        osm_state: data.osmState
+        osm_state: data.osmState,
+        invisible: data.isInvisible || false, // Default to false if not provided
       };
       await createNode(nodeData);
       navigate(`/trip/${tripID}`);

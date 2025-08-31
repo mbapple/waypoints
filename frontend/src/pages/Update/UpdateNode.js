@@ -25,6 +25,7 @@ function UpdateNode() {
     osmID: "",
     osmCountry: "",
     osmState: "",
+    isInvisible: false, // Default to false
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -55,6 +56,7 @@ function UpdateNode() {
           osmID: n.osm_id || "",
           osmCountry: n.osm_country || "",
           osmState: n.osm_state || "",
+          isInvisible: n.invisible || false,
         });
       } catch (e) {
         console.error(e);
@@ -82,6 +84,7 @@ function UpdateNode() {
         osm_id: data.osmID || null,
         osm_country: data.osmCountry || null,
         osm_state: data.osmState || null,
+        invisible: data.isInvisible || false, // Default to false if not provided
       };
       await apiUpdateNode(nodeID, payload);
       navigate(`/trip/${tripID}`);

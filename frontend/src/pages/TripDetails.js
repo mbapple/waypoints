@@ -1,16 +1,17 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useParams, Link } from "react-router-dom";
 import { PageHeader } from "../components/page-components";
 import { AddButtons, TripInfoCard, EmptyState } from "../components/trip-details/trip-detail-components";
 import NodeItem from "../components/trip-details/NodeItem";
 import LegItem from "../components/trip-details/LegItem";
 import StopItem from "../components/trip-details/StopItem";
-
 import { Button, Text, Grid, Flex, Badge, Select } from "../styles/components";
-import TripMiniMap from "../components/TripMiniMap";
+import MapView from "../components/MapView";
+import { buildMapLayersForTrip } from "../utils/mapData";
+// import TripMiniMap from "../components/TripMiniMap";
 import { getTrip, getTripMiles } from "../api/trips";
 import { listNodesByTrip } from "../api/nodes";
-import { listLegsByTrip } from "../api/legs";
+import { listLegsByTrip, getCarDetails } from "../api/legs";
 import { listStopsByTrip } from "../api/stops";
 import { getTransportTypeLabel } from "../utils/format";
 import { listPhotosByTrip, listPhotosByLeg, listPhotosByNode, listPhotosByStop } from "../api/photos";
@@ -28,6 +29,7 @@ function TripDetails() {
   const [entityPhotos, setEntityPhotos] = useState({}); // cache by type:id
   const [expanded, setExpanded] = useState({}); // key: type:id -> bool
   const [uploadTarget, setUploadTarget] = useState(""); // e.g. node:3 / leg:5 / stop:7
+  const [carPolylineByLeg, setCarPolylineByLeg] = useState({});
 
   const [miles, setMiles] = useState(0);
 
@@ -46,6 +48,20 @@ function TripDetails() {
         setLegs(legsData);
         setStops(stopsData);
         setTripPhotos(photosData);
+
+
+        const carLegs = (legs || []).filter((leg) => (leg.type || "").toLowerCase() === "car");
+        const pairs = await Promise.all(
+          carLegs.map(async (leg) => {
+            try {
+              const details = await getCarDetails(leg.id);
+              return [leg.id, details?.polyline || null];
+            } catch {
+              return [leg.id, null];
+            }
+          })
+        );
+        setCarPolylineByLeg(Object.fromEntries(pairs));
 
         // Fetch miles separately
         try {
@@ -66,6 +82,11 @@ function TripDetails() {
     fetchTripData();
   }, [tripID]);
 
+  const { markers, stopMarkers, polylines, bounds, nodeById, visitedCountries, visitedStates } = useMemo(() =>
+      buildMapLayersForTrip({ nodes, legs, stops, carPolylineByLeg, tripID })
+    , [nodes, legs, stops, carPolylineByLeg, tripID]);
+
+    
   if (loading) {
     return (
       <div>
@@ -125,6 +146,7 @@ function TripDetails() {
   const getStopsForLeg = (legID) => stops.filter(stop => stop.leg_id === legID);
   const getStopsForNode = (nodeID) => stops.filter(stop => stop.node_id === nodeID);
 
+
   return (
     <div>
       <PageHeader>
@@ -150,13 +172,32 @@ function TripDetails() {
         </div>
       )}
 
-      {/* Mini Map */}
+      {/* Mini Map
       <div style={{ marginBottom: '1.25rem' }}>
         <Flex justify="space-between" align="center" style={{ marginBottom: '0.5rem' }}>
           <h3>Map preview</h3>
           <Button as={Link} to={`/trip/${tripID}/map`} variant="ghost" size="sm">Open full map →</Button>
         </Flex>
         <TripMiniMap tripID={tripID} nodes={nodes} legs={legs} />
+      </div> */}
+      {/* Mini Map */}
+      <div style={{ marginBottom: '7vh', height: "30vh"}}>
+        <Flex justify="space-between" align="center" style={{ marginBottom: '0.5rem' }}>
+          <h3>Map preview</h3>
+          <Button as={Link} to={`/trip/${tripID}/map`} variant="ghost" size="sm">Open full map →</Button>
+        </Flex>
+        <MapView
+          markers={markers}
+          stopMarkers={stopMarkers}
+          polylines={polylines}
+          bounds={bounds}
+          highlightMode={"off"}
+          nodeById={nodeById}
+          visitedCountries={visitedCountries}
+          visitedStates={visitedStates}
+          pathForTripId={() => `/trip/${tripID}`}
+          linkLabel="View trip details"
+        />
       </div>
 
       {/* Trip information Card */}
@@ -204,7 +245,7 @@ function TripDetails() {
                     entityPhotos={entityPhotos}
                     setEntityPhotos={setEntityPhotos}
                   />
-                ) : (
+                ) : item.type === 'leg' ? (
                   <LegItem
                     leg={item.data}
                     tripID={tripID}
@@ -214,7 +255,7 @@ function TripDetails() {
                     entityPhotos={entityPhotos}
                     setEntityPhotos={setEntityPhotos}
                   />
-                )}
+                ) : null}
 
                 {/* Display stops for this node or leg */}
                 {item.type === 'node'

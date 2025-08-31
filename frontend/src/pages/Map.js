@@ -6,8 +6,6 @@ import { listTrips, getTripStatistics } from "../api/trips";
 import { listNodesByTrip } from "../api/nodes";
 import { listStopsByTrip } from "../api/stops";
 import { listLegsByTrip, getCarDetails } from "../api/legs";
-import { useSettings } from "../context/SettingsContext";
-import { useTheme } from "styled-components";
 import { Button } from "../styles/components";
 import { getTripColor } from "../styles/mapTheme";
 import MapView from "../components/MapView";
@@ -16,9 +14,6 @@ import { buildMapLayersForAllTrips } from "../utils/mapData";
 
 
 function MapPage() {
-	const { settings } = useSettings();
-	const theme = useTheme();
-	const isDark = (settings?.theme || "dark") === "dark";
 	const [loading, setLoading] = useState(true);
 	const [trips, setTrips] = useState([]);
 	const [nodesByTrip, setNodesByTrip] = useState({});
@@ -103,23 +98,23 @@ function MapPage() {
 					<Text variant="muted">{loading ? "Loading trips…" : `${trips.length} trips, ${totalMiles} miles, ${totalCountries} countries, ${totalDestinations} destinations`}</Text>
 				</Flex>
 			</PageHeader>
-
-						<MapView
-							isDark={isDark}
-							theme={theme}
-							markers={markers}
-							stopMarkers={stopMarkers}
-							polylines={polylines}
-							bounds={bounds}
-							highlightMode={highlightMode}
-							nodeById={nodeById}
-							stopsByNodeId={stopsByNodeId}
-						  visitedCountries={visitedCountries}
-						  visitedStates={visitedStates}
-							pathForTripId={(id) => `/trip/${id}`}
-							linkLabel="View trip"
-						/>
 			
+			<div style = {{height: "70vh"}}>
+				<MapView
+					markers={markers}
+					stopMarkers={stopMarkers}
+					polylines={polylines}
+					bounds={bounds}
+					highlightMode={highlightMode}
+					nodeById={nodeById}
+					stopsByNodeId={stopsByNodeId}
+					visitedCountries={visitedCountries}
+					visitedStates={visitedStates}
+					pathForTripId={(id) => `/trip/${id}`}
+					linkLabel="View trip"
+				/>
+			</div>
+
 			<Flex gap={2} style={{ marginTop: 12, flexWrap: "wrap" }}>
 				{trips.map((t) => (
 					<Flex key={t.id} align="center" gap={2}>

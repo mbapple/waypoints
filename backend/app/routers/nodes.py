@@ -19,6 +19,7 @@ class Node(BaseModel):
     osm_id: str | None = None
     osm_country: str | None = None
     osm_state: str | None = None
+    invisible: bool | None = None
 
 # Node update model (all fields optional)
 class NodeUpdate(BaseModel):
@@ -34,6 +35,7 @@ class NodeUpdate(BaseModel):
     osm_id: str | None = None
     osm_country: str | None = None
     osm_state: str | None = None
+    invisible: bool | None = None
 
 # Return a list of all nodes corresponding to a specific trip
 @router.get("/by_trip/{trip_id}")
@@ -41,7 +43,7 @@ def get_nodes_by_trip(trip_id: int):
     conn = get_db()
     cur = conn.cursor()
     cur.execute("""
-        SELECT id, trip_id, name, description, notes, arrival_date, departure_date, latitude, longitude, osm_name, osm_id, osm_country, osm_state
+        SELECT id, trip_id, name, description, notes, arrival_date, departure_date, latitude, longitude, osm_name, osm_id, osm_country, osm_state, invisible
         FROM nodes
         WHERE trip_id = %s
         ORDER BY arrival_date
@@ -64,7 +66,8 @@ def get_nodes_by_trip(trip_id: int):
             "osm_name": r["osm_name"] if r["osm_name"] else None,
             "osm_id": r["osm_id"] if r["osm_id"] else None,
             "osm_country": r["osm_country"] if r["osm_country"] else None,
-            "osm_state": r["osm_state"] if r["osm_state"] else None
+            "osm_state": r["osm_state"] if r["osm_state"] else None,
+            "invisible": r["invisible"] if r["invisible"] else None
         }
         for r in rows
     ]
@@ -75,8 +78,8 @@ def create_node(node: Node):
     conn = get_db()
     cur = conn.cursor()
     cur.execute("""
-        INSERT INTO nodes (trip_id, name, description, notes, arrival_date, departure_date, latitude, longitude, osm_name, osm_id, osm_country, osm_state)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        INSERT INTO nodes (trip_id, name, description, notes, arrival_date, departure_date, latitude, longitude, osm_name, osm_id, osm_country, osm_state, invisible)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         RETURNING id
     """, (
         node.trip_id,
@@ -90,7 +93,8 @@ def create_node(node: Node):
         node.osm_name,
         node.osm_id,
         node.osm_country,
-        node.osm_state
+        node.osm_state,
+        node.invisible
     ))
     row = cur.fetchone()
     conn.commit()
@@ -104,7 +108,7 @@ def get_node(node_id: int):
     conn = get_db()
     cur = conn.cursor()
     cur.execute("""
-        SELECT id, trip_id, name, description, notes, arrival_date, departure_date, latitude, longitude, osm_name, osm_id, osm_country, osm_state
+        SELECT id, trip_id, name, description, notes, arrival_date, departure_date, latitude, longitude, osm_name, osm_id, osm_country, osm_state, invisible
         FROM nodes
         WHERE id = %s
     """, (node_id,))
@@ -126,6 +130,7 @@ def get_node(node_id: int):
             "osm_name": row["osm_name"] if row["osm_name"] else None,
             "osm_country": row["osm_country"] if row["osm_country"] else None,
             "osm_state": row["osm_state"] if row["osm_state"] else None,
+            "invisible": row["invisible"] if row["invisible"] else None
         }
     else:
         raise HTTPException(status_code=404, detail="Node not found")
@@ -150,7 +155,7 @@ def delete_node(node_id: int):
 @router.put("/{node_id}")
 def update_node(node_id: int, update: NodeUpdate):
     data = update.model_dump(exclude_unset=True) if hasattr(update, "model_dump") else update.dict(exclude_unset=True)
-    allowed = {"name", "trip_id", "description", "notes", "arrival_date", "departure_date", "latitude", "longitude", "osm_name", "osm_id", "osm_country", "osm_state"}
+    allowed = {"name", "trip_id", "description", "notes", "arrival_date", "departure_date", "latitude", "longitude", "osm_name", "osm_id", "osm_country", "osm_state", "invisible"}
     data = {k: v for k, v in data.items() if k in allowed}
     if not data:
         raise HTTPException(status_code=400, detail="No fields provided for update")

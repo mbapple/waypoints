@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Button, Input, Form, FormGroup, Label, Flex } from "../../styles/components";
+import { Button, Input, Form, FormGroup, Label, Flex, CheckboxLabel, Checkbox } from "../../styles/components";
 import { PlaceSearchInput } from "../map-integration-components";
 import { placeToOsmFields } from "../../utils/places";
 
@@ -16,6 +16,7 @@ export default function NodeForm({
     osmID: "",
     osmCountry: "",
     osmState: "",
+    isInvisble: "",
   },
   onSubmit,
   onCancel,
@@ -78,6 +79,11 @@ export default function NodeForm({
         <Label htmlFor="notes">Notes</Label>
         <Input id="notes" name="notes" as="textarea" rows={4} placeholder="Any additional notes about this destination..." value={formData.notes} onChange={handleChange} style={{ resize: 'vertical', minHeight: '100px' }} />
       </FormGroup>
+
+      <CheckboxLabel>
+        <Checkbox id="isInvisible" name="isInvisible" checked={formData.isInvisble} onChange={handleChange} />
+        Make Node Invisible
+      </CheckboxLabel>
 
       <div style={{ display: 'flex', gap: 12 }}>
         {onCancel && (<Button type="button" variant="outline" onClick={onCancel}>Cancel</Button>)}

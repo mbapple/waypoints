@@ -42,14 +42,14 @@ export function curvedFlightPath(start, end, segmentsOrCurvature = 0.25) {
 			: Math.max(16, Math.round(Number(segmentsOrCurvature) || 64));
 		// ~1 point per 0.75° of arc length
 		const segmentsByAngle = Math.ceil((omega * 180 / Math.PI) / 0.75);
-		let segments = Math.max(baseProvided, segmentsByAngle);
-		segments = Math.max(16, Math.min(256, segments));
+		let segmentCount = Math.max(baseProvided, segmentsByAngle);
+		segmentCount = Math.max(16, Math.min(256, segmentCount));
 
 	const sinOmega = Math.sin(omega);
 	// Antipodal handling: when sinOmega ~ 0, choose an arbitrary orthogonal path
 	let p = [];
-	for (let i = 0; i <= segments; i++) {
-		const t = i / segments;
+	for (let i = 0; i <= segmentCount; i++) {
+		const t = i / segmentCount;
 		let A = Math.sin((1 - t) * omega) / sinOmega;
 		let B = Math.sin(t * omega) / sinOmega;
 
@@ -68,7 +68,27 @@ export function curvedFlightPath(start, end, segmentsOrCurvature = 0.25) {
 		const lon = toDeg(Math.atan2(yn, xn));
 		p.push([lat, lon]);
 	}
-	return p;
+	// Split at the International Date Line: if consecutive longitudes differ by > 180°,
+	// break into a new segment so Leaflet doesn't draw across the entire map.
+	const segments = [];
+	let current = [];
+	for (let i = 0; i < p.length; i++) {
+		const curr = p[i];
+		if (i > 0) {
+			const prev = p[i - 1];
+			const dLon = Math.abs(curr[1] - prev[1]);
+			if (dLon > 180) {
+				if (current.length >= 2) segments.push(current);
+				current = [curr];
+				continue;
+			}
+		}
+		current.push(curr);
+	}
+	if (current.length >= 2) segments.push(current);
+
+	// If no splits occurred, return the single segment array for backward compatibility.
+	return segments.length === 1 ? segments[0] : segments;
 }
 
 export function FitToBounds({ bounds }) {

@@ -83,8 +83,13 @@ export function buildMapLayersForAllTrips({ nodesByTrip, legsByTrip, stopsByTrip
         latlngsForBounds.push(start, end);
       } else if (type === "flight") {
         const curve = curvedFlightPath(start, end, 128);
-        polylines.push({ positions: curve, color, tripId, type });
-        latlngsForBounds.push(...curve);
+        const segments = Array.isArray(curve[0]?.[0]) ? curve : [curve];
+        segments.forEach((seg) => {
+          if (seg && seg.length >= 2) {
+            polylines.push({ positions: seg, color, tripId, type });
+            latlngsForBounds.push(...seg);
+          }
+        });
       } else {
         polylines.push({ positions: [start, end], color, tripId, type });
         latlngsForBounds.push(start, end);
@@ -164,8 +169,13 @@ export function buildMapLayersForTrip({ nodes, legs, stops, carPolylineByLeg, tr
       latlngsForBounds.push(start, end);
     } else if (type === "flight") {
       const curve = curvedFlightPath(start, end, 128);
-      polylines.push({ positions: curve, color, type });
-      latlngsForBounds.push(...curve);
+      const segments = Array.isArray(curve[0]?.[0]) ? curve : [curve];
+      segments.forEach((seg) => {
+        if (seg && seg.length >= 2) {
+          polylines.push({ positions: seg, color, type });
+          latlngsForBounds.push(...seg);
+        }
+      });
     } else {
       polylines.push({ positions: [start, end], color, type });
       latlngsForBounds.push(start, end);

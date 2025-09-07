@@ -119,3 +119,4 @@ app container
 - [ ] Make browser display name based on current page
 - [ ] Design logo and implement
 - [ ] Fix mess that is MapView getting data from the page itself and in the MapView
+- [ ] Fix container so it doesn't rebuild frontend each time

@@ -4,7 +4,8 @@ import { PageHeader } from "../components/page-components";
 import { AddButtons, TripInfoCard, EmptyState } from "../components/trip-details/trip-detail-components";
 import NodeItem from "../components/trip-details/NodeItem";
 import LegItem from "../components/trip-details/LegItem";
-import StopItem from "../components/trip-details/StopItem";
+import InvisibleNodeItem from "../components/trip-details/InvisibleNodeItem";
+import { TravelGroupCard } from "../components/trip-details/trip-detail-components";
 import { Button, Text, Grid, Flex, Badge, Select } from "../styles/components";
 import MapView from "../components/MapView";
 import { buildMapLayersForTrip } from "../utils/mapData";
@@ -86,6 +87,13 @@ function TripDetails() {
       buildMapLayersForTrip({ nodes, legs, stops, carPolylineByLeg, tripID })
     , [nodes, legs, stops, carPolylineByLeg, tripID]);
 
+  // Identify the first and last nodes by arrival_date (must be before early returns to satisfy Hooks rules)
+  const { firstNodeId, lastNodeId } = useMemo(() => {
+    if (!nodes || nodes.length === 0) return { firstNodeId: undefined, lastNodeId: undefined };
+    const sorted = [...nodes].sort((a, b) => new Date(a.arrival_date) - new Date(b.arrival_date));
+    return { firstNodeId: sorted[0]?.id, lastNodeId: sorted[sorted.length - 1]?.id };
+  }, [nodes]);
+
     
   if (loading) {
     return (
@@ -136,6 +144,69 @@ function TripDetails() {
   };
 
   const orderedItinerary = getOrderedItinerary();
+
+  // Build itinerary entries that group legs passing through invisible nodes between two visible nodes.
+  const getItineraryWithGroups = () => {
+    const entries = [];
+    const nodeByIdMap = new Map(nodes.map(n => [n.id, n]));
+    const legsByStart = new Map();
+    for (const l of legs) {
+      if (!legsByStart.has(l.start_node_id)) legsByStart.set(l.start_node_id, []);
+      legsByStart.get(l.start_node_id).push(l);
+    }
+    // Sort legs per start node by their date if present
+    for (const list of legsByStart.values()) {
+      list.sort((a, b) => new Date(a.date || 0) - new Date(b.date || 0));
+    }
+    const visibleNodes = [...nodes]
+      .sort((a, b) => new Date(a.arrival_date) - new Date(b.arrival_date))
+      .filter(n => !n.invisible);
+    const consumedLegIds = new Set();
+
+    for (const start of visibleNodes) {
+      // Always show visible node card
+      entries.push({ kind: 'node', node: start });
+
+      const outLegs = legsByStart.get(start.id) || [];
+      for (const firstLeg of outLegs) {
+        if (consumedLegIds.has(firstLeg.id)) continue;
+
+        let currentLeg = firstLeg;
+        let foundInvisible = false;
+        let endVisible = null;
+        const sequence = [];
+        let safety = 0;
+        while (currentLeg && safety++ < 100) {
+          sequence.push({ type: 'leg', leg: currentLeg });
+          consumedLegIds.add(currentLeg.id);
+          const nextNode = nodeByIdMap.get(currentLeg.end_node_id);
+          if (!nextNode) break;
+          if (nextNode.invisible) {
+            foundInvisible = true;
+            sequence.push({ type: 'node', node: nextNode });
+            // Find next leg from this invisible node that's not consumed
+            const nextLeg = (legsByStart.get(nextNode.id) || []).find(l => !consumedLegIds.has(l.id));
+            if (!nextLeg) break;
+            currentLeg = nextLeg;
+          } else {
+            endVisible = nextNode;
+            break;
+          }
+        }
+
+        if (foundInvisible && endVisible) {
+          entries.push({ kind: 'travel-group', fromNode: start, toNode: endVisible, sequence });
+        } else if (!foundInvisible) {
+          // No invisibles encountered: render standalone leg
+          entries.push({ kind: 'leg', leg: firstLeg });
+        }
+      }
+    }
+
+    return entries;
+  };
+
+  const itineraryWithGroups = getItineraryWithGroups();
 
   const getNodeName = (nodeID) => {
     const node = nodes.find(n => n.id === nodeID);
@@ -225,7 +296,7 @@ function TripDetails() {
           </Text>
         </Flex>
 
-        {orderedItinerary.length === 0 ? (
+        {itineraryWithGroups.length === 0 ? (
           <EmptyState>
             <h3>No itinerary items yet</h3>
             <Text variant="muted">
@@ -234,53 +305,76 @@ function TripDetails() {
           </EmptyState>
         ) : (
           <Grid columns={1}>
-            {orderedItinerary.map((item) => (
-              <div key={`${item.type}-${item.data.id}`}>
-                {item.type === 'node' ? (
+            {itineraryWithGroups.map((entry, idx) => (
+              <div key={`entry-${idx}`}>
+                {entry.kind === 'node' ? (
                   <NodeItem
-                    node={item.data}
+                    node={entry.node}
                     tripID={tripID}
                     expanded={expanded}
                     setExpanded={setExpanded}
                     entityPhotos={entityPhotos}
                     setEntityPhotos={setEntityPhotos}
+                    stops={getStopsForNode(entry.node.id)}
+                    isFirstNode={entry.node.id === firstNodeId}
+                    isLastNode={entry.node.id === lastNodeId}
                   />
-                ) : item.type === 'leg' ? (
+                ) : entry.kind === 'leg' ? (
                   <LegItem
-                    leg={item.data}
+                    leg={entry.leg}
                     tripID={tripID}
                     getNodeName={getNodeName}
                     expanded={expanded}
                     setExpanded={setExpanded}
                     entityPhotos={entityPhotos}
                     setEntityPhotos={setEntityPhotos}
+                    stops={getStopsForLeg(entry.leg.id)}
                   />
+                ) : entry.kind === 'travel-group' ? (
+                  <TravelGroupCard>
+                    <Flex justify="space-between" align="center">
+                      <h4>Travel from {entry.fromNode.name} to {entry.toNode.name}</h4>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setExpanded(prev => ({ ...prev, [
+                          `group:${entry.fromNode.id}-${entry.toNode.id}`
+                        ]: !prev[`group:${entry.fromNode.id}-${entry.toNode.id}`] }))}
+                      >
+                        {expanded[`group:${entry.fromNode.id}-${entry.toNode.id}`] ? '▴' : '▾'}
+                      </Button>
+                    </Flex>
+                    {expanded[`group:${entry.fromNode.id}-${entry.toNode.id}`] && (
+                      <div style={{ marginTop: '0.5rem', display: 'grid', gap: '0.5rem' }}>
+                        {entry.sequence.map((seg, sidx) => (
+                          seg.type === 'leg' ? (
+                            <LegItem
+                              key={`gleg-${sidx}-${seg.leg.id}`}
+                              leg={seg.leg}
+                              tripID={tripID}
+                              getNodeName={getNodeName}
+                              expanded={expanded}
+                              setExpanded={setExpanded}
+                              entityPhotos={entityPhotos}
+                              setEntityPhotos={setEntityPhotos}
+                              stops={getStopsForLeg(seg.leg.id)}
+                            />
+                          ) : (
+                            <InvisibleNodeItem
+                              key={`gnode-${sidx}-${seg.node.id}`}
+                              node={seg.node}
+                              tripID={tripID}
+                              expanded={expanded}
+                              setExpanded={setExpanded}
+                              entityPhotos={entityPhotos}
+                              setEntityPhotos={setEntityPhotos}
+                            />
+                          )
+                        ))}
+                      </div>
+                    )}
+                  </TravelGroupCard>
                 ) : null}
-
-                {/* Display stops for this node or leg */}
-                {item.type === 'node'
-                  ? getStopsForNode(item.data.id).map(stop => (
-                      <StopItem
-                        key={stop.id}
-                        stop={stop}
-                        tripID={tripID}
-                        expanded={expanded}
-                        setExpanded={setExpanded}
-                        entityPhotos={entityPhotos}
-                        setEntityPhotos={setEntityPhotos}
-                      />
-                    ))
-                  : getStopsForLeg(item.data.id).map(stop => (
-                      <StopItem
-                        key={stop.id}
-                        stop={stop}
-                        tripID={tripID}
-                        expanded={expanded}
-                        setExpanded={setExpanded}
-                        entityPhotos={entityPhotos}
-                        setEntityPhotos={setEntityPhotos}
-                      />
-                    ))}
               </div>
             ))}
           </Grid>

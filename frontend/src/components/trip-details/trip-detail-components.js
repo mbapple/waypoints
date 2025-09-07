@@ -35,6 +35,16 @@ export const StopCard = styled(Card)`
   }
 `;
 
+export const TravelGroupCard = styled(Card)`
+  transition: ${props => props.theme.transitions.base};
+  margin-left: ${props => props.theme.space[8]};
+  /* Uses theme-based colors via Card to support dark/light modes */
+  &:hover {
+    transform: translateY(1px);
+    box-shadow: ${props => props.theme.shadows.lg};
+  }
+`;
+
 export const ActionButtons = styled(Flex)`
   gap: ${props => props.theme.space[3]};
   margin: ${props => props.theme.space[6]} 0;

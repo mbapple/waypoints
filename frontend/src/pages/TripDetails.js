@@ -51,7 +51,8 @@ function TripDetails() {
         setTripPhotos(photosData);
 
 
-        const carLegs = (legs || []).filter((leg) => (leg.type || "").toLowerCase() === "car");
+  // Use freshly fetched legsData (not state) to build car polylines
+  const carLegs = (legsData || []).filter((leg) => (leg.type || "").toLowerCase() === "car");
         const pairs = await Promise.all(
           carLegs.map(async (leg) => {
             try {

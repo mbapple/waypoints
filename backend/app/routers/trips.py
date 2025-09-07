@@ -243,7 +243,50 @@ def get_trip_statistics():
     country_row = cur.fetchone()
     country_count = country_row["country_count"] if country_row and country_row["country_count"] is not None else 0
 
+    # Miles grouped by each travel type
+    cur.execute("""
+        SELECT type, COALESCE(SUM(miles), 0) AS total_miles
+        FROM legs
+        GROUP BY type
+    """)
+    miles_by_type_rows = cur.fetchall() or []
+    miles_by_type = {r["type"]: round(r["total_miles"] or 0) for r in miles_by_type_rows if r["type"] is not None}
+    # Ensure car and flight are always present in miles_by_type
+    miles_by_type["flight"] = round(all_flight_miles or 0)
+    miles_by_type["car"] = round(all_car_miles or 0)
+
+    # Total nights across all trips (end_date - start_date), guard against nulls and negative ranges
+    cur.execute(
+        """
+        SELECT COALESCE(SUM(GREATEST(0, (end_date - start_date))), 0) AS total_nights
+        FROM trips
+        WHERE start_date IS NOT NULL AND end_date IS NOT NULL
+        """
+    )
+    nights_row = cur.fetchone()
+    total_nights = int(nights_row["total_nights"]) if nights_row and nights_row["total_nights"] is not None else 0
+
+    # States by country from nodes (unique states per country)
+    cur.execute(
+        """
+        SELECT osm_country, ARRAY_AGG(DISTINCT osm_state ORDER BY osm_state) AS states
+        FROM nodes
+        WHERE osm_country IS NOT NULL AND osm_state IS NOT NULL AND (invisible IS NOT TRUE)
+        GROUP BY osm_country
+        ORDER BY osm_country
+        """
+    )
+    states_rows = cur.fetchall() or []
+    states_by_country = {r["osm_country"]: [s for s in (r["states"] or []) if s is not None] for r in states_rows}
+
     cur.close()
     conn.close()
 
-    return {"all_trip_miles": all_trip_miles, "unique_destination_count": unique_destination_count, "all_flight_miles": all_flight_miles, "all_car_miles": all_car_miles, "country_count": country_count}
+    return {
+        "all_trip_miles": all_trip_miles,
+        "unique_destination_count": unique_destination_count,
+        "country_count": country_count,
+        "miles_by_type": miles_by_type,
+        "total_nights": total_nights,
+        "states_by_country": states_by_country,
+    }

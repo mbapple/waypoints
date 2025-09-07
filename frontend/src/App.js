@@ -19,6 +19,7 @@ import UpdateTrip from "./pages/Update/UpdateTrip";
 import UpdateNode from "./pages/Update/UpdateNode";
 import UpdateLeg from "./pages/Update/UpdateLeg";
 import UpdateStop from "./pages/Update/UpdateStop";
+import Statistics from "./pages/Statistics";
 
 
 const ThemedApp = () => {
@@ -50,6 +51,7 @@ const ThemedApp = () => {
             <Route path="/trip/:tripID/update-node" element={<UpdateNode />} />
             <Route path="/trip/:tripID/update-leg" element={<UpdateLeg />} />
             <Route path="/trip/:tripID/update-stop" element={<UpdateStop />} />
+            <Route path="/statistics" element={<Statistics />} />
           </Routes>
         </Container>
       </Router>

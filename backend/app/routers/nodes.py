@@ -46,7 +46,7 @@ def get_nodes_by_trip(trip_id: int):
         SELECT id, trip_id, name, description, notes, arrival_date, departure_date, latitude, longitude, osm_name, osm_id, osm_country, osm_state, invisible
         FROM nodes
         WHERE trip_id = %s
-    ORDER BY arrival_date NULLS LAST, updated_at DESC NULLS LAST
+    ORDER BY arrival_date NULLS LAST, updated_at ASC NULLS FIRST
     """, (trip_id,))
     rows = cur.fetchall()
     cur.close()

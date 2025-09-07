@@ -91,11 +91,11 @@ app container
 	- [X] General cleanup of code and pulling out functions/reused components
 	- [X] Clean up what is show on TripDetails page
 	- [ ] Dates not being saved w/ Quick Create
-	- [ ] Make only one date appear on first/last nodes
+	- [x] Make only one date appear on first/last nodes
 	- [X] Visually separate legs from nodes
 	- [X] Fix styling of dropdown when uploading photo
 	- [X] Fix leg display name when creating stop
-	- [ ] Figure out a way to correctly order stops and nodes that ocurred on same day
+	- [x] Figure out a way to correctly order stops and nodes that ocurred on same day
 	- [ ] Add pick a random photo
 	- [ ] Hide invisible nodes from map
 	- [ ] Add dropdown to edit invisble nodes
@@ -112,6 +112,7 @@ app container
 - [ ] Fix bug over international date line
 - [ ] Make nodes appear smaller on map
 - [ ] Add ability to custom order stops w/in nodes
+	Hacked by ordering by updated_at
 - [ ] Add created_at and updated_at timestamps to all datatypes
 - [ ] Clean up API endpoints to only return relevant data on call
 - [ ] Add statistics to statistics: Nights, distances by travel type
@@ -120,3 +121,4 @@ app container
 - [ ] Design logo and implement
 - [ ] Fix mess that is MapView getting data from the page itself and in the MapView
 - [ ] Fix container so it doesn't rebuild frontend each time
+- [ ] Possibly refactor so that limited data is sent via API and specific components call for full data

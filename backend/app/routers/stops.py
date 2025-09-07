@@ -46,7 +46,7 @@ def get_stops_by_leg(leg_id: int):
         SELECT id, trip_id, name, notes, category, leg_id, latitude, longitude, osm_name, osm_id, osm_country, osm_state
         FROM stops
         WHERE leg_id = %s
-        ORDER BY id
+        ORDER BY updated_at ASC NULLS FIRST
     """, (leg_id,))
     rows = cur.fetchall()
     cur.close()
@@ -79,7 +79,7 @@ def get_stops_by_node(node_id: int):
         SELECT id, trip_id, name, notes, category, node_id, latitude, longitude, osm_name, osm_id, osm_country, osm_state
         FROM stops
         WHERE node_id = %s
-    ORDER BY updated_at DESC NULLS LAST
+    ORDER BY updated_at ASC NULLS FIRST
     """, (node_id,))
     rows = cur.fetchall()
     cur.close()
@@ -112,7 +112,7 @@ def get_stops_by_node(trip_id: int):
         SELECT id, trip_id, name, notes, category, node_id, leg_id, latitude, longitude, osm_name, osm_id, osm_country, osm_state
         FROM stops
         WHERE trip_id = %s
-        ORDER BY id
+        ORDER BY updated_at ASC NULLS FIRST
     """, (trip_id,))
     rows = cur.fetchall()
     cur.close()

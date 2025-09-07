@@ -79,7 +79,7 @@ def get_stops_by_node(node_id: int):
         SELECT id, trip_id, name, notes, category, node_id, latitude, longitude, osm_name, osm_id, osm_country, osm_state
         FROM stops
         WHERE node_id = %s
-        ORDER BY id
+    ORDER BY updated_at DESC NULLS LAST
     """, (node_id,))
     rows = cur.fetchall()
     cur.close()

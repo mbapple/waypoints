@@ -96,7 +96,8 @@ export function FitToBounds({ bounds }) {
 	useEffect(() => {
 		if (!bounds) return;
 		try {
-			map.fitBounds(bounds, { padding: [30, 30] });
+			// Remove side padding on initial load; keep small vertical padding only
+			map.fitBounds(bounds, { paddingTopLeft: [0, 50], paddingBottomRight: [0, 40] });
 		} catch {}
 	}, [map, bounds]);
 	return null;

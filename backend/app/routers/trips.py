@@ -227,7 +227,7 @@ def get_trip_statistics():
     all_trip_miles = miles_row["all_trip_miles"] if miles_row and miles_row["all_trip_miles"] is not None else 0
     all_trip_miles = round(all_trip_miles)
 
-    cur.execute("SELECT COUNT(DISTINCT osm_id) AS unique_destination_count FROM nodes WHERE osm_id IS NOT NULL AND (is_invisible IS NOT TRUE)")
+    cur.execute("SELECT COUNT(DISTINCT osm_id) AS unique_destination_count FROM nodes WHERE osm_id IS NOT NULL AND (invisible IS NOT TRUE)")
     destinations_row = cur.fetchone()
     unique_destination_count = destinations_row["unique_destination_count"] if destinations_row and destinations_row["unique_destination_count"] is not None else 0
 

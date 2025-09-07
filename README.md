@@ -122,3 +122,4 @@ app container
 - [ ] Fix mess that is MapView getting data from the page itself and in the MapView
 - [ ] Fix container so it doesn't rebuild frontend each time
 - [ ] Possibly refactor so that limited data is sent via API and specific components call for full data
+- [ ] Not all data is shown in editing forms

@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from "react";
 import { Link } from "react-router-dom";
-import { MapContainer, TileLayer, Marker, Polyline, Popup, Tooltip } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Polyline, Popup, Tooltip, useMap, useMapEvent } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import { applyLeafletDefaultIconFix, getTileLayerConfig, MapGlobalStyles, createStopDivIcon, getTripColor } from "../styles/mapTheme";
 import HighlightLayer from "./HighlightLayer";
@@ -14,6 +14,25 @@ import { useSettings } from "../context/SettingsContext";
 // Ensure marker icons load correctly
 applyLeafletDefaultIconFix();
 
+// Ensure the map cannot zoom out beyond the world's max bounds (dateline at edges)
+function ClampToWorld() {
+  const map = useMap();
+  const update = React.useCallback(() => {
+    try {
+      const world = map.options.maxBounds;
+      if (!world) return;
+      const z = map.getBoundsZoom(world, false);
+      if (Number.isFinite(z)) {
+        map.setMinZoom(z);
+        if (map.getZoom() < z) map.setZoom(z);
+      }
+    } catch {}
+  }, [map]);
+
+  useMapEvent('resize', update);
+  React.useEffect(() => { update(); }, [update]);
+  return null;
+}
 
 export default function MapView({
   markers = [],
@@ -58,8 +77,20 @@ export default function MapView({
 
   return (
     <div style={{ height: "100%", width: "100%", borderRadius: 12, overflow: "hidden" }}>
-      <MapContainer style={{ height: "100%", width: "100%" }} center={[20, 0]} zoom={2} scrollWheelZoom>
-        <TileLayer {...getTileLayerConfig(isDark)} />
+      <MapContainer
+        style={{ height: "100%", width: "100%" }}
+        center={[20, 0]}
+        zoom={2}
+        scrollWheelZoom
+        worldCopyJump={false}
+        maxBounds={[[-85, -180], [85, 180]]}
+        maxBoundsViscosity={1.0}
+        zoomSnap={0.01}
+        zoomDelta={0.1}
+        wheelPxPerZoom={90}
+      >
+        <TileLayer {...getTileLayerConfig(isDark)} noWrap={true} />
+        <ClampToWorld />
         <HighlightLayer
           mode={highlightMode}
           visitedCountries={visitedCountries || new Set(Object.values(nodeById).map(n => n?.osm_country).filter(Boolean))}

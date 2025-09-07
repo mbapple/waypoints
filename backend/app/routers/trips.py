@@ -255,29 +255,72 @@ def get_trip_statistics():
     miles_by_type["flight"] = round(all_flight_miles or 0)
     miles_by_type["car"] = round(all_car_miles or 0)
 
-    # Total nights across all trips (end_date - start_date), guard against nulls and negative ranges
+    # Total nights across all trips: merge overlapping date ranges and sum, counting only time actually on trips
     cur.execute(
         """
-        SELECT COALESCE(SUM(GREATEST(0, (end_date - start_date))), 0) AS total_nights
+        SELECT start_date, end_date
         FROM trips
         WHERE start_date IS NOT NULL AND end_date IS NOT NULL
+        ORDER BY start_date
         """
     )
-    nights_row = cur.fetchone()
-    total_nights = int(nights_row["total_nights"]) if nights_row and nights_row["total_nights"] is not None else 0
+    trip_ranges = cur.fetchall() or []
+    merged: list[list] = []  # list of [start_date, end_date]
+    for r in trip_ranges:
+        s = r["start_date"]
+        e = r["end_date"]
+        if not s or not e or e <= s:
+            continue
+        if not merged:
+            merged.append([s, e])
+        else:
+            last_s, last_e = merged[-1]
+            if s <= last_e:
+                if e > last_e:
+                    merged[-1][1] = e
+            else:
+                merged.append([s, e])
+    total_nights = sum((e - s).days for s, e in merged)
 
     # States by country from nodes (unique states per country)
     cur.execute(
         """
         SELECT osm_country, ARRAY_AGG(DISTINCT osm_state ORDER BY osm_state) AS states
         FROM nodes
-        WHERE osm_country IS NOT NULL AND osm_state IS NOT NULL AND (invisible IS NOT TRUE)
+        WHERE osm_country IS NOT NULL AND (invisible IS NOT TRUE)
+        
         GROUP BY osm_country
         ORDER BY osm_country
         """
     )
     states_rows = cur.fetchall() or []
     states_by_country = {r["osm_country"]: [s for s in (r["states"] or []) if s is not None] for r in states_rows}
+
+    # Destinations by country (count of unique OSM places per country)
+    cur.execute(
+        """
+        SELECT osm_country, COUNT(DISTINCT osm_id) AS dest_count
+        FROM nodes
+        WHERE osm_country IS NOT NULL AND osm_id IS NOT NULL AND (invisible IS NOT TRUE)
+        GROUP BY osm_country
+        ORDER BY osm_country
+        """
+    )
+    dest_rows = cur.fetchall() or []
+    destinations_by_country = {r["osm_country"]: int(r["dest_count"] or 0) for r in dest_rows}
+
+    # Stops by category counts (ensure all categories present)
+    cur.execute(
+        """
+        SELECT category, COUNT(*) AS cnt
+        FROM stops
+        GROUP BY category
+        """
+    )
+    cat_rows = cur.fetchall() or []
+    categories = {r["category"]: int(r["cnt"] or 0) for r in cat_rows}
+    for key in ('hotel','restaurant','attraction','park','other'):
+        categories.setdefault(key, 0)
 
     cur.close()
     conn.close()
@@ -289,4 +332,202 @@ def get_trip_statistics():
         "miles_by_type": miles_by_type,
         "total_nights": total_nights,
         "states_by_country": states_by_country,
+        "destinations_by_country": destinations_by_country,
+        "stops_by_category": categories,
     }
+
+
+@router.get("/data/trips_by_miles")
+def get_trips_by_miles():
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute(
+        """
+        SELECT t.id, t.name, COALESCE(SUM(l.miles), 0) AS total_miles
+        FROM trips t
+        LEFT JOIN legs l ON l.trip_id = t.id
+        GROUP BY t.id, t.name
+        ORDER BY total_miles DESC, t.start_date ASC
+        """
+    )
+    rows = cur.fetchall() or []
+    cur.close()
+    conn.close()
+    return [
+        {"id": r["id"], "name": r["name"], "total_miles": round(r["total_miles"] or 0)}
+        for r in rows
+    ]
+
+
+@router.get("/data/trips_by_nights")
+def get_trips_by_nights():
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute(
+        """
+        SELECT t.id, t.name,
+               COALESCE(GREATEST(0, (t.end_date::date - t.start_date::date)), 0)::int AS nights
+        FROM trips t
+        WHERE t.start_date IS NOT NULL AND t.end_date IS NOT NULL
+        ORDER BY nights DESC, t.start_date ASC
+        """
+    )
+    rows = cur.fetchall() or []
+    cur.close()
+    conn.close()
+    return [
+        {"id": r["id"], "name": r["name"], "nights": int(r["nights"] or 0)}
+        for r in rows
+    ]
+
+
+@router.get("/data/legs_by_type")
+def get_legs_by_type(type: str):
+    if not type:
+        raise HTTPException(status_code=400, detail="type is required")
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute(
+        """
+        SELECT 
+            l.id, 
+            l.trip_id, 
+            t.name AS trip_name, 
+            l.type, 
+            l.start_node_id, 
+            l.end_node_id, 
+            l.miles,
+            COALESCE(ns.name, l.start_osm_name) AS start_name,
+            COALESCE(ne.name, l.end_osm_name)   AS end_name
+        FROM legs l
+        JOIN trips t ON t.id = l.trip_id
+        LEFT JOIN nodes ns ON ns.id = l.start_node_id
+        LEFT JOIN nodes ne ON ne.id = l.end_node_id
+        WHERE l.type = %s
+        ORDER BY l.miles DESC NULLS LAST, l.id ASC
+        """,
+        (type,)
+    )
+    rows = cur.fetchall() or []
+    cur.close()
+    conn.close()
+    return [
+        {
+            "id": r["id"],
+            "trip_id": r["trip_id"],
+            "trip_name": r["trip_name"],
+            "type": r["type"],
+            "start_node_id": r["start_node_id"],
+            "end_node_id": r["end_node_id"],
+            "start_name": r.get("start_name"),
+            "end_name": r.get("end_name"),
+            "miles": r["miles"] or 0,
+        }
+        for r in rows
+    ]
+
+
+@router.get("/data/nodes_by_country")
+def get_nodes_by_country(country: str):
+    if not country:
+        raise HTTPException(status_code=400, detail="country is required")
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute(
+        """
+        SELECT osm_id,
+               MIN(name) AS name,
+               osm_country,
+               ARRAY_AGG(DISTINCT trip_id) AS trip_ids
+        FROM nodes
+        WHERE osm_country = %s AND osm_id IS NOT NULL AND (invisible IS NOT TRUE)
+        GROUP BY osm_id, osm_country
+        ORDER BY name NULLS LAST
+        """,
+        (country,)
+    )
+    rows = cur.fetchall() or []
+    cur.close()
+    conn.close()
+    return [
+        {
+            "osm_id": r["osm_id"],
+            "name": r["name"],
+            "osm_country": r["osm_country"],
+            "trip_ids": [int(t) for t in (r["trip_ids"] or []) if t is not None],
+        }
+        for r in rows
+    ]
+
+
+@router.get("/data/nodes_by_state")
+def get_nodes_by_state(state: str, country: str | None = None):
+    if not state:
+        raise HTTPException(status_code=400, detail="state is required")
+    conn = get_db()
+    cur = conn.cursor()
+    if country:
+        cur.execute(
+            """
+            SELECT osm_id,
+                   MIN(name) AS name,
+                   osm_country,
+                   osm_state,
+                   ARRAY_AGG(DISTINCT trip_id) AS trip_ids
+            FROM nodes
+            WHERE osm_state = %s AND osm_country = %s AND osm_id IS NOT NULL AND (invisible IS NOT TRUE)
+            GROUP BY osm_id, osm_country, osm_state
+            ORDER BY name NULLS LAST
+            """,
+            (state, country),
+        )
+    else:
+        cur.execute(
+            """
+            SELECT osm_id,
+                   MIN(name) AS name,
+                   osm_country,
+                   osm_state,
+                   ARRAY_AGG(DISTINCT trip_id) AS trip_ids
+            FROM nodes
+            WHERE osm_state = %s AND osm_id IS NOT NULL AND (invisible IS NOT TRUE)
+            GROUP BY osm_id, osm_country, osm_state
+            ORDER BY name NULLS LAST
+            """,
+            (state,),
+        )
+    rows = cur.fetchall() or []
+    cur.close()
+    conn.close()
+    return [
+        {
+            "osm_id": r["osm_id"],
+            "name": r["name"],
+            "osm_country": r.get("osm_country"),
+            "osm_state": r.get("osm_state"),
+            "trip_ids": [int(t) for t in (r["trip_ids"] or []) if t is not None],
+        }
+        for r in rows
+    ]
+
+
+@router.get("/data/trips_by_osm")
+def get_trips_by_osm(osm_id: str):
+    if not osm_id:
+        raise HTTPException(status_code=400, detail="osm_id is required")
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute(
+        """
+        SELECT DISTINCT t.id, t.name
+        FROM nodes n
+        JOIN trips t ON t.id = n.trip_id
+        WHERE n.osm_id = %s
+        ORDER BY t.start_date
+        """,
+        (osm_id,)
+    )
+    rows = cur.fetchall() or []
+    cur.close()
+    conn.close()
+    return [{"id": r["id"], "name": r["name"]} for r in rows]

@@ -69,6 +69,12 @@ const Navigation = () => {
               All Trips
             </NavLink>
             <NavLink 
+              to="/statistics" 
+              className={location.pathname === '/statistics' ? 'active' : ''}
+            >
+              Statistics
+            </NavLink>
+            <NavLink 
               to="/create" 
               className={location.pathname === '/create' ? 'active' : ''}
             >

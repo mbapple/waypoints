@@ -519,7 +519,7 @@ export const Badge = styled.span`
           color: ${props.theme.colors.primary};
         `;
       case 'success':
-        return `/
+  return `
           background: rgba(16, 185, 129, 0.2);
           color: ${props.theme.colors.success};
         `;

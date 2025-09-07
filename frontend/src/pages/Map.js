@@ -95,7 +95,11 @@ function MapPage() {
 			<PageHeader>
 				<Flex justify="space-between" align="center">
 					<h1>Your Trips</h1>
-					<Text variant="muted">{loading ? "Loading trips…" : `${trips.length} trips, ${totalMiles} miles, ${totalCountries} countries, ${totalDestinations} destinations`}</Text>
+					<a href="/statistics" style={{ textDecoration: "none", color: "inherit" }}>
+						<Text variant="muted">
+							{loading ? "Loading trips…" : `${trips.length} trips, ${totalMiles} miles, ${totalCountries} countries, ${totalDestinations} destinations`}
+						</Text>
+					</a>
 				</Flex>
 			</PageHeader>
 			

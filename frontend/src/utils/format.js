@@ -8,3 +8,11 @@ export function getTransportTypeLabel(type) {
     default: return 'Travel from';
   }
 }
+
+export function formatNumber(n) {
+  try {
+    return Number(n || 0).toLocaleString();
+  } catch {
+    return String(n || 0);
+  }
+}

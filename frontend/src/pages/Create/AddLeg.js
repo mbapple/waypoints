@@ -55,7 +55,7 @@ function AddLeg() {
             const legRes = await createLeg(payload);
             const newLegId = legRes?.id;
 
-            if (data.type === "car" && newLegId) {
+            if ((data.type === "car" || data.type === "bus") && newLegId) {
                 await createCarDetails({
                     leg_id: newLegId,
                     driving_time_seconds: data.driving_time_seconds ?? null,

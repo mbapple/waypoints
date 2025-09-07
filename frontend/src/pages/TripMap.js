@@ -38,9 +38,12 @@ function TripMap() {
         setLegs(l);
         setStops(s);
 
-        const carLegs = (l || []).filter((leg) => (leg.type || "").toLowerCase() === "car");
+        const roadLegs = (l || []).filter((leg) => {
+          const t = (leg.type || "").toLowerCase();
+          return t === "car" || t === "bus";
+        });
         const pairs = await Promise.all(
-          carLegs.map(async (leg) => {
+          roadLegs.map(async (leg) => {
             try {
               const details = await getCarDetails(leg.id);
               return [leg.id, details?.polyline || null];

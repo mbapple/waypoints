@@ -67,7 +67,7 @@ export function buildMapLayersForAllTrips({ nodesByTrip, legsByTrip, stopsByTrip
       if (!endpoints) return;
       const [start, end] = endpoints;
 
-      if (type === "car") {
+  if (type === "car" || type === "bus") {
         const encoded = carPolylineByLeg?.[leg.id];
         if (encoded) {
           try {
@@ -153,7 +153,7 @@ export function buildMapLayersForTrip({ nodes, legs, stops, carPolylineByLeg, tr
     const endpoints = legEndpoints(leg);
     if (!endpoints) return;
     const [start, end] = endpoints;
-    if (type === "car") {
+  if (type === "car" || type === "bus") {
       const encoded = carPolylineByLeg?.[leg.id];
       if (encoded) {
         try {

@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Form, FormGroup, Label, Input, Select, Button } from "../../styles/components";
 import { PlaceSearchInput } from "../map-integration-components";
-import { CarDetails, FlightDetails } from "../leg-details-components";
+import { CarDetails, FlightDetails, haversineMiles } from "../leg-details-components";
 import NodeSelect from "../common/NodeSelect";
 import { placeToLegStart, placeToLegEnd } from "../../utils/places";
 
@@ -78,6 +78,26 @@ export default function LegForm({
       }));
     }
   }, [selectedToNode]);
+
+  // Auto-calc miles for non-car, non-bus, non-flight legs using the same haversine used by FlightDetails
+  useEffect(() => {
+    const type = (formData.type || '').toLowerCase();
+    if (!type || type === 'car' || type === 'bus' || type === 'flight') return;
+
+    const lat1 = parseFloat(formData.start_latitude);
+    const lon1 = parseFloat(formData.start_longitude);
+    const lat2 = parseFloat(formData.end_latitude);
+    const lon2 = parseFloat(formData.end_longitude);
+
+    if (![lat1, lon1, lat2, lon2].every(v => Number.isFinite(v))) return;
+
+    const miles = haversineMiles(lat1, lon1, lat2, lon2);
+    setFormData(prev => {
+      // Don't override if user has already provided a miles value
+      if (prev.miles !== "" && prev.miles !== null && typeof prev.miles !== 'undefined') return prev;
+      return { ...prev, miles: miles.toFixed(1) };
+    });
+  }, [formData.type, formData.start_latitude, formData.start_longitude, formData.end_latitude, formData.end_longitude]);
 
   const handleCarAutoFill = useCallback(({ miles, driving_time_seconds, polyline }) => {
     setFormData(prev => ({
@@ -157,7 +177,7 @@ export default function LegForm({
         <small>Autofilled from node; you can override.</small>
       </FormGroup>
 
-      {formData.type === 'car' && (
+  {(formData.type === 'car' || formData.type === 'bus') && (
         <FormGroup>
           <CarDetails
             start={{ lat: Number(formData.start_latitude), lon: Number(formData.start_longitude) }}

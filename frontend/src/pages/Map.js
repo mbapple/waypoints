@@ -59,10 +59,15 @@ function MapPage() {
 				setLegsByTrip(legsMap);
 				setStopsByTrip(stopsMap);
 
-				const carLegs = Object.values(legsMap).flat().filter((leg) => (leg.type || "").toLowerCase() === "car");
-				const uniqueCarLegs = carLegs.filter((l) => l && l.id);
-				const carDetailsPairs = await Promise.all(
-					uniqueCarLegs.map(async (leg) => {
+				// Build road (car/bus) polylines across all trips
+				const allLegs = Object.values(legsMap).flat();
+				const roadLegs = allLegs.filter((leg) => {
+					const t = (leg?.type || "").toLowerCase();
+					return t === "car" || t === "bus";
+				});
+				const uniqueRoadLegs = roadLegs.filter((l) => l && l.id);
+				const roadDetailsPairs = await Promise.all(
+					uniqueRoadLegs.map(async (leg) => {
 						try {
 							const details = await getCarDetails(leg.id);
 							return [leg.id, details?.polyline || null];
@@ -72,7 +77,7 @@ function MapPage() {
 					})
 				);
 				if (cancelled) return;
-				setCarPolylineByLeg(Object.fromEntries(carDetailsPairs));
+				setCarPolylineByLeg(Object.fromEntries(roadDetailsPairs));
 			} catch (e) {
 				// eslint-disable-next-line no-console
 				console.error("Failed to load map data", e);

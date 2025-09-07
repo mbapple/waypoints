@@ -130,8 +130,8 @@ function UpdateLeg() {
         miles: data.miles ? Number(data.miles) : null,
       });
 
-      // Upsert car_details if car and we have details
-    if (data.type === 'car') {
+      // Upsert car_details if car or bus and we have details
+    if (data.type === 'car' || data.type === 'bus') {
         await createCarDetails({
           leg_id: Number(legID),
       driving_time_seconds: data.driving_time_seconds ?? null,

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Button, Input, Form, FormGroup, Label, Flex, CheckboxLabel, Checkbox } from "../../styles/components";
 import { PlaceSearchInput } from "../map-integration-components";
 import { placeToOsmFields } from "../../utils/places";
@@ -16,7 +16,7 @@ export default function NodeForm({
     osmID: "",
     osmCountry: "",
     osmState: "",
-    isInvisble: "",
+    isInvisible: false,
   },
   onSubmit,
   onCancel,
@@ -24,6 +24,11 @@ export default function NodeForm({
   saving = false,
 }) {
   const [formData, setFormData] = useState(initialValues);
+
+  // Keep form in sync when initialValues prop changes (e.g., after async load)
+  useEffect(() => {
+    setFormData(initialValues);
+  }, [initialValues]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -49,6 +54,8 @@ export default function NodeForm({
           name="location"
           placeholder="Search for a location..."
           required
+          value={formData.osmName || ""}
+          onChange={(e) => setFormData(prev => ({ ...prev, osmName: e.target.value }))}
           onPlaceSelect={(place) => {
             setFormData(prev => ({
               ...prev,
@@ -81,7 +88,12 @@ export default function NodeForm({
       </FormGroup>
 
       <CheckboxLabel>
-        <Checkbox id="isInvisible" name="isInvisible" checked={formData.isInvisble} onChange={handleChange} />
+        <Checkbox
+          id="isInvisible"
+          name="isInvisible"
+          checked={!!formData.isInvisible}
+          onChange={(e) => setFormData(prev => ({ ...prev, isInvisible: e.target.checked }))}
+        />
         Make Node Invisible
       </CheckboxLabel>
 

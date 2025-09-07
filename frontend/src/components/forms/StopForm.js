@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Form, FormGroup, Label, Input, Select, Button } from "../../styles/components";
 import { PlaceSearchInput } from "../map-integration-components";
 import { placeToOsmFields } from "../../utils/places";
@@ -26,6 +26,11 @@ export default function StopForm({
   saving = false,
 }) {
   const [formData, setFormData] = useState(initialValues);
+
+  // Sync when initialValues changes (e.g., after async fetch on update page)
+  useEffect(() => {
+    setFormData(initialValues);
+  }, [initialValues]);
 
   const getNodeName = (nodeID) => {
     const node = nodes.find(n => n.id === nodeID);
@@ -81,7 +86,14 @@ export default function StopForm({
 
       <FormGroup>
         <Label htmlFor="location">Location</Label>
-        <PlaceSearchInput id="location" name="location" placeholder="Search for a location..." onPlaceSelect={(place) => setFormData(prev => ({ ...prev, ...placeToOsmFields(place) }))} />
+        <PlaceSearchInput
+          id="location"
+          name="location"
+          placeholder="Search for a location..."
+          value={formData.osmName || ""}
+          onChange={(e) => setFormData(prev => ({ ...prev, osmName: e.target.value }))}
+          onPlaceSelect={(place) => setFormData(prev => ({ ...prev, ...placeToOsmFields(place) }))}
+        />
       </FormGroup>
 
       <FormGroup>

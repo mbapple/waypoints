@@ -105,7 +105,7 @@ app container
 - [X] Come up with actual name for project
 - [ ] Design logo
 - [X] Complete docker-compose.yml and install script so that it can be installed with one command and mount relevant volumes
-- [ ] Add detailed statistics page
+- [X] Add detailed statistics page
 - [ ] Timeline view and route replay
 - [X] Fix invisible ndoes: Display in trip list but not on map and do not count towards destination
 - [ ] Make trip list display more distinctly with different colors for different item types
@@ -113,9 +113,9 @@ app container
 - [ ] Make nodes appear smaller on map
 - [ ] Add ability to custom order stops w/in nodes
 	Hacked by ordering by updated_at
-- [ ] Add created_at and updated_at timestamps to all datatypes
+- [X] Add created_at and updated_at timestamps to all datatypes
 - [ ] Clean up API endpoints to only return relevant data on call
-- [ ] Add statistics to statistics: Nights, distances by travel type
+- [X] Add statistics to statistics: Nights, distances by travel type
 - [ ] Auto fill distances on all leg types
 - [ ] Make browser display name based on current page
 - [ ] Design logo and implement
@@ -123,3 +123,4 @@ app container
 - [ ] Fix container so it doesn't rebuild frontend each time
 - [ ] Possibly refactor so that limited data is sent via API and specific components call for full data
 - [ ] Not all data is shown in editing forms
+- [ ] Simplify statistics page

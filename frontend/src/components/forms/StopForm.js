@@ -19,6 +19,7 @@ export default function StopForm({
     osmID: "",
     osmCountry: "",
     osmState: "",
+    date: "",
   },
   onSubmit,
   onCancel,
@@ -97,6 +98,11 @@ export default function StopForm({
       </FormGroup>
 
       <FormGroup>
+        <Label htmlFor="date">Date *</Label>
+        <Input id="date" name="date" type="date" value={formData.date} onChange={handleChange} />
+      </FormGroup>
+
+      <FormGroup>
         <Label htmlFor="category">Category *</Label>
         <Select id="category" name="category" value={formData.category} onChange={handleChange} required>
           <option value="">Select category</option>
@@ -104,7 +110,7 @@ export default function StopForm({
           <option value="restaurant">Restaurant</option>
           <option value="attraction">Attraction</option>
           <option value="park">Park</option>
-          <option value="bus">Bus</option>
+          <option value="museum">Museum</option>
           <option value="other">Other</option>
         </Select>
       </FormGroup>

@@ -75,7 +75,7 @@ app container
 	- [X] Driving distance
 - [X] Provide statistics about travel: distances, destination lists
 - [X] Fine tune styling
-- [ ] Figure out how to update database without breaking
+- [X] Figure out how to update database without breaking
 - [ ] Figure out how to backup database
 - [X] Organize page files
 - [X] Pull out redundant functions into separate file
@@ -97,9 +97,9 @@ app container
 	- [X] Fix leg display name when creating stop
 	- [x] Figure out a way to correctly order stops and nodes that ocurred on same day
 	- [ ] Add pick a random photo
-	- [ ] Hide invisible nodes from map
-	- [ ] Add dropdown to edit invisble nodes
-	- [ ] Filter destination count by unique osm id and first/last destinations
+	- [X] Hide invisible nodes from map
+	- [X] Add dropdown to edit invisble nodes
+	- [X] Filter destination count by unique osm id and first/last destinations
 - [X] Fix bugs with updating components, particularly if you change transportation type of leg
 - [X] Add maps of individual trips
 - [X] Come up with actual name for project
@@ -109,18 +109,24 @@ app container
 - [ ] Timeline view and route replay
 - [X] Fix invisible ndoes: Display in trip list but not on map and do not count towards destination
 - [ ] Make trip list display more distinctly with different colors for different item types
-- [ ] Fix bug over international date line
+- [X] Fix bug over international date line
 - [ ] Make nodes appear smaller on map
-- [ ] Add ability to custom order stops w/in nodes
+- [X] Add ability to custom order stops w/in nodes
 	Hacked by ordering by updated_at
 - [X] Add created_at and updated_at timestamps to all datatypes
 - [ ] Clean up API endpoints to only return relevant data on call
 - [X] Add statistics to statistics: Nights, distances by travel type
-- [ ] Auto fill distances on all leg types
+- [X] Auto fill distances on all leg types
 - [ ] Make browser display name based on current page
 - [ ] Design logo and implement
 - [ ] Fix mess that is MapView getting data from the page itself and in the MapView
 - [ ] Fix container so it doesn't rebuild frontend each time
 - [ ] Possibly refactor so that limited data is sent via API and specific components call for full data
-- [ ] Not all data is shown in editing forms
-- [ ] Simplify statistics page
+- [X] Not all data is shown in editing forms
+- [ ] Simplify statistics page code
+- [ ] Add airport statistics
+- [ ] Make trip details display look better
+- [ ] Add date to stops
+	- [X] API
+	- [ ] Form
+	- [ ] Display

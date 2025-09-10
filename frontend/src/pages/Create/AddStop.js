@@ -24,7 +24,8 @@ function AddStop() {
         osmName: "",
         osmID: "",
         osmCountry: "",
-        osmState: ""
+        osmState: "",
+        date: "",
     });
 
     const [loading, setLoading] = useState(false);
@@ -44,7 +45,8 @@ function AddStop() {
                 osm_name: data.osmName,
                 osm_id: data.osmID,
                 osm_country: data.osmCountry,
-                osm_state: data.osmState
+                osm_state: data.osmState,
+                date: data.date
             });
             navigate(`/trip/${tripID}`);
         } catch (err) {

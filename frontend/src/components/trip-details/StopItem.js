@@ -40,6 +40,13 @@ function StopItem({ stop, tripID, expanded, setExpanded, entityPhotos, setEntity
         <h5>
           {stop.name} &nbsp;&nbsp; <Badge variant="info">{stop.category}</Badge>
         </h5>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          {stop.date && (
+            <Flex gap={3} align="center">
+              <Badge variant="primary">{stop.date}</Badge>
+            </Flex>
+          )}
+        </div>
       </Flex>
       <Flex justify="space-between" align="center">
         <Link to={getPlaceLink(stop.osm_id, stop.osm_name)} target="_blank" rel="noopener noreferrer">

@@ -92,11 +92,6 @@ function TripDetails() {
     , [nodes, legs, stops, carPolylineByLeg, tripID]);
 
   // Identify the first and last nodes by arrival_date (must be before early returns to satisfy Hooks rules)
-  const { firstNodeId, lastNodeId } = useMemo(() => {
-    if (!nodes || nodes.length === 0) return { firstNodeId: undefined, lastNodeId: undefined };
-    const sorted = [...nodes].sort((a, b) => new Date(a.arrival_date) - new Date(b.arrival_date));
-    return { firstNodeId: sorted[0]?.id, lastNodeId: sorted[sorted.length - 1]?.id };
-  }, [nodes]);
 
     
   if (loading) {
@@ -320,8 +315,6 @@ function TripDetails() {
                     entityPhotos={entityPhotos}
                     setEntityPhotos={setEntityPhotos}
                     stops={getStopsForNode(entry.node.id)}
-                    isFirstNode={entry.node.id === firstNodeId}
-                    isLastNode={entry.node.id === lastNodeId}
                   />
                 ) : entry.kind === 'leg' ? (
                   <LegItem

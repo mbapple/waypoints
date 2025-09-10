@@ -9,7 +9,7 @@ import ContextMenu, { ContextMenuItem } from "../common/ContextMenu";
 import useExpandPhotos from "./useExpandPhotos";
 import { listPhotosByNode } from "../../api/photos";
 
-function NodeItem({ node, tripID, expanded, setExpanded, entityPhotos, setEntityPhotos, stops = [], isFirstNode = false, isLastNode = false }) {
+function NodeItem({ node, tripID, expanded, setExpanded, entityPhotos, setEntityPhotos, stops = [] }) {
   const key = `node:${node.id}`;
   const fetchPhotos = useCallback(() => listPhotosByNode(node.id), [node.id]);
   const { isExpanded, photos, toggle } = useExpandPhotos({ key, expanded, setExpanded, entityPhotos, setEntityPhotos, fetchPhotos });
@@ -26,13 +26,9 @@ function NodeItem({ node, tripID, expanded, setExpanded, entityPhotos, setEntity
       <Flex justify="space-between" align="flex-start">
         <h4>{node.name}</h4>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          {isFirstNode ? (
+          {(!node.arrival_date || !node.departure_date || node.arrival_date === node.departure_date) ? (
             <Flex gap={3} align="center">
-              <Badge variant="primary">{node.departure_date}</Badge>
-            </Flex>
-          ) : isLastNode ? (
-            <Flex gap={3} align="center">
-              <Badge variant="primary">{node.arrival_date}</Badge>
+              <Badge variant="primary">{node.arrival_date || node.departure_date || ''}</Badge>
             </Flex>
           ) : (
             <Flex gap={3} align="center">

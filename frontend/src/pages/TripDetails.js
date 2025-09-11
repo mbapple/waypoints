@@ -1,12 +1,8 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { useParams, Link } from "react-router-dom";
 import { PageHeader } from "../components/page-components";
-import { AddButtons, TripInfoCard, EmptyState } from "../components/trip-details/trip-detail-components";
-import NodeItem from "../components/trip-details/NodeItem";
-import LegItem from "../components/trip-details/LegItem";
-import InvisibleNodeItem from "../components/trip-details/InvisibleNodeItem";
-import { TravelGroupCard } from "../components/trip-details/trip-detail-components";
-import { Button, Text, Grid, Flex, Badge, Select } from "../styles/components";
+import { AddButtons, TripInfoCard } from "../components/trip-details/trip-detail-components";
+import { Button, Text, Flex, Badge, Select } from "../styles/components";
 import MapView from "../components/MapView";
 import { buildMapLayersForTrip } from "../utils/mapData";
 // import TripMiniMap from "../components/TripMiniMap";
@@ -18,6 +14,8 @@ import { getTransportTypeLabel } from "../utils/format";
 import { listPhotosByTrip, listPhotosByLeg, listPhotosByNode, listPhotosByStop } from "../api/photos";
 import PhotoSlideshowLarge from "../components/photos/PhotoSlideshowLarge";
 import PhotoUploadButton from "../components/photos/PhotoUploadButton";
+import TripDetailsList from "../components/trip-details/TripDetailsList";
+import TripDetailsDaily from "../components/trip-details/TripDetailsDaily";
 
 function TripDetails() {
   const { tripID } = useParams();
@@ -31,6 +29,7 @@ function TripDetails() {
   const [expanded, setExpanded] = useState({}); // key: type:id -> bool
   const [uploadTarget, setUploadTarget] = useState(""); // e.g. node:3 / leg:5 / stop:7
   const [carPolylineByLeg, setCarPolylineByLeg] = useState({});
+  const [viewMode, setViewMode] = useState('list'); // 'list' | 'daily'
 
   const [miles, setMiles] = useState(0);
 
@@ -120,101 +119,10 @@ function TripDetails() {
     );
   }
 
-  // Combine and sort nodes and legs
-  const getOrderedItinerary = () => {
-    const items = [];
-
-    // Sort nodes by arrival_date
-    const sortedNodes = [...nodes].sort((a, b) => new Date(a.arrival_date) - new Date(b.arrival_date));
-
-    sortedNodes.forEach((node, nodeIndex) => {
-      // Add the node
-      items.push({ type: 'node', data: node, order: nodeIndex * 2 });
-
-      // Find and add legs that start from this node
-      const nodeLegs = legs.filter(leg => leg.start_node_id === node.id);
-      nodeLegs.forEach((leg, legIndex) => {
-        items.push({ type: 'leg', data: leg, order: nodeIndex * 2 + 1 + legIndex * 0.1 });
-      });
-    });
-
-    // Sort by order to ensure proper sequence
-    return items.sort((a, b) => a.order - b.order);
-  };
-
-  const orderedItinerary = getOrderedItinerary();
-
-  // Build itinerary entries that group legs passing through invisible nodes between two visible nodes.
-  const getItineraryWithGroups = () => {
-    const entries = [];
-    const nodeByIdMap = new Map(nodes.map(n => [n.id, n]));
-    const legsByStart = new Map();
-    for (const l of legs) {
-      if (!legsByStart.has(l.start_node_id)) legsByStart.set(l.start_node_id, []);
-      legsByStart.get(l.start_node_id).push(l);
-    }
-    // Sort legs per start node by their date if present
-    for (const list of legsByStart.values()) {
-      list.sort((a, b) => new Date(a.date || 0) - new Date(b.date || 0));
-    }
-    const visibleNodes = [...nodes]
-      .sort((a, b) => new Date(a.arrival_date) - new Date(b.arrival_date))
-      .filter(n => !n.invisible);
-    const consumedLegIds = new Set();
-
-    for (const start of visibleNodes) {
-      // Always show visible node card
-      entries.push({ kind: 'node', node: start });
-
-      const outLegs = legsByStart.get(start.id) || [];
-      for (const firstLeg of outLegs) {
-        if (consumedLegIds.has(firstLeg.id)) continue;
-
-        let currentLeg = firstLeg;
-        let foundInvisible = false;
-        let endVisible = null;
-        const sequence = [];
-        let safety = 0;
-        while (currentLeg && safety++ < 100) {
-          sequence.push({ type: 'leg', leg: currentLeg });
-          consumedLegIds.add(currentLeg.id);
-          const nextNode = nodeByIdMap.get(currentLeg.end_node_id);
-          if (!nextNode) break;
-          if (nextNode.invisible) {
-            foundInvisible = true;
-            sequence.push({ type: 'node', node: nextNode });
-            // Find next leg from this invisible node that's not consumed
-            const nextLeg = (legsByStart.get(nextNode.id) || []).find(l => !consumedLegIds.has(l.id));
-            if (!nextLeg) break;
-            currentLeg = nextLeg;
-          } else {
-            endVisible = nextNode;
-            break;
-          }
-        }
-
-        if (foundInvisible && endVisible) {
-          entries.push({ kind: 'travel-group', fromNode: start, toNode: endVisible, sequence });
-        } else if (!foundInvisible) {
-          // No invisibles encountered: render standalone leg
-          entries.push({ kind: 'leg', leg: firstLeg });
-        }
-      }
-    }
-
-    return entries;
-  };
-
-  const itineraryWithGroups = getItineraryWithGroups();
-
-  const getNodeName = (nodeID) => {
+  const getNodeName = (nodeID) => { // retained for possible future use (e.g., upload select labels)
     const node = nodes.find(n => n.id === nodeID);
     return node ? node.name : `Node ${nodeID}`;
   };
-
-  // Helper functions to get stops for legs and nodes
-  const getStopsForLeg = (legID) => stops.filter(stop => stop.leg_id === legID);
-  const getStopsForNode = (nodeID) => stops.filter(stop => stop.node_id === nodeID);
 
 
   return (
@@ -286,95 +194,38 @@ function TripDetails() {
         </Text>
       </TripInfoCard>
 
-      {/* Itinerary Section */}
-      <div>
-        <Flex justify="space-between" align="center" style={{ marginBottom: '1.5rem' }}>
-          <h2>Trip Itinerary</h2>
-          <Text variant="muted">
-            {nodes.length} {nodes.length === 1 ? 'destination' : 'destinations'}
-          </Text>
+      {/* Itinerary / Daily Toggle Section */}
+      <div style={{ marginBottom: '2rem' }}>
+        <Flex justify="space-between" align="center" style={{ marginBottom: '1rem' }}>
+          <h2 style={{ margin: 0 }}>Trip Details</h2>
+          <Flex gap={2}>
+            <Button variant={viewMode === 'list' ? 'primary' : 'outline'} size="sm" onClick={() => setViewMode('list')}>List</Button>
+            <Button variant={viewMode === 'daily' ? 'primary' : 'outline'} size="sm" onClick={() => setViewMode('daily')}>Daily</Button>
+          </Flex>
         </Flex>
-
-        {itineraryWithGroups.length === 0 ? (
-          <EmptyState>
-            <h3>No itinerary items yet</h3>
-            <Text variant="muted">
-              Start building your itinerary by adding your first destination!
-            </Text>
-          </EmptyState>
+        {viewMode === 'list' ? (
+          <TripDetailsList
+            tripID={tripID}
+            nodes={nodes}
+            legs={legs}
+            stops={stops}
+            expanded={expanded}
+            setExpanded={setExpanded}
+            entityPhotos={entityPhotos}
+            setEntityPhotos={setEntityPhotos}
+          />
         ) : (
-          <Grid columns={1}>
-            {itineraryWithGroups.map((entry, idx) => (
-              <div key={`entry-${idx}`}>
-                {entry.kind === 'node' ? (
-                  <NodeItem
-                    node={entry.node}
-                    tripID={tripID}
-                    expanded={expanded}
-                    setExpanded={setExpanded}
-                    entityPhotos={entityPhotos}
-                    setEntityPhotos={setEntityPhotos}
-                    stops={getStopsForNode(entry.node.id)}
-                  />
-                ) : entry.kind === 'leg' ? (
-                  <LegItem
-                    leg={entry.leg}
-                    tripID={tripID}
-                    getNodeName={getNodeName}
-                    expanded={expanded}
-                    setExpanded={setExpanded}
-                    entityPhotos={entityPhotos}
-                    setEntityPhotos={setEntityPhotos}
-                    stops={getStopsForLeg(entry.leg.id)}
-                  />
-                ) : entry.kind === 'travel-group' ? (
-                  <TravelGroupCard>
-                    <Flex justify="space-between" align="center">
-                      <h4>Travel from {entry.fromNode.name} to {entry.toNode.name}</h4>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setExpanded(prev => ({ ...prev, [
-                          `group:${entry.fromNode.id}-${entry.toNode.id}`
-                        ]: !prev[`group:${entry.fromNode.id}-${entry.toNode.id}`] }))}
-                      >
-                        {expanded[`group:${entry.fromNode.id}-${entry.toNode.id}`] ? '▴' : '▾'}
-                      </Button>
-                    </Flex>
-                    {expanded[`group:${entry.fromNode.id}-${entry.toNode.id}`] && (
-                      <div style={{ marginTop: '0.5rem', display: 'grid', gap: '0.5rem' }}>
-                        {entry.sequence.map((seg, sidx) => (
-                          seg.type === 'leg' ? (
-                            <LegItem
-                              key={`gleg-${sidx}-${seg.leg.id}`}
-                              leg={seg.leg}
-                              tripID={tripID}
-                              getNodeName={getNodeName}
-                              expanded={expanded}
-                              setExpanded={setExpanded}
-                              entityPhotos={entityPhotos}
-                              setEntityPhotos={setEntityPhotos}
-                              stops={getStopsForLeg(seg.leg.id)}
-                            />
-                          ) : (
-                            <InvisibleNodeItem
-                              key={`gnode-${sidx}-${seg.node.id}`}
-                              node={seg.node}
-                              tripID={tripID}
-                              expanded={expanded}
-                              setExpanded={setExpanded}
-                              entityPhotos={entityPhotos}
-                              setEntityPhotos={setEntityPhotos}
-                            />
-                          )
-                        ))}
-                      </div>
-                    )}
-                  </TravelGroupCard>
-                ) : null}
-              </div>
-            ))}
-          </Grid>
+          <TripDetailsDaily
+            trip={trip}
+            tripID={tripID}
+            nodes={nodes}
+            legs={legs}
+            stops={stops}
+            expanded={expanded}
+            setExpanded={setExpanded}
+            entityPhotos={entityPhotos}
+            setEntityPhotos={setEntityPhotos}
+          />
         )}
       </div>
 

@@ -126,7 +126,9 @@ app container
 - [ ] Simplify statistics page code
 - [ ] Add airport statistics
 - [ ] Make trip details display look better
-- [ ] Add date to stops
+- [X] Add date to stops
 	- [X] API
-	- [ ] Form
-	- [ ] Display
+	- [X] Form
+	- [X] Display
+- [ ] Add day by day itenerary of each trip
+- [ ] Add overall calendar of travel

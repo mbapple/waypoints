@@ -98,7 +98,7 @@ export default function StopForm({
       </FormGroup>
 
       <FormGroup>
-        <Label htmlFor="date">Date *</Label>
+        <Label htmlFor="date">Date</Label>
         <Input id="date" name="date" type="date" value={formData.date} onChange={handleChange} />
       </FormGroup>
 

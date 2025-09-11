@@ -190,7 +190,26 @@ export default function LegForm({
 
       <FormGroup>
         <Label htmlFor="miles">Miles</Label>
-        <Input id="miles" name="miles" type="number" step="0.1" value={formData.miles} onChange={handleChange} />
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+          <Input id="miles" name="miles" type="number" step="0.1" value={formData.miles} onChange={handleChange} style={{ flex: 1 }} />
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              const lat1 = parseFloat(formData.start_latitude);
+              const lon1 = parseFloat(formData.start_longitude);
+              const lat2 = parseFloat(formData.end_latitude);
+              const lon2 = parseFloat(formData.end_longitude);
+              if (![lat1, lon1, lat2, lon2].every(v => Number.isFinite(v))) return;
+              const miles = haversineMiles(lat1, lon1, lat2, lon2);
+              setFormData(prev => ({ ...prev, miles: miles.toFixed(1) }));
+            }}
+            disabled={saving || ![parseFloat(formData.start_latitude), parseFloat(formData.start_longitude), parseFloat(formData.end_latitude), parseFloat(formData.end_longitude)].every(v => Number.isFinite(v))}
+            aria-label="Auto-calc miles"
+            title="Auto-calc miles from coordinates"
+          >↺</Button>
+        </div>
       </FormGroup>
 
       {formData.type === 'flight' && (

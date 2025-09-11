@@ -46,7 +46,7 @@ function AddStop() {
                 osm_id: data.osmID,
                 osm_country: data.osmCountry,
                 osm_state: data.osmState,
-                date: data.date
+                date: data.date || null
             });
             navigate(`/trip/${tripID}`);
         } catch (err) {

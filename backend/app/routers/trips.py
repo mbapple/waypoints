@@ -227,7 +227,13 @@ def get_trip_statistics():
     all_trip_miles = miles_row["all_trip_miles"] if miles_row and miles_row["all_trip_miles"] is not None else 0
     all_trip_miles = round(all_trip_miles)
 
-    cur.execute("SELECT COUNT(DISTINCT osm_id) AS unique_destination_count FROM nodes WHERE osm_id IS NOT NULL AND (invisible IS NOT TRUE)")
+    cur.execute("""
+        SELECT
+            (COUNT(DISTINCT osm_id) FILTER (WHERE osm_id IS NOT NULL)
+             + COUNT(*) FILTER (WHERE osm_id IS NULL)) AS unique_destination_count
+        FROM nodes
+        WHERE (invisible IS NOT TRUE)
+    """)
     destinations_row = cur.fetchone()
     unique_destination_count = destinations_row["unique_destination_count"] if destinations_row and destinations_row["unique_destination_count"] is not None else 0
 
@@ -242,6 +248,10 @@ def get_trip_statistics():
     cur.execute("SELECT COUNT(DISTINCT osm_country) AS country_count FROM nodes WHERE osm_country IS NOT NULL")
     country_row = cur.fetchone()
     country_count = country_row["country_count"] if country_row and country_row["country_count"] is not None else 0
+
+    cur.execute("SELECT COUNT(DISTINCT osm_state) AS state_count FROM nodes WHERE osm_state IS NOT NULL")
+    state_row = cur.fetchone()
+    state_count = state_row["state_count"] if state_row and state_row["state_count"] is not None else 0
 
     # Miles grouped by each travel type
     cur.execute("""
@@ -329,6 +339,7 @@ def get_trip_statistics():
         "all_trip_miles": all_trip_miles,
         "unique_destination_count": unique_destination_count,
         "country_count": country_count,
+        "state_count": state_count,
         "miles_by_type": miles_by_type,
         "total_nights": total_nights,
         "states_by_country": states_by_country,

@@ -395,18 +395,22 @@ export default function Statistics() {
 			{!loading && !error && data && (
 				<>
 					{/* Top summary stats */}
-								<SectionGrid columns={3}>
-									<StatCard as={Button} onClick={openTripsByMiles} style={{ textAlign: 'left' }}>
+					<SectionGrid columns={3}>
+						<StatCard as={Button} onClick={openTripsByMiles} style={{ textAlign: 'left' }}>
 							<StatValue>{formatNumber(data.all_trip_miles)}</StatValue>
 							<StatLabel variant="muted">Total miles</StatLabel>
-									</StatCard>
-									<StatCard style={{ textAlign: 'left' }}>
+						</StatCard>
+						<StatCard style={{ textAlign: 'left' }}>
 							<StatValue>{formatNumber(data.unique_destination_count)}</StatValue>
 							<StatLabel variant="muted">Unique destinations</StatLabel>
-									</StatCard>
-									<StatCard style={{ textAlign: 'left' }}>
+						</StatCard>
+						<StatCard style={{ textAlign: 'left' }}>
 							<StatValue>{formatNumber(data.country_count)}</StatValue>
 							<StatLabel variant="muted">Countries visited</StatLabel>
+						</StatCard>
+						<StatCard>
+							<StatValue>{formatNumber(data.state_count)}</StatValue>
+							<StatLabel variant="muted">States visited</StatLabel>
 						</StatCard>
 					  </SectionGrid>
 

@@ -130,5 +130,7 @@ app container
 	- [X] API
 	- [X] Form
 	- [X] Display
-- [ ] Add day by day itenerary of each trip
+- [X] Add day by day itenerary of each trip
+	- [ ] Clean up this
 - [ ] Add overall calendar of travel
+- [ ] osm_id not being saved????

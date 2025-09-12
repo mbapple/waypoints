@@ -128,6 +128,7 @@ def get_node(node_id: int):
             "latitude": row["latitude"],
             "longitude": row["longitude"],
             "osm_name": row["osm_name"] if row["osm_name"] else None,
+            "osm_id": row["osm_id"] if row["osm_id"] else None,
             "osm_country": row["osm_country"] if row["osm_country"] else None,
             "osm_state": row["osm_state"] if row["osm_state"] else None,
             "invisible": row["invisible"] if row["invisible"] else None

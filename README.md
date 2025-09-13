@@ -136,3 +136,14 @@ app container
 - [X] osm_id not being saved????
 - [ ] Fix consistencies in whether states are counted by nodes or stops
 - [ ] Add global search feature
+- [ ] Major refactor:
+	- [ ] Lighten up what is sent over API for a nodes/stops by trip, lazy load the rest of the details
+	- [ ] Move the pop up component from Statistics into a general use so it can be reused
+	- [ ] Rather than expand cards, use the pop up to show more details
+		- [ ] Remove expand code
+		- [ ] Link to pop up
+- [ ] Make at least somewhat mobile friendly
+	- [ ] Fix navigation bar issue
+	- [ ] Fix any other pages
+	- [ ] Fix call to API
+- [ ] Add stop/end dates to stops so ex. hotels can be spread across multiple days

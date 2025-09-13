@@ -80,6 +80,12 @@ const Navigation = () => {
             >
               Create Trip
             </NavLink>
+            <NavLink
+              to="/calendar"
+              className={location.pathname === '/calendar' ? 'active' : ''}
+            >
+              Calendar
+            </NavLink>
             <NavLink 
               to="/settings" 
               className={location.pathname === '/settings' ? 'active' : ''}

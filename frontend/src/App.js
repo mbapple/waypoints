@@ -20,7 +20,7 @@ import UpdateNode from "./pages/Update/UpdateNode";
 import UpdateLeg from "./pages/Update/UpdateLeg";
 import UpdateStop from "./pages/Update/UpdateStop";
 import Statistics from "./pages/Statistics";
-
+import Calendar from "./pages/Calendar";
 
 const ThemedApp = () => {
   const { settings } = useSettings();
@@ -52,6 +52,7 @@ const ThemedApp = () => {
             <Route path="/trip/:tripID/update-leg" element={<UpdateLeg />} />
             <Route path="/trip/:tripID/update-stop" element={<UpdateStop />} />
             <Route path="/statistics" element={<Statistics />} />
+            <Route path="/calendar" element={<Calendar />} />
           </Routes>
         </Container>
       </Router>

@@ -72,13 +72,27 @@ export default function NodeForm({
 
       <Flex gap={4}>
         <FormGroup style={{ flex: 1 }}>
-          <Label htmlFor="arrivalDate">Arrival Date *</Label>
-          <Input id="arrivalDate" name="arrivalDate" type="date" value={formData.arrivalDate} onChange={handleChange} />
+          <Label htmlFor="arrivalDate">Arrival Date</Label>
+          <Input
+            id="arrivalDate"
+            name="arrivalDate"
+            type="date"
+            value={formData.arrivalDate}
+            onChange={handleChange}
+          />
         </FormGroup>
 
         <FormGroup style={{ flex: 1 }}>
-          <Label htmlFor="departureDate">Departure Date *</Label>
-          <Input id="departureDate" name="departureDate" type="date" value={formData.departureDate} onChange={handleChange} min={formData.arrivalDate} />
+          <Label htmlFor="departureDate">Departure Date</Label>
+          <Input
+            id="departureDate"
+            name="departureDate"
+            type="date"
+            value={formData.departureDate}
+            onChange={handleChange}
+            // Allow departure date before arrival if arrival missing; only enforce min when arrival set
+            min={formData.arrivalDate || undefined}
+          />
         </FormGroup>
       </Flex>
 

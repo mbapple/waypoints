@@ -26,16 +26,16 @@ function AddNode() {
       const nodeData = {
         name: data.name,
         trip_id: Number(tripID),
-        description: data.description,
-        arrival_date: data.arrivalDate,
-        departure_date: data.departureDate,
-        notes: data.notes,
-        latitude: data.latitude,
-        longitude: data.longitude,
-        osm_name: data.osmName,
-        osm_id: data.osmID,
-        osm_country: data.osmCountry,
-        osm_state: data.osmState,
+        description: data.description || null,
+        arrival_date: data.arrivalDate || null,
+        departure_date: data.departureDate || null,
+        notes: data.notes || null,
+        latitude: data.latitude || null,
+        longitude: data.longitude || null,
+        osm_name: data.osmName || null,
+        osm_id: data.osmID || null,
+        osm_country: data.osmCountry || null,
+        osm_state: data.osmState || null,
         invisible: data.isInvisible || false, // Default to false if not provided
       };
       await createNode(nodeData);

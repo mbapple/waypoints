@@ -13,6 +13,7 @@ from routers import photos
 from routers import admin
 from routers import stop_categories
 from routers import search
+from routers import adventures
 
 
 app = FastAPI()
@@ -37,6 +38,7 @@ app.include_router(photos.router)
 app.include_router(admin.router)
 app.include_router(stop_categories.router)
 app.include_router(search.router)
+app.include_router(adventures.router)
 
 # Serve uploaded photos statically
 app.mount("/uploads", StaticFiles(directory="/workspaces/src/uploads"), name="uploads")

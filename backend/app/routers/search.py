@@ -110,7 +110,7 @@ def global_search(q: str = Query("", min_length=0), limit: int = Query(50, ge=1,
     conn = get_db()
     cur = conn.cursor()
     # Build AND clauses for multi-token search (applied to each entity's concatenated blob)
-    token_clauses_trip = token_clauses_node = token_clauses_leg = token_clauses_stop = ""
+    token_clauses_trip = token_clauses_node = token_clauses_leg = token_clauses_stop = token_clauses_adv = ""
     params = {"p": pattern, "limit": limit, "mp": month_pattern}
     # Only add token-specific clauses if we truly have multiple tokens AND we're not in a relaxed month-only query.
     if multi_token and not month_only_query:
@@ -121,6 +121,7 @@ def global_search(q: str = Query("", min_length=0), limit: int = Query(50, ge=1,
     node_blob = "(COALESCE(n.name,'') || ' ' || COALESCE(n.description,'') || ' ' || COALESCE(n.notes,'') || ' ' || COALESCE(n.osm_name,'') || ' ' || COALESCE(n.osm_country,'') || ' ' || COALESCE(n.osm_state,'') || ' ' || COALESCE(n.arrival_date::text,'') || ' ' || COALESCE(n.departure_date::text,''))"
     leg_blob = "(COALESCE(l.notes,'') || ' ' || COALESCE(l.type,'') || ' ' || COALESCE(l.start_osm_name,'') || ' ' || COALESCE(l.end_osm_name,'') || ' ' || COALESCE(l.start_osm_country,'') || ' ' || COALESCE(l.end_osm_country,'') || ' ' || COALESCE(l.start_osm_state,'') || ' ' || COALESCE(l.end_osm_state,'') || ' ' || COALESCE(l.date::text,'') || ' ' || COALESCE(fd.airline,'') || ' ' || COALESCE(fd.flight_number,'') || ' ' || COALESCE(fd.start_airport,'') || ' ' || COALESCE(fd.end_airport,''))"
     stop_blob = "(COALESCE(s.name,'') || ' ' || COALESCE(s.notes,'') || ' ' || COALESCE(s.category,'') || ' ' || COALESCE(s.osm_name,'') || ' ' || COALESCE(s.osm_country,'') || ' ' || COALESCE(s.osm_state,'') || ' ' || COALESCE(s.start_date::text,'') || ' ' || COALESCE(s.end_date::text,''))"
+    adventure_blob = "(COALESCE(a.name,'') || ' ' || COALESCE(a.notes,'') || ' ' || COALESCE(a.category,'') || ' ' || COALESCE(a.osm_name,'') || ' ' || COALESCE(a.osm_country,'') || ' ' || COALESCE(a.osm_state,'') || ' ' || COALESCE(a.start_date::text,'') || ' ' || COALESCE(a.end_date::text,''))"
     if multi_token and not month_only_query:
         token_parts = [f"{trip_blob} ILIKE %(tk{i})s" for i in range(len(tokens))]
         token_clauses_trip = f"AND ( {trip_blob} ILIKE %(p)s AND " + " AND ".join(token_parts) + " )"
@@ -130,6 +131,8 @@ def global_search(q: str = Query("", min_length=0), limit: int = Query(50, ge=1,
         token_clauses_leg = f"AND ( {leg_blob} ILIKE %(p)s AND " + " AND ".join(token_parts) + " )"
         token_parts = [f"{stop_blob} ILIKE %(tk{i})s" for i in range(len(tokens))]
         token_clauses_stop = f"AND ( {stop_blob} ILIKE %(p)s AND " + " AND ".join(token_parts) + " )"
+        token_parts = [f"{adventure_blob} ILIKE %(tk{i})s" for i in range(len(tokens))]
+        token_clauses_adv = f"AND ( {adventure_blob} ILIKE %(p)s AND " + " AND ".join(token_parts) + " )"
 
     sql = f"""
         WITH results AS (
@@ -271,6 +274,38 @@ def global_search(q: str = Query("", min_length=0), limit: int = Query(50, ge=1,
                 (%(mp)s IS NOT NULL AND (s.start_date::text ILIKE %(mp)s OR s.end_date::text ILIKE %(mp)s))
             )
             {token_clauses_stop}
+
+            UNION ALL
+            -- Adventures (no trip association)
+            SELECT
+                'adventure'::text AS type,
+                a.id::text AS id,
+                a.id AS sort_id,
+                a.id AS entity_id,
+                NULL::int AS trip_id,
+                a.name AS title,
+                a.category AS subtitle,
+                COALESCE(a.start_date, a.end_date) AS date,
+                a.start_date AS start_date,
+                a.end_date AS end_date,
+                ARRAY_REMOVE(ARRAY[
+                    CASE WHEN a.name ILIKE %(p)s THEN 'name' END,
+                    CASE WHEN a.notes ILIKE %(p)s THEN 'notes' END,
+                    CASE WHEN a.category ILIKE %(p)s THEN 'category' END,
+                    CASE WHEN a.osm_name ILIKE %(p)s THEN 'osm_name' END,
+                    CASE WHEN a.osm_country ILIKE %(p)s THEN 'osm_country' END,
+                    CASE WHEN a.osm_state ILIKE %(p)s THEN 'osm_state' END,
+                    CASE WHEN (a.start_date::text ILIKE %(p)s OR (%(mp)s IS NOT NULL AND a.start_date::text ILIKE %(mp)s)) THEN 'start_date' END,
+                    CASE WHEN (a.end_date::text ILIKE %(p)s OR (%(mp)s IS NOT NULL AND a.end_date::text ILIKE %(mp)s)) THEN 'end_date' END
+                ], NULL) AS matched_fields
+            FROM adventures a
+            WHERE (
+                a.name ILIKE %(p)s OR a.notes ILIKE %(p)s OR a.category ILIKE %(p)s OR
+                a.osm_name ILIKE %(p)s OR a.osm_country ILIKE %(p)s OR a.osm_state ILIKE %(p)s OR
+                a.start_date::text ILIKE %(p)s OR a.end_date::text ILIKE %(p)s OR
+                (%(mp)s IS NOT NULL AND (a.start_date::text ILIKE %(mp)s OR a.end_date::text ILIKE %(mp)s))
+            )
+            {token_clauses_adv}
         )
         SELECT *
         FROM results

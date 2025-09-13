@@ -399,42 +399,41 @@ useEffect(() => {
 			}
 		};
 
-			// Stops by category popup loader
+			// Stops + adventures by category popup loader
 			const openStopsByCategory = async (category) => {
 				const displayCat = category ? category.charAt(0).toUpperCase() + category.slice(1) : category;
-				setPopup({ open: true, title: `${displayCat} stops`, content: <Empty variant="muted">Loading…</Empty> });
+				setPopup({ open: true, title: `${displayCat}`, content: <Empty variant="muted">Loading…</Empty> });
 				try {
-					const rows = await getStopsByCategory(category);
+					const resp = await getStopsByCategory(category); // { stops: [...], adventures: [...] }
+					const stops = resp?.stops || [];
+					const adventures = resp?.adventures || [];
 					setPopup({
 						open: true,
-						title: `${displayCat} stops`,
+						title: `${displayCat} category`,
 						content: (
 							<div>
-								<RowHeader>
-									<Text weight="semibold">{displayCat} stops</Text>
-								</RowHeader>
-								{(rows || []).length === 0 && (
-									<Empty variant="muted">No stops in this category.</Empty>
-								)}
-								{(rows || []).map(r => {
-									const stopName = r.stop_name || r.name || 'Unnamed stop';
-									const tripName = r.trip_name || 'Unknown trip';
-									const tripId = r.trip_id;
-									const key = r.stop_id || stopName + tripId;
-									return (
-										<SubRow key={key} direction="column" style={{ alignItems: 'flex-start' }}>
-											<Text weight="semibold">{stopName}</Text>
-											{tripId && (
-												<Link to={`/trip/${tripId}`}>{tripName}</Link>
-											)}
-										</SubRow>
-									);
-								})}
+								<RowHeader><Text weight="semibold">Stops</Text></RowHeader>
+								{stops.length === 0 && <Empty variant="muted">No stops in this category.</Empty>}
+								{stops.map(r => (
+									<SubRow key={`stop-${r.name}-${r.trip_id || ''}`} direction="column" style={{ alignItems: 'flex-start' }}>
+										<Text weight="semibold">{r.name}</Text>
+										{r.trip_id && <Link to={`/trip/${r.trip_id}`}>{r.trip_name || 'Trip'}</Link>}
+									</SubRow>
+								))}
+								<hr style={{ margin: '0.75rem 0', opacity: .4 }} />
+								<RowHeader><Text weight="semibold">Adventures</Text></RowHeader>
+								{adventures.length === 0 && <Empty variant="muted">No adventures in this category.</Empty>}
+								{adventures.map(r => (
+									<SubRow key={`adv-${r.id || r.name}-${r.start_date || ''}`} direction="column" style={{ alignItems: 'flex-start' }}>
+										<Link to={`/adventures/view?adventureID=${r.id}`}>{r.name}</Link>
+										{r.start_date && <Text variant="muted" size="sm">{r.start_date}{r.end_date && r.end_date !== r.start_date ? ` → ${r.end_date}` : ''}</Text>}
+									</SubRow>
+								))}
 							</div>
 						)
 					});
 				} catch (e) {
-					setPopup({ open: true, title: `${displayCat} stops`, content: <Text variant="danger">Failed to load</Text> });
+					setPopup({ open: true, title: `${displayCat}`, content: <Text variant="danger">Failed to load</Text> });
 				}
 			};
 

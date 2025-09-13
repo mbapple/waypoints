@@ -7,6 +7,7 @@ import { listNodesByTrip } from "../api/nodes";
 import { listStopsByTrip } from "../api/stops";
 import { listLegsByTrip, getCarDetails } from "../api/legs";
 import { Button } from "../styles/components";
+import { listAdventures } from "../api/adventures";
 import { getTripColor } from "../styles/mapTheme";
 import MapView from "../components/MapView";
 import { buildMapLayersForAllTrips } from "../utils/mapData";
@@ -19,6 +20,7 @@ function MapPage() {
 	const [nodesByTrip, setNodesByTrip] = useState({});
 	const [legsByTrip, setLegsByTrip] = useState({});
 	const [stopsByTrip, setStopsByTrip] = useState({});
+	const [adventures, setAdventures] = useState([]); // global adventures (no trip_id)
 	const [carPolylineByLeg, setCarPolylineByLeg] = useState({});
 	const [totalMiles, setTotalMiles] = useState(0);
 	const [totalDestinations, setTotalDestinations] = useState(0);
@@ -34,6 +36,8 @@ function MapPage() {
 				const tripList = await listTrips();
 				if (cancelled) return;
 				setTrips(tripList);
+				// fetch adventures in parallel (no dependency on trips) 
+				try { const adv = await listAdventures(); if (!cancelled) setAdventures(adv); } catch {}
 				try {
 					const stats = await getTripStatistics();
 					if (!cancelled) {
@@ -92,9 +96,9 @@ function MapPage() {
 		};
 	}, []);
 
-	const { markers, stopMarkers, polylines, bounds, nodeById, stopsByNodeId, visitedCountries, visitedStates } = useMemo(() =>
-		buildMapLayersForAllTrips({ nodesByTrip, legsByTrip, stopsByTrip, carPolylineByLeg })
-	, [nodesByTrip, legsByTrip, stopsByTrip, carPolylineByLeg]);
+	const { markers, stopMarkers, adventureMarkers, polylines, bounds, nodeById, stopsByNodeId, visitedCountries, visitedStates } = useMemo(() =>
+		buildMapLayersForAllTrips({ nodesByTrip, legsByTrip, stopsByTrip, carPolylineByLeg, adventures })
+	, [nodesByTrip, legsByTrip, stopsByTrip, carPolylineByLeg, adventures]);
 
 	// Recompute focus positions when focusTripId changes or underlying data updates
 	// (FocusTrip logic now handled inside MapView)
@@ -116,6 +120,7 @@ function MapPage() {
 				<MapView
 					markers={markers}
 					stopMarkers={stopMarkers}
+					adventureMarkers={adventureMarkers}
 					polylines={polylines}
 					bounds={bounds}
 					highlightMode={highlightMode}

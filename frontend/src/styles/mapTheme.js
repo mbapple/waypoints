@@ -109,6 +109,20 @@ export function createStopDivIcon(category, color) {
   });
 }
 
+// Adventure icon: visually similar to stop but thicker border and different background tint.
+export function createAdventureDivIcon(category) {
+  const emoji = getStopEmoji(category); // reuse category emoji (could differentiate later)
+  const html = `<span class="adventure-emoji">${emoji}</span>`;
+  return L.divIcon({
+    className: 'adventure-emoji-icon',
+    html,
+    iconSize: [26, 26],
+    iconAnchor: [13, 13],
+    popupAnchor: [0, -14],
+    tooltipAnchor: [0, -14],
+  });
+}
+
 // Global Leaflet popup theming so popups align with app theme
 export const MapGlobalStyles = createGlobalStyle`
   .leaflet-container {
@@ -129,6 +143,21 @@ export const MapGlobalStyles = createGlobalStyle`
     line-height: 1;
     border: 1px solid currentColor;
     box-shadow: ${p => p.theme.shadows.sm};
+    user-select: none;
+  }
+  .leaflet-div-icon.adventure-emoji-icon { background: transparent; border:none; }
+  .adventure-emoji {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.65rem;
+    height: 1.65rem;
+    border-radius: 50%;
+    font-size: 1.1rem;
+    line-height: 1;
+    border: 3px solid ${p => p.theme.colors.accent};
+    background: ${p => p.theme.colors.accent}22;
+    box-shadow: 0 0 0 2px ${p => p.theme.colors.background};
     user-select: none;
   }
   .leaflet-popup-content-wrapper {

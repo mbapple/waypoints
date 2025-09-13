@@ -2,6 +2,7 @@ import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import styled from 'styled-components';
 import { Link } from 'react-router-dom';
 import { listTrips } from '../api/trips';
+import { listAdventures } from '../api/adventures';
 import { listNodesByTrip } from '../api/nodes';
 import { listStopsByTrip } from '../api/stops';
 import { getStopEmoji } from '../styles/mapTheme';
@@ -246,6 +247,7 @@ function Calendar() {
     const today = new Date();
     const [year, setYear] = useState(today.getFullYear());
     const [trips, setTrips] = useState([]);
+    const [adventures, setAdventures] = useState([]);
     const [loading, setLoading] = useState(true);
     const [view, setView] = useState('year');
     const [selectedMonth, setSelectedMonth] = useState(today.getMonth());
@@ -263,6 +265,15 @@ function Calendar() {
                 if (!s || !e) return false;
                 return e >= yearStart && s <= yearEnd;
             }));
+            // Load adventures for the year (single or span day entries)
+            try {
+                const adv = await listAdventures();
+                setAdventures(adv.filter(a => {
+                    const s = parseISO(a.start_date || a.end_date); const e = parseISO(a.end_date || a.start_date);
+                    if (!s || !e) return false;
+                    return e >= yearStart && s <= yearEnd;
+                }));
+            } catch (err) { console.warn('Failed loading adventures', err); }
             // Minimal debug: comment out if not needed
             // console.log('[Calendar][fetchTrips] Raw trips response:', res);
         } catch (e) {
@@ -283,6 +294,16 @@ function Calendar() {
     // console.log('[Calendar][monthTrips] Computed monthTrips for month', selectedMonth, 'year', year, filtered);
     return filtered;
     }, [trips, year, selectedMonth]);
+
+    const monthAdventures = useMemo(() => {
+        const ms = new Date(Date.UTC(year, selectedMonth, 1));
+        const me = new Date(Date.UTC(year, selectedMonth, daysInMonth(year, selectedMonth)));
+        return adventures.filter(a => {
+            const s = parseISO(a.start_date || a.end_date); const e = parseISO(a.end_date || a.start_date);
+            if (!s || !e) return false;
+            return e >= ms && s <= me;
+        });
+    }, [adventures, year, selectedMonth]);
 
     const loadDetailsForMonth = useCallback(async () => {
         setLoadingMonthDetails(true);
@@ -359,6 +380,7 @@ function Calendar() {
                         const monthStart = new Date(Date.UTC(year, idx, 1));
                         const monthEnd = new Date(Date.UTC(year, idx, totalDays));
                         const dayTrips = Array.from({ length: totalDays }, () => []);
+                        const dayAdventures = Array.from({ length: totalDays }, () => []);
                         trips.forEach(t => {
                             const s = parseISO(t.start_date); const e = parseISO(t.end_date); if(!s||!e) return;
                             if (e < monthStart || s > monthEnd) return;
@@ -369,6 +391,16 @@ function Calendar() {
                                 if (di >= 0 && di < totalDays) dayTrips[di].push(t);
                             }
                         });
+                            adventures.forEach(a => {
+                                const s = parseISO(a.start_date || a.end_date); const e = parseISO(a.end_date || a.start_date); if(!s||!e) return;
+                                if (e < monthStart || s > monthEnd) return;
+                                const cs = s < monthStart ? monthStart : s;
+                                const ce = e > monthEnd ? monthEnd : e;
+                                for (let d = cs; d <= ce; d = new Date(d.getTime()+86400000)) {
+                                    const di = Math.floor((d - monthStart)/86400000);
+                                    if (di >= 0 && di < totalDays) dayAdventures[di].push(a);
+                                }
+                            });
                         const cells = [];
                         for (let i=0;i<startWeekday;i++) cells.push({ label:'', dim:true, dayIndex:-1 });
                         for (let d=1; d<=totalDays; d++) cells.push({ label:String(d), dim:false, dayIndex:d-1 });
@@ -380,6 +412,7 @@ function Calendar() {
                                     {['S','M','T','W','T','F','S'].map((h, hi) => <MiniDay key={`${h}-${hi}`} isHeader>{h}</MiniDay>)}
                                     {cells.map((c, i) => {
                                         const tripsForDay = c.dayIndex>=0 ? dayTrips[c.dayIndex] : [];
+                                            const advForDay = c.dayIndex>=0 ? dayAdventures[c.dayIndex] : [];
                                         const style = {};
                                         if (!c.dim && tripsForDay.length === 1) {
                                             style.background = hashColor(tripsForDay[0].id);
@@ -391,6 +424,9 @@ function Calendar() {
                                             style.background = `linear-gradient(90deg, ${cols.map((col,i)=>`${col} ${(i*seg)}% ${(i+1)*seg}%`).join(',')})`;
                                             style.color = '#fff';
                                             style.opacity = .95;
+                                        } else if (!c.dim && tripsForDay.length === 0 && advForDay.length > 0) {
+                                            style.boxShadow = `inset 0 0 0 2px #ec4899`;
+                                            style.borderRadius = 4;
                                         }
                                         return (
                                             <MiniDay key={i} dim={c.dim} clickable={!c.dim} style={style}>
@@ -398,6 +434,11 @@ function Calendar() {
                                                 {!c.dim && tripsForDay.length > 1 && (
                                                     <MiniDayTrips>
                                                         {tripsForDay.slice(0,4).map(t => <TripDot key={t.id} color={hashColor(t.id)} />)}
+                                                    </MiniDayTrips>
+                                                )}
+                                                {!c.dim && tripsForDay.length === 0 && advForDay.length > 1 && (
+                                                    <MiniDayTrips>
+                                                        {advForDay.slice(0,4).map(a => <TripDot key={`adv-${a.id}`} color={'#ec4899'} />)}
                                                     </MiniDayTrips>
                                                 )}
                                             </MiniDay>
@@ -446,9 +487,43 @@ function Calendar() {
                     {cells.map((c,i) => {
                         const key = c.date ? dateKey(c.date) : `x-${i}`;
                         const tripBars = [];
+                        const adventureCards = [];
                         // detailPills removed in refactor
                         if (c.date) {
                             const iso = key;
+                            // Adventure outlined cards similar to stops
+                            monthAdventures.forEach(a => {
+                                const s = parseISO(a.start_date || a.end_date); const e = parseISO(a.end_date || a.start_date); if(!s||!e) return;
+                                if (c.date >= s && c.date <= e) {
+                                    const isStart = isSameDay(c.date, s);
+                                    const isEnd = isSameDay(c.date, e);
+                                    const isSingle = isStart && isEnd;
+                                    let radius = '6px';
+                                    if (!isSingle) {
+                                        if (isStart) radius = '6px 0 0 6px';
+                                        else if (isEnd) radius = '0 6px 6px 0';
+                                        else radius = '0';
+                                    }
+                                    adventureCards.push(
+                                        <Link key={`adv-${a.id}-${iso}`} to={`/adventures/view?adventureID=${a.id}`} style={{
+                                            border: '1px solid #ec4899',
+                                            color: '#ec4899',
+                                            padding: '1px 4px',
+                                            marginBottom: 2,
+                                            fontSize: '.65rem',
+                                            lineHeight: '14px',
+                                            borderRadius: radius,
+                                            background: 'transparent',
+                                            whiteSpace: 'nowrap',
+                                            overflow: 'hidden',
+                                            textOverflow: 'ellipsis',
+                                            textDecoration: 'none'
+                                        }} title={a.name}>
+                                            {isStart ? a.name : ''}
+                                        </Link>
+                                    );
+                                }
+                            });
                             monthTrips.forEach(t => {
                                 const s = parseISO(t.start_date); const e = parseISO(t.end_date); if(!s||!e) return;
                                 if (c.date >= s && c.date <= e) {
@@ -587,6 +662,7 @@ function Calendar() {
                                 <DayNumber dim={c.dim}>{c.label}</DayNumber>
                                 <div style={{ display:'flex', flexDirection:'column', gap:'3px' }}>
                                     {tripBars}
+                                    {adventureCards}
                                 </div>
                             </DayCell>
                         );

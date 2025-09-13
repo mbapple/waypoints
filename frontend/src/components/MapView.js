@@ -3,7 +3,7 @@ import L from 'leaflet';
 import { Link } from "react-router-dom";
 import { MapContainer, TileLayer, Marker, Polyline, Popup, Tooltip, useMap, useMapEvent } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
-import { applyLeafletDefaultIconFix, getTileLayerConfig, MapGlobalStyles, createStopDivIcon, getTripColor } from "../styles/mapTheme";
+import { applyLeafletDefaultIconFix, getTileLayerConfig, MapGlobalStyles, createStopDivIcon, createAdventureDivIcon, getTripColor } from "../styles/mapTheme";
 import HighlightLayer from "./HighlightLayer";
 import { FitToBounds } from "../utils/map_helper_functions";
 import PhotoSlideshowLarge from "./photos/PhotoSlideshowLarge";
@@ -38,6 +38,7 @@ function ClampToWorld() {
 export default function MapView({
   markers = [],
   stopMarkers = [],
+  adventureMarkers = [],
   polylines = [],
   bounds,
   highlightMode = "off",
@@ -56,6 +57,7 @@ export default function MapView({
   // Cache photos by entity so we only fetch once per popup
   const [nodePhotos, setNodePhotos] = useState({});
   const [stopPhotos, setStopPhotos] = useState({});
+  const [adventurePhotos, setAdventurePhotos] = useState({});
 
   const loadNodePhotos = useCallback(async (nodeId) => {
     if (nodePhotos[nodeId]) return;
@@ -76,6 +78,21 @@ export default function MapView({
       setStopPhotos((prev) => ({ ...prev, [stopId]: [] }));
     }
   }, [stopPhotos]);
+
+  const loadAdventurePhotos = useCallback(async (adventureId) => {
+    if (adventurePhotos[adventureId]) return;
+    try {
+      const resp = await fetch(`/api/photos/by_adventure/${adventureId}`);
+      if (resp.ok) {
+        const photos = await resp.json();
+        setAdventurePhotos(prev => ({ ...prev, [adventureId]: photos }));
+      } else {
+        setAdventurePhotos(prev => ({ ...prev, [adventureId]: [] }));
+      }
+    } catch {
+      setAdventurePhotos(prev => ({ ...prev, [adventureId]: [] }));
+    }
+  }, [adventurePhotos]);
 
   const [legendItems, setLegendItems] = useState([]); // {name, color}
   const [focusName, setFocusName] = useState(null);
@@ -195,6 +212,52 @@ export default function MapView({
                     </Link>
                   </div>
                 )}
+              </div>
+            </Popup>
+          </Marker>
+        ))}
+
+        {adventureMarkers.map(a => (
+          <Marker
+            key={`adv-${a.id}`}
+            position={a.pos}
+            icon={createAdventureDivIcon(a.category)}
+            eventHandlers={{ popupopen: () => loadAdventurePhotos(a.id) }}
+          >
+            <Tooltip direction="top" offset={[0, -8]} opacity={1} permanent={false} sticky>
+              <span><strong>{a.name}</strong>{a.category ? ` · ${a.category}` : ''}</span>
+            </Tooltip>
+            <Popup>
+              <div style={{ minWidth: 220 }}>
+                <div style={{ fontWeight:700, marginBottom:4 }}>{a.name} {a.category && <span style={{ opacity:0.75 }}>· {a.category}</span>}</div>
+                {(a.start_date || a.end_date) && (
+                  <div style={{ fontSize: '0.65rem', color: '#777', marginBottom:6 }}>
+                    {a.start_date && a.end_date && a.start_date !== a.end_date ? `${a.start_date} – ${a.end_date}` : (a.start_date || a.end_date)}
+                  </div>
+                )}
+                {a.notes && <div style={{ fontSize: '0.65rem', color:'#666', whiteSpace:'pre-wrap', marginBottom:6 }}>{a.notes}</div>}
+                {(adventurePhotos[a.id]?.length > 0) && (
+                  <div style={{ marginTop: 6 }}>
+                    <PhotoSlideshowLarge photos={adventurePhotos[a.id]} image_height={140} />
+                  </div>
+                )}
+                <div style={{ marginTop:8 }}>
+                  <Link
+                    to={`/adventures/view?adventureID=${a.id}`}
+                    style={{
+                      display: 'inline-block',
+                      padding: '6px 10px',
+                      borderRadius: 6,
+                      border: `1px solid ${theme.colors.border}`,
+                      background: theme.colors.surface,
+                      color: theme.colors.text,
+                      fontSize: theme.fontSizes.xs,
+                      textDecoration: 'none'
+                    }}
+                  >
+                    View adventure
+                  </Link>
+                </div>
               </div>
             </Popup>
           </Marker>

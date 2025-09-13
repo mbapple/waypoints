@@ -114,7 +114,7 @@ export default function SearchPage() {
     return g;
   }, [results]);
 
-  const order = ['trip','node','leg','stop'];
+  const order = ['trip','node','leg','stop','adventure'];
 
   return (
     <div>
@@ -133,7 +133,11 @@ export default function SearchPage() {
           <div key={key}>
             <SectionHeader>{key.charAt(0).toUpperCase()+key.slice(1)}s</SectionHeader>
             {grouped[key].map(r => {
-              const link = r.type === 'trip' ? `/trip/${r.id}` : r.trip_id ? `/trip/${r.trip_id}` : '/';
+              const link = r.type === 'trip'
+                ? `/trip/${r.id}`
+                : r.type === 'adventure'
+                  ? `/adventures/view?adventureID=${r.id}`
+                  : r.trip_id ? `/trip/${r.trip_id}` : '/';
               return (
                 <ResultCard key={`${r.type}-${r.id}`} to={link}>
                   <strong>{r.title || '(Untitled)'}</strong>

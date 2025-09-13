@@ -22,6 +22,10 @@ import UpdateStop from "./pages/Update/UpdateStop";
 import Statistics from "./pages/Statistics";
 import Calendar from "./pages/Calendar";
 import SearchPage from "./pages/Search";
+import AdventureList from "./pages/AdventureList";
+import AddAdventure from "./pages/Create/AddAdventure";
+import UpdateAdventure from "./pages/Update/UpdateAdventure";
+import AdventureDetails from "./pages/AdventureDetails";
 
 const ThemedApp = () => {
   const { settings } = useSettings();
@@ -55,6 +59,10 @@ const ThemedApp = () => {
             <Route path="/statistics" element={<Statistics />} />
             <Route path="/calendar" element={<Calendar />} />
             <Route path="/search" element={<SearchPage />} />
+            <Route path="/adventures" element={<AdventureList />} />
+            <Route path="/adventures/create" element={<AddAdventure />} />
+            <Route path="/adventures/update" element={<UpdateAdventure />} />
+            <Route path="/adventures/view" element={<AdventureDetails />} />
           </Routes>
         </Container>
       </Router>

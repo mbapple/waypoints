@@ -326,7 +326,7 @@ def get_trip_statistics():
     dest_rows = cur.fetchall() or []
     destinations_by_country = {r["osm_country"]: int(r["dest_count"] or 0) for r in dest_rows}
 
-    # Stops by category counts (ensure all categories present)
+    # Stops + adventures by category counts (ensure all categories present)
     cur.execute(
         """
         SELECT category, COUNT(*) AS cnt
@@ -334,8 +334,20 @@ def get_trip_statistics():
         GROUP BY category
         """
     )
-    cat_rows = cur.fetchall() or []
-    categories = {r["category"]: int(r["cnt"] or 0) for r in cat_rows}
+    stop_cat_rows = cur.fetchall() or []
+    cur.execute(
+        """
+        SELECT category, COUNT(*) AS cnt
+        FROM adventures
+        GROUP BY category
+        """
+    )
+    adv_cat_rows = cur.fetchall() or []
+    categories = {}
+    for r in stop_cat_rows:
+        categories[r["category"]] = categories.get(r["category"], 0) + int(r["cnt"] or 0)
+    for r in adv_cat_rows:
+        categories[r["category"]] = categories.get(r["category"], 0) + int(r["cnt"] or 0)
     for key in ('hotel','restaurant','attraction','park','other'):
         categories.setdefault(key, 0)
 
@@ -562,13 +574,14 @@ def get_stops_by_category(category: str):
         raise HTTPException(status_code=400, detail="category is required")
     conn = get_db()
     cur = conn.cursor()
+    # Stops
     cur.execute(
         """
-    SELECT s.name AS stop_name,
-           t.id AS trip_id,
-           t.name AS trip_name,
-           t.start_date AS trip_start_date,
-           t.end_date AS trip_end_date
+        SELECT s.name AS stop_name,
+               t.id AS trip_id,
+               t.name AS trip_name,
+               s.start_date AS stop_start_date,
+               s.end_date AS stop_end_date
         FROM stops s
         LEFT JOIN trips t ON t.id = s.trip_id
         WHERE s.category = %s
@@ -576,16 +589,45 @@ def get_stops_by_category(category: str):
         """,
         (category,)
     )
-    rows = cur.fetchall() or []
+    stop_rows = cur.fetchall() or []
+
+    # Adventures (same category)
+    cur.execute(
+        """
+        SELECT a.id as adventure_id,
+               a.name AS adventure_name,
+               a.start_date AS adventure_start_date,
+               a.end_date AS adventure_end_date
+        FROM adventures a
+        WHERE a.category = %s
+        ORDER BY a.start_date DESC NULLS LAST, a.id ASC
+        """,
+        (category,)
+    )
+    adv_rows = cur.fetchall() or []
     cur.close()
     conn.close()
-    return [
-        {
-            "name": r["stop_name"],
-            "trip_id": r.get("trip_id"),
-            "trip_name": r.get("trip_name"),
-        "trip_start_date": r.get("trip_start_date"),
-        "trip_end_date": r.get("trip_end_date"),
-        }
-        for r in rows
-    ]
+
+    return {
+        "stops": [
+            {
+                "name": r["stop_name"],
+                "trip_id": r.get("trip_id"),
+                "trip_name": r.get("trip_name"),
+                "start_date": r.get("stop_start_date"),
+                "end_date": r.get("stop_end_date"),
+                "type": "stop",
+            }
+            for r in stop_rows
+        ],
+        "adventures": [
+            {
+                "id": r["adventure_id"],
+                "name": r["adventure_name"],
+                "start_date": r.get("adventure_start_date"),
+                "end_date": r.get("adventure_end_date"),
+                "type": "adventure",
+            }
+            for r in adv_rows
+        ],
+    }

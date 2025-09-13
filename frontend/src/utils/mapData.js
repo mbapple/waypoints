@@ -4,10 +4,11 @@ import { getTripColor } from "../styles/mapTheme";
 import { curvedFlightPath } from "./map_helper_functions";
 
 // Build map layers for the all-trips view
-export function buildMapLayersForAllTrips({ nodesByTrip, legsByTrip, stopsByTrip, carPolylineByLeg }) {
+export function buildMapLayersForAllTrips({ nodesByTrip, legsByTrip, stopsByTrip, carPolylineByLeg, adventures = [] }) {
   const markers = [];
   const stopMarkers = [];
   const polylines = [];
+  const adventureMarkers = [];
   const latlngsForBounds = [];
   const visitedCountries = new Set();
   const visitedStates = new Set();
@@ -97,8 +98,18 @@ export function buildMapLayersForAllTrips({ nodesByTrip, legsByTrip, stopsByTrip
     });
   });
 
+  // Adventures: global single-day points (not tied to trips)
+  (adventures || []).forEach(a => {
+    if (isFinite(a.latitude) && isFinite(a.longitude)) {
+      adventureMarkers.push({ id: a.id, name: a.name, category: a.category, pos: [a.latitude, a.longitude], start_date: a.start_date, end_date: a.end_date, notes: a.notes });
+      latlngsForBounds.push([a.latitude, a.longitude]);
+      if (a.osm_country) visitedCountries.add(a.osm_country);
+      if (a.osm_state) visitedStates.add(a.osm_state);
+    }
+  });
+
   const bounds = latlngsForBounds.length ? L.latLngBounds(latlngsForBounds) : L.latLngBounds([[20, 0], [50, 30]]);
-  return { markers, stopMarkers, polylines, bounds, nodeById, stopsByNodeId, visitedCountries, visitedStates };
+  return { markers, stopMarkers, adventureMarkers, polylines, bounds, nodeById, stopsByNodeId, visitedCountries, visitedStates };
 }
 
 // Build map layers for a single trip view

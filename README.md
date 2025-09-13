@@ -165,3 +165,4 @@ app container
 - [ ] Fix issue where it freezes randomly
 - [X] Ensure all OSM fields are updated when you change location
 - [ ] fix frame rate when zooming on map
+- [ ] Add screenshots and more detailed instructions to README

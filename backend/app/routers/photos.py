@@ -28,10 +28,11 @@ async def upload_photo(
     leg_id: Optional[int] = Form(None),
     node_id: Optional[int] = Form(None),
     stop_id: Optional[int] = Form(None),
+    adventure_id: Optional[int] = Form(None),
     description: Optional[str] = Form(None)
 ):
-    if not (trip_id or leg_id or node_id or stop_id):
-        raise HTTPException(status_code=400, detail="One of trip_id, leg_id, node_id, or stop_id must be provided")
+    if not (trip_id or leg_id or node_id or stop_id or adventure_id):
+        raise HTTPException(status_code=400, detail="One of trip_id, leg_id, node_id, stop_id, or adventure_id must be provided")
 
     if not _allowed(file.filename):
         raise HTTPException(status_code=400, detail="Unsupported file type")
@@ -79,13 +80,14 @@ async def upload_photo(
             row = cur.fetchone()
             if row and row["trip_id"] is not None:
                 trip_id = row["trip_id"]
+        # adventures not tied to a trip, so no derivation
     cur.execute(
         """
-        INSERT INTO photos (trip_id, leg_id, node_id, stop_id, url, description)
-        VALUES (%s, %s, %s, %s, %s, %s)
+        INSERT INTO photos (trip_id, leg_id, node_id, stop_id, adventure_id, url, description)
+        VALUES (%s, %s, %s, %s, %s, %s, %s)
         RETURNING id
         """,
-        (trip_id, leg_id, node_id, stop_id, url_path, description)
+        (trip_id, leg_id, node_id, stop_id, adventure_id, url_path, description)
     )
     row = cur.fetchone()
     conn.commit()
@@ -99,7 +101,7 @@ async def upload_photo(
 async def list_photos_by_trip(trip_id: int):
     conn = get_db()
     cur = conn.cursor()
-    cur.execute("SELECT id, url, description, leg_id, node_id, stop_id FROM photos WHERE trip_id = %s ORDER BY id DESC", (trip_id,))
+    cur.execute("SELECT id, url, description, leg_id, node_id, stop_id, adventure_id FROM photos WHERE trip_id = %s ORDER BY id DESC", (trip_id,))
     rows = cur.fetchall()
     cur.close()
     conn.close()
@@ -110,7 +112,7 @@ async def list_photos_by_trip(trip_id: int):
 async def list_photos_by_leg(leg_id: int):
     conn = get_db()
     cur = conn.cursor()
-    cur.execute("SELECT id, url, description, trip_id, node_id, stop_id FROM photos WHERE leg_id = %s ORDER BY id DESC", (leg_id,))
+    cur.execute("SELECT id, url, description, trip_id, node_id, stop_id, adventure_id FROM photos WHERE leg_id = %s ORDER BY id DESC", (leg_id,))
     rows = cur.fetchall()
     cur.close()
     conn.close()
@@ -121,7 +123,7 @@ async def list_photos_by_leg(leg_id: int):
 async def list_photos_by_node(node_id: int):
     conn = get_db()
     cur = conn.cursor()
-    cur.execute("SELECT id, url, description, trip_id, leg_id, stop_id FROM photos WHERE node_id = %s ORDER BY id DESC", (node_id,))
+    cur.execute("SELECT id, url, description, trip_id, leg_id, stop_id, adventure_id FROM photos WHERE node_id = %s ORDER BY id DESC", (node_id,))
     rows = cur.fetchall()
     cur.close()
     conn.close()
@@ -132,7 +134,17 @@ async def list_photos_by_node(node_id: int):
 async def list_photos_by_stop(stop_id: int):
     conn = get_db()
     cur = conn.cursor()
-    cur.execute("SELECT id, url, description, trip_id, leg_id, node_id FROM photos WHERE stop_id = %s ORDER BY id DESC", (stop_id,))
+    cur.execute("SELECT id, url, description, trip_id, leg_id, node_id, adventure_id FROM photos WHERE stop_id = %s ORDER BY id DESC", (stop_id,))
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+    return rows
+
+@router.get("/by_adventure/{adventure_id}")
+async def list_photos_by_adventure(adventure_id: int):
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("SELECT id, url, description, trip_id, leg_id, node_id, stop_id FROM photos WHERE adventure_id = %s ORDER BY id DESC", (adventure_id,))
     rows = cur.fetchall()
     cur.close()
     conn.close()
@@ -166,3 +178,5 @@ async def delete_photo(photo_id: int):
             pass
 
     return {"message": "Photo deleted"}
+
+

@@ -161,16 +161,16 @@ const Navigation = () => {
               Statistics
             </NavLink>
             <NavLink
+              to="/adventures"
+              className={location.pathname.startsWith('/adventures') ? 'active' : ''}
+            >
+              Adventures
+            </NavLink>
+            <NavLink
               to="/search"
               className={location.pathname === '/search' ? 'active' : ''}
             >
               Search
-            </NavLink>
-            <NavLink
-              to="/create"
-              className={location.pathname === '/create' ? 'active' : ''}
-            >
-              Create Trip
             </NavLink>
             <NavLink
               to="/settings"

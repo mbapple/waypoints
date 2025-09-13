@@ -65,7 +65,7 @@ def global_search(q: str = Query("", min_length=0), limit: int = Query(50, ge=1,
     """Global fuzzy-ish search across trips, nodes, legs, and stops.
 
     Returns a unified list of result objects with a common shape:
-    { type, id, trip_id, title, subtitle, date, matched_fields }
+    { type, id, trip_id, title, subtitle, date, start_date, end_date, matched_fields }
     """
     query = (q or "").strip()
     if len(query) < 2:
@@ -116,18 +116,18 @@ def global_search(q: str = Query("", min_length=0), limit: int = Query(50, ge=1,
         for i, tk in enumerate(tokens):
             params[f"tk{i}"] = f"%{tk}%"
         # Define blob expressions once per entity type
-        trip_blob = "(COALESCE(t.name,'') || ' ' || COALESCE(t.description,'') || ' ' || COALESCE(t.start_date::text,'') || ' ' || COALESCE(t.end_date::text,''))"
-        node_blob = "(COALESCE(n.name,'') || ' ' || COALESCE(n.description,'') || ' ' || COALESCE(n.notes,'') || ' ' || COALESCE(n.osm_name,'') || ' ' || COALESCE(n.osm_country,'') || ' ' || COALESCE(n.osm_state,'') || ' ' || COALESCE(n.arrival_date::text,'') || ' ' || COALESCE(n.departure_date::text,''))"
-        leg_blob = "(COALESCE(l.notes,'') || ' ' || COALESCE(l.type,'') || ' ' || COALESCE(l.start_osm_name,'') || ' ' || COALESCE(l.end_osm_name,'') || ' ' || COALESCE(l.start_osm_country,'') || ' ' || COALESCE(l.end_osm_country,'') || ' ' || COALESCE(l.start_osm_state,'') || ' ' || COALESCE(l.end_osm_state,'') || ' ' || COALESCE(l.date::text,'') || ' ' || COALESCE(fd.airline,'') || ' ' || COALESCE(fd.flight_number,'') || ' ' || COALESCE(fd.start_airport,'') || ' ' || COALESCE(fd.end_airport,''))"
-        stop_blob = "(COALESCE(s.name,'') || ' ' || COALESCE(s.notes,'') || ' ' || COALESCE(s.category,'') || ' ' || COALESCE(s.osm_name,'') || ' ' || COALESCE(s.osm_country,'') || ' ' || COALESCE(s.osm_state,'') || ' ' || COALESCE(s.date::text,''))"
-        token_parts = [f"{trip_blob} ILIKE %(tk{i})s" for i in range(len(tokens))]
-        token_clauses_trip = f"AND ( {trip_blob} ILIKE %(p)s AND " + " AND ".join(token_parts) + " )"
-        token_parts = [f"{node_blob} ILIKE %(tk{i})s" for i in range(len(tokens))]
-        token_clauses_node = f"AND ( {node_blob} ILIKE %(p)s AND " + " AND ".join(token_parts) + " )"
-        token_parts = [f"{leg_blob} ILIKE %(tk{i})s" for i in range(len(tokens))]
-        token_clauses_leg = f"AND ( {leg_blob} ILIKE %(p)s AND " + " AND ".join(token_parts) + " )"
-        token_parts = [f"{stop_blob} ILIKE %(tk{i})s" for i in range(len(tokens))]
-        token_clauses_stop = f"AND ( {stop_blob} ILIKE %(p)s AND " + " AND ".join(token_parts) + " )"
+    trip_blob = "(COALESCE(t.name,'') || ' ' || COALESCE(t.description,'') || ' ' || COALESCE(t.start_date::text,'') || ' ' || COALESCE(t.end_date::text,''))"
+    node_blob = "(COALESCE(n.name,'') || ' ' || COALESCE(n.description,'') || ' ' || COALESCE(n.notes,'') || ' ' || COALESCE(n.osm_name,'') || ' ' || COALESCE(n.osm_country,'') || ' ' || COALESCE(n.osm_state,'') || ' ' || COALESCE(n.arrival_date::text,'') || ' ' || COALESCE(n.departure_date::text,''))"
+    leg_blob = "(COALESCE(l.notes,'') || ' ' || COALESCE(l.type,'') || ' ' || COALESCE(l.start_osm_name,'') || ' ' || COALESCE(l.end_osm_name,'') || ' ' || COALESCE(l.start_osm_country,'') || ' ' || COALESCE(l.end_osm_country,'') || ' ' || COALESCE(l.start_osm_state,'') || ' ' || COALESCE(l.end_osm_state,'') || ' ' || COALESCE(l.date::text,'') || ' ' || COALESCE(fd.airline,'') || ' ' || COALESCE(fd.flight_number,'') || ' ' || COALESCE(fd.start_airport,'') || ' ' || COALESCE(fd.end_airport,''))"
+    stop_blob = "(COALESCE(s.name,'') || ' ' || COALESCE(s.notes,'') || ' ' || COALESCE(s.category,'') || ' ' || COALESCE(s.osm_name,'') || ' ' || COALESCE(s.osm_country,'') || ' ' || COALESCE(s.osm_state,'') || ' ' || COALESCE(s.start_date::text,'') || ' ' || COALESCE(s.end_date::text,''))"
+    token_parts = [f"{trip_blob} ILIKE %(tk{i})s" for i in range(len(tokens))]
+    token_clauses_trip = f"AND ( {trip_blob} ILIKE %(p)s AND " + " AND ".join(token_parts) + " )"
+    token_parts = [f"{node_blob} ILIKE %(tk{i})s" for i in range(len(tokens))]
+    token_clauses_node = f"AND ( {node_blob} ILIKE %(p)s AND " + " AND ".join(token_parts) + " )"
+    token_parts = [f"{leg_blob} ILIKE %(tk{i})s" for i in range(len(tokens))]
+    token_clauses_leg = f"AND ( {leg_blob} ILIKE %(p)s AND " + " AND ".join(token_parts) + " )"
+    token_parts = [f"{stop_blob} ILIKE %(tk{i})s" for i in range(len(tokens))]
+    token_clauses_stop = f"AND ( {stop_blob} ILIKE %(p)s AND " + " AND ".join(token_parts) + " )"
 
     sql = f"""
         WITH results AS (
@@ -233,7 +233,7 @@ def global_search(q: str = Query("", min_length=0), limit: int = Query(50, ge=1,
             {token_clauses_leg}
 
             UNION ALL
-            -- Stops
+            -- Stops (use start_date/end_date; expose start_date as primary date for sorting)
             SELECT
                 'stop'::text AS type,
                 s.id::text AS id,
@@ -242,7 +242,9 @@ def global_search(q: str = Query("", min_length=0), limit: int = Query(50, ge=1,
                 s.trip_id AS trip_id,
                 s.name AS title,
                 s.category AS subtitle,
-                s.date AS date,
+                s.start_date AS date,
+                s.start_date AS start_date,
+                s.end_date AS end_date,
                 ARRAY_REMOVE(ARRAY[
                     CASE WHEN s.name ILIKE %(p)s THEN 'name' END,
                     CASE WHEN s.notes ILIKE %(p)s THEN 'notes' END,
@@ -250,13 +252,15 @@ def global_search(q: str = Query("", min_length=0), limit: int = Query(50, ge=1,
                     CASE WHEN s.osm_name ILIKE %(p)s THEN 'osm_name' END,
                     CASE WHEN s.osm_country ILIKE %(p)s THEN 'osm_country' END,
                     CASE WHEN s.osm_state ILIKE %(p)s THEN 'osm_state' END,
-                    CASE WHEN (s.date::text ILIKE %(p)s OR (%(mp)s IS NOT NULL AND s.date::text ILIKE %(mp)s)) THEN 'date' END
+                    CASE WHEN (s.start_date::text ILIKE %(p)s OR (%(mp)s IS NOT NULL AND s.start_date::text ILIKE %(mp)s)) THEN 'start_date' END,
+                    CASE WHEN (s.end_date::text ILIKE %(p)s OR (%(mp)s IS NOT NULL AND s.end_date::text ILIKE %(mp)s)) THEN 'end_date' END
                 ], NULL) AS matched_fields
         FROM stops s
             WHERE (
                 s.name ILIKE %(p)s OR s.notes ILIKE %(p)s OR s.category ILIKE %(p)s OR
                 s.osm_name ILIKE %(p)s OR s.osm_country ILIKE %(p)s OR s.osm_state ILIKE %(p)s OR
-                s.date::text ILIKE %(p)s OR (%(mp)s IS NOT NULL AND s.date::text ILIKE %(mp)s)
+                s.start_date::text ILIKE %(p)s OR s.end_date::text ILIKE %(p)s OR
+                (%(mp)s IS NOT NULL AND (s.start_date::text ILIKE %(mp)s OR s.end_date::text ILIKE %(mp)s))
         )
             {token_clauses_stop}
         )

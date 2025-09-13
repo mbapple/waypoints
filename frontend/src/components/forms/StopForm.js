@@ -19,7 +19,8 @@ export default function StopForm({
     osmID: "",
     osmCountry: "",
     osmState: "",
-    date: "",
+  start_date: "",
+  end_date: "",
   },
   onSubmit,
   onCancel,
@@ -121,8 +122,12 @@ export default function StopForm({
       </FormGroup>
 
       <FormGroup>
-        <Label htmlFor="date">Date</Label>
-        <Input id="date" name="date" type="date" value={formData.date} onChange={handleChange} />
+        <Label htmlFor="start_date">Start Date</Label>
+        <Input id="start_date" name="start_date" type="date" value={formData.start_date} onChange={handleChange} />
+      </FormGroup>
+      <FormGroup>
+        <Label htmlFor="end_date">End Date</Label>
+        <Input id="end_date" name="end_date" type="date" value={formData.end_date} onChange={handleChange} />
       </FormGroup>
 
       <FormGroup>

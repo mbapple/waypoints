@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { listTrips } from '../api/trips';
 import { listNodesByTrip } from '../api/nodes';
 import { listStopsByTrip } from '../api/stops';
+import { getStopEmoji } from '../styles/mapTheme';
 
 // ---------------------------------------------------------------------------
 // Styled Components (expanded + larger font sizes)
@@ -140,7 +141,7 @@ const DayTripBar = styled(Link)`
     display: block;
     height: 18px;
     line-height: 18px;
-    font-size: .7rem;
+    font-size: .8rem;
     background: ${p => p.color};
     color: #fff;
     text-decoration: none;
@@ -153,20 +154,43 @@ const DayTripBar = styled(Link)`
     box-shadow: 0 0 0 1px rgba(255,255,255,.15);
 `;
 
-const Pill = styled(Link)`
-    display: inline-block;
-    background: ${p => p.color};
+// Bar for nodes spanning multiple days
+const NodeBar = styled(Link)`
+    display: block;
+    height: 18px;
+    line-height: 18px;
+    font-size: .8rem;
+    background: ${p => p.color}; /* already faded */
     color: #fff;
-    padding: 3px 6px 2px;
-    border-radius: 6px;
-    font-size: .7rem;
-    margin: 2px 3px 2px 0;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
     text-decoration: none;
-    box-shadow: 0 0 0 1px rgba(255,255,255,.15);
+    margin-bottom: 2px;
+    border-radius: ${p => p.radius};
+    padding: 0 4px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
 `;
+
+// Bar for multi-day stops (hotel first)
+const StopBar = styled(Link)`
+    display: block;
+    height: 18px;
+    line-height: 18px;
+    font-size: .8rem;
+    background: transparent;
+    border: 1px solid ${p => p.color};
+    border-left: ${p => p.hideLeftBorder ? 'none' : `1px solid ${p.color}`};
+    border-right: ${p => p.hideRightBorder ? 'none' : `1px solid ${p.color}`};
+    color: ${p => p.color};
+    text-decoration: none;
+    margin-bottom: 2px;
+    border-radius: ${p => p.radius};
+    padding: 0 3px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+`;
+
 
 const Legend = styled.div`
     display: flex;
@@ -218,11 +242,20 @@ function dateKey(d){ return d.toISOString().slice(0,10); }
 function daysInMonth(y,m){ return new Date(Date.UTC(y, m+1, 0)).getUTCDate(); }
 function isSameDay(a,b){ return a&&b&&a.getUTCFullYear()===b.getUTCFullYear()&&a.getUTCMonth()===b.getUTCMonth()&&a.getUTCDate()===b.getUTCDate(); }
 function hashColor(id){ const h=(id*57)%360; return `hsl(${h} 65% 45%)`; }
-function buildTripDayData(nodes=[],stops=[]) {
-    const by = {};
-    nodes.forEach(n => { if (n.arrival_date) { (by[n.arrival_date] ||= {nodes:[],stops:[]}).nodes.push(n); } });
-    stops.forEach(s => { if (s.date) { (by[s.date] ||= {nodes:[],stops:[]}).stops.push(s); } });
-    return by;
+// (Removed old buildTripDayData logic; monthly view now uses precomputed layout only)
+
+// Helper to fade trip color (convert hsl to hsla with alpha)
+// Lighten + desaturate trip color for node fill (solid, not transparent)
+function fadedColor(c){
+    if (!c) return c;
+    const m = c.match(/hsl\((\d+)\s+(\d+)%\s+(\d+)%\)/);
+    if (m) {
+        const h = Number(m[1]);
+        const s = Math.max(20, Math.min(100, Number(m[2]) - 15));
+        const l = Math.max(15, Math.min(92, Number(m[3]) + 18));
+        return `hsl(${h} ${s}% ${l}%)`;
+    }
+    return c;
 }
 
 // ---------------------------------------------------------------------------
@@ -277,9 +310,41 @@ function Calendar() {
                         listNodesByTrip(t.id).catch(()=>[]),
                         listStopsByTrip(t.id).catch(()=>[])
                     ]);
+                    // Precompute month layout data used for per-day dynamic packing.
+                    // 1. Visible nodes only.
+                    const visibleNodes = nodes.filter(n => !n.invisible);
+                    // 2. Sort like TripDetailsDaily / TripDetailsList logic:
+                    //    Sort by primary chronological date (departure OR arrival); when same date, departure-only first.
+                    const sortedNodes = [...visibleNodes].sort((a,b) => {
+                        const aDate = new Date(a.departure_date || a.arrival_date || '1900-01-01');
+                        const bDate = new Date(b.departure_date || b.arrival_date || '1900-01-01');
+                        if (aDate.getTime() === bDate.getTime()) {
+                            const aIsDepartureOnly = !a.arrival_date && a.departure_date;
+                            const bIsDepartureOnly = !b.arrival_date && b.departure_date;
+                            if (aIsDepartureOnly && !bIsDepartureOnly) return -1;
+                            if (!aIsDepartureOnly && bIsDepartureOnly) return 1;
+                        }
+                        return aDate - bDate;
+                    });
+                    // 3. Build lightweight structures (we will pack rows daily, not reserve fixed rows for whole month).
+                    const layoutNodes = sortedNodes.map(n => {
+                        const spanStart = n.arrival_date || n.departure_date; // earliest known
+                        const spanEnd = (n.arrival_date && n.departure_date && n.departure_date >= n.arrival_date) ? n.departure_date : spanStart;
+                        const nodeStops = stops.filter(s => s.node_id === n.id);
+                        const multiHotel = nodeStops.filter(s => (s.category||'').toLowerCase()==='hotel' && s.start_date && s.end_date && s.end_date !== s.start_date)
+                            .sort((a,b)=> new Date(a.start_date)-new Date(b.start_date));
+                        const multiOther = nodeStops.filter(s => (s.category||'').toLowerCase()!=='hotel' && s.start_date && s.end_date && s.end_date !== s.start_date)
+                            .sort((a,b)=> new Date(a.start_date)-new Date(b.start_date));
+                        const multiSpans = [
+                            ...multiHotel.map(s => ({ kind:'stopSpan', priority:1, stop:s })),
+                            ...multiOther.map(s => ({ kind:'stopSpan', priority:2, stop:s }))
+                        ];
+                        const singles = nodeStops.filter(s => !(s.start_date && s.end_date && s.end_date !== s.start_date));
+                        return { node:n, spanStart, spanEnd, multiSpans, singles };
+                    });
                     setTripDetails(prev => ({
                         ...prev,
-                        [t.id]: { nodes, stops, dayData: buildTripDayData(nodes, stops) }
+                        [t.id]: { nodes, stops, monthLayout: { layoutNodes } }
                     }));
                 } catch (err) {
                     console.warn('Failed loading trip details', t.id, err);
@@ -372,6 +437,8 @@ function Calendar() {
 
     function renderMonthView() {
         const cells = buildMonthCells();
+    // Per-trip persistent row state across sequential day iteration
+    const tripRowState = {}; // t.id -> { assignments: { key: row }, lastDay: null }
         return (
             <MonthCalendarShell>
                 <MonthHeader>
@@ -392,7 +459,7 @@ function Calendar() {
                     {cells.map((c,i) => {
                         const key = c.date ? dateKey(c.date) : `x-${i}`;
                         const tripBars = [];
-                        const detailPills = [];
+                        // detailPills removed in refactor
                         if (c.date) {
                             const iso = key;
                             monthTrips.forEach(t => {
@@ -415,13 +482,115 @@ function Calendar() {
                                         >{label}</DayTripBar>
                                     );
                                     const details = tripDetails[t.id];
-                                    if (details && details.dayData[iso]) {
-                                        details.dayData[iso].nodes.forEach((n,idx) => detailPills.push(
-                                            <Pill key={`n-${t.id}-${idx}`} to={`/trip/${t.id}`} color={hashColor(t.id)} title={`${t.name} – node: ${n.name}`}>{n.name}</Pill>
-                                        ));
-                                        details.dayData[iso].stops.forEach((s2,idx) => detailPills.push(
-                                            <Pill key={`s-${t.id}-${idx}`} to={`/trip/${t.id}`} color={hashColor(t.id)} title={`${t.name} – stop: ${s2.name}`}>{s2.name}</Pill>
-                                        ));
+                                    if (details && details.monthLayout) {
+                                        const tripColor = hashColor(t.id);
+                                        // Persistent row assignments across days for continuity.
+                                        if (!tripRowState[t.id]) tripRowState[t.id] = { assignments: {} };
+                                        const state = tripRowState[t.id];
+                                        const activeSpanKeys = [];
+                                        const spanInfos = []; // { key, start, end, make }
+                                        // Build ordered spans (node then its multi-day stops)
+                    details.monthLayout.layoutNodes.forEach(ln => {
+                                            const nStart = parseISO(ln.spanStart); const nEnd = parseISO(ln.spanEnd);
+                                            const nActive = nStart && nEnd && c.date >= nStart && c.date <= nEnd;
+                                            if (nActive) {
+                                                const isStartN = isSameDay(c.date, nStart);
+                                                const isEndN = isSameDay(c.date, nEnd);
+                                                const isSingleDay = ln.spanStart === ln.spanEnd;
+                                                let radiusN='0'; 
+                                                if (isSingleDay || (isStartN && isEndN)) radiusN='7px'; 
+                                                else if (isStartN) radiusN='7px 0 0 7px'; 
+                                                else if (isEndN) radiusN='0 7px 7px 0';
+                                                const nodeKey = `node-${ln.node.id}`;
+                                                activeSpanKeys.push(nodeKey);
+                                                spanInfos.push({ key: nodeKey, start:nStart, end:nEnd, make: () => (
+                                                    <NodeBar key={`${nodeKey}-${iso}`} to={`/trip/${t.id}`} color={fadedColor(tripColor)} radius={radiusN} title={ln.node.name}>{isStartN ? ln.node.name : ''}</NodeBar>
+                        ) });
+                                                ln.multiSpans.forEach(ms => {
+                                                    const s = ms.stop; const sStart = parseISO(s.start_date); const sEnd = parseISO(s.end_date); if(!sStart||!sEnd) return;
+                                                    const sActive = c.date >= sStart && c.date <= sEnd;
+                                                    if (sActive) {
+                                                        const isStartS = isSameDay(c.date, sStart);
+                                                        const isEndS = isSameDay(c.date, sEnd);
+                                                        const isSingleDayStop = s.start_date === s.end_date;
+                                                        let r='0'; 
+                                                        if (isSingleDayStop || (isStartS && isEndS)) r='7px'; 
+                                                        else if (isStartS) r='7px 0 0 7px'; 
+                                                        else if (isEndS) r='0 7px 7px 0';
+                                                        // For middle days, r stays '0' which creates seamless connection
+                                                        const stopKey = `stopspan-${s.id}`;
+                                                        activeSpanKeys.push(stopKey);
+                            spanInfos.push({ key: stopKey, parentNodeKey: nodeKey, start:sStart, end:sEnd, make: () => (
+                                                            <StopBar 
+                                                                key={`${stopKey}-${iso}`} 
+                                                                to={`/trip/${t.id}`} 
+                                                                color={tripColor} 
+                                                                radius={r} 
+                                                                title={s.name}
+                                                                hideLeftBorder={!isStartS && !isSingleDayStop}
+                                                                hideRightBorder={!isEndS && !isSingleDayStop}
+                                                            >
+                                                                {isStartS ? `${getStopEmoji(s.category)} ${s.name}` : ''}
+                                                            </StopBar>
+                                                        ) });
+                                                    }
+                                                });
+                                            }
+                                        });
+                                        // Remove ended spans from assignments
+                                        Object.keys(state.assignments).forEach(spanKey => {
+                                            if (!activeSpanKeys.includes(spanKey)) delete state.assignments[spanKey];
+                                        });
+                                        // Assign rows preserving existing rows; gather used set
+                                        const used = new Set(Object.values(state.assignments));
+                                        spanInfos.forEach(si => {
+                                            if (state.assignments[si.key] === undefined) {
+                                                // Minimum row constraint: stop spans must be below their node row
+                                                const minRow = si.parentNodeKey !== undefined && state.assignments[si.parentNodeKey] !== undefined
+                                                    ? state.assignments[si.parentNodeKey] + 1
+                                                    : 0;
+                                                let r = minRow;
+                                                while (used.has(r)) r++;
+                                                state.assignments[si.key] = r; used.add(r);
+                                            }
+                                        });
+                                        // NO compaction - keep row assignments stable to prevent visual jumping
+                                        // Render rows: group elements by row (in order of spanInfos added)
+                                        const rowElems = new Map();
+                                        spanInfos.forEach(si => {
+                                            const r = state.assignments[si.key];
+                                            if (!rowElems.has(r)) rowElems.set(r, []);
+                                            rowElems.get(r).push(si.make());
+                                        });
+                                        
+                                        // Fill gaps with invisible placeholders to maintain consistent positioning
+                                        const maxAssignedRow = Math.max(...Object.values(state.assignments), -1);
+                                        for (let r = 0; r <= maxAssignedRow; r++) {
+                                            if (!rowElems.has(r)) {
+                                                rowElems.set(r, [<div key={`placeholder-${t.id}-${r}-${iso}`} style={{height:18, marginBottom:2}} />]);
+                                            }
+                                        }
+                                        
+                                        // Single-day stops (ephemeral) placed after existing rows; they don't get continuity.
+                                        let maxRowIndex = maxAssignedRow;
+                                        details.monthLayout.layoutNodes.forEach(ln => {
+                                            const singlesToday = ln.singles.filter(sg => {
+                                                if (sg.start_date && sg.end_date && sg.end_date !== sg.start_date) return false;
+                                                const d = sg.start_date || sg.end_date; return d === iso;
+                                            });
+                                            singlesToday.forEach(sg => {
+                                                maxRowIndex += 1;
+                                                rowElems.set(maxRowIndex, [
+                                                    <StopBar key={`single-${t.id}-${sg.id}-${iso}`} to={`/trip/${t.id}`} color={tripColor} radius='7px' title={sg.name}>{getStopEmoji(sg.category)} {sg.name}</StopBar>
+                                                ]);
+                                            });
+                                        });
+                                        // Push to tripBars in row order
+                                        [...rowElems.keys()].sort((a,b)=>a-b).forEach(ridx => {
+                                            const elems = rowElems.get(ridx);
+                                            if (elems.length === 1) tripBars.push(elems[0]);
+                                            else tripBars.push(<div key={`rowwrap-${t.id}-${ridx}-${iso}`} style={{display:'flex', gap:4, height:18, marginBottom:3}}>{elems}</div>);
+                                        });
                                     }
                                 }
                             });
@@ -431,20 +600,19 @@ function Calendar() {
                                 <DayNumber dim={c.dim}>{c.label}</DayNumber>
                                 <div style={{ display:'flex', flexDirection:'column', gap:'3px' }}>
                                     {tripBars}
-                                    {detailPills}
                                 </div>
                             </DayCell>
                         );
                     })}
                 </CalendarGrid>
-                <Legend>
+                {/* <Legend>
                     {monthTrips.map(t => (
                         <LegendItem key={t.id}>
                             <ColorSwatch color={hashColor(t.id)} />
                             <Link style={{color:'inherit',textDecoration:'none'}} to={`/trip/${t.id}`}>{t.name}</Link>
                         </LegendItem>
                     ))}
-                </Legend>
+                </Legend> */}
             </MonthCalendarShell>
         );
     }

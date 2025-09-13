@@ -217,14 +217,14 @@ function TripDetailsDaily({ trip, tripID, nodes, legs, stops, expanded, setExpan
     const firstNodeDate = node.arrival_date || node.departure_date;
     
     return stops.filter(s => s.node_id === nodeID && (
-      s.date ? s.date === date : date === firstNodeDate  // Show undated stops only on first day
+      s.start_date ? s.start_date === date : date === firstNodeDate  // Show undated stops only on first day
     ));
   };
 
   const getStopsForLegOnDate = (legID, date) => {
     const leg = legs.find(l => l.id === legID);
     return stops.filter(s => s.leg_id === legID && (
-      s.date ? s.date === date : (leg && leg.date === date)
+      s.start_date ? s.start_date === date : (leg && leg.date === date)
     ));
   };
 

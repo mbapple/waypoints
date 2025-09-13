@@ -45,9 +45,13 @@ function StopItem({ stop, tripID, expanded, setExpanded, entityPhotos, setEntity
           {stop.name} &nbsp;&nbsp; <Badge variant="info">{stop.category}</Badge>
         </h5>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          {stop.date && (
+          {(stop.start_date || stop.end_date) && (
             <Flex gap={3} align="center">
-              <Badge variant="primary">{stop.date}</Badge>
+              <Badge variant="primary">
+                {stop.start_date && stop.end_date && stop.start_date !== stop.end_date
+                  ? `${stop.start_date} – ${stop.end_date}`
+                  : (stop.start_date || stop.end_date)}
+              </Badge>
             </Flex>
           )}
         </div>

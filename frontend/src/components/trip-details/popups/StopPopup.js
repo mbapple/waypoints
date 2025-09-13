@@ -12,7 +12,13 @@ const StopPopup = ({ stop, onClose }) => {
   return (
     <Popup title={`Stop: ${stop.name}`} onClose={onClose}>
       <Flex gap={3} align="center" style={{ marginBottom: '0.75rem' }}>
-        {stop.date && <Badge variant="primary">{stop.date}</Badge>}
+        {(stop.start_date || stop.end_date) && (
+          <Badge variant="primary">
+            {stop.start_date && stop.end_date && stop.start_date !== stop.end_date
+              ? `${stop.start_date} – ${stop.end_date}`
+              : (stop.start_date || stop.end_date)}
+          </Badge>
+        )}
         {stop.category && <Badge variant="info">{stop.category}</Badge>}
       </Flex>
       {stop.osm_id && (

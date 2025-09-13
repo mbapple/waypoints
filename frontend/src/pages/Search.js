@@ -114,7 +114,13 @@ export default function SearchPage() {
                   {r.subtitle && <div style={{ marginTop: 4, fontSize: '0.875rem', opacity: 0.85 }}>{r.subtitle}</div>}
                   <Meta>
                     <Badge>{r.type}</Badge>
-                    {r.date && <span>{new Date(r.date).toISOString().split('T')[0]}</span>}
+                    {(r.start_date || r.end_date) && (
+                      <span>
+                        {r.start_date && r.end_date && r.start_date !== r.end_date
+                          ? `${r.start_date} → ${r.end_date}`
+                          : (r.start_date || r.end_date)}
+                      </span>
+                    )}
                     {r.matched_fields && r.matched_fields.slice(0,4).map(f => <Badge key={f}>{f}</Badge>)}
                   </Meta>
                 </ResultCard>

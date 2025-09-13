@@ -27,7 +27,8 @@ function UpdateStop() {
     osmID: "",
     osmCountry: "",
     osmState: "",
-    date: "",
+  start_date: "",
+  end_date: "",
   });
 
   const [nodes, setNodes] = useState([]);
@@ -69,7 +70,8 @@ function UpdateStop() {
           osmID: s.osm_id || "",
           osmCountry: s.osm_country || "",
           osmState: s.osm_state || "",
-          date: s.date || "",
+          start_date: s.start_date || "",
+          end_date: s.end_date || "",
         });
       } catch (e) {
         console.error(e);
@@ -95,7 +97,8 @@ function UpdateStop() {
         longitude: data.longitude || null,
         osm_name: data.osmName || null,
         osm_id: data.osmID || null,
-        date: data.date || null,
+  start_date: data.start_date || null,
+  end_date: data.end_date || null,
       });
       navigate(`/trip/${tripID}`);
     } catch (err) {

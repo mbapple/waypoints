@@ -75,8 +75,12 @@ export default function MapView({
     }
   }, [stopPhotos]);
 
+  const [legendItems, setLegendItems] = useState([]); // {name, color}
+  const [focusName, setFocusName] = useState(null);
+
   return (
-    <div style={{ height: "100%", width: "100%", borderRadius: 12, overflow: "hidden" }}>
+    <div style={{ height: "100%", width: "100%", borderRadius: 12, overflow: "hidden", display: 'flex', flexDirection: 'column' }}>
+      <div style={{ flex: 1, position: 'relative' }}>
       <MapContainer
         style={{ height: "100%", width: "100%" }}
         center={[20, 0]}
@@ -96,6 +100,8 @@ export default function MapView({
           visitedCountries={visitedCountries || new Set(Object.values(nodeById).map(n => n?.osm_country).filter(Boolean))}
           visitedStates={visitedStates || new Set(Object.values(nodeById).map(n => n?.osm_state).filter(Boolean))}
           styleColors={{ fill: theme.colors.accent || '#22c55e', stroke: theme.colors.accent || '#16a34a' }}
+          onFeatureData={(items)=> setLegendItems(items)}
+          focusFeature={focusName}
         />
 
         {markers.map((m) => (
@@ -200,6 +206,36 @@ export default function MapView({
         {bounds && <FitToBounds bounds={bounds} />}
       </MapContainer>
       <MapGlobalStyles />
+      </div>
+      {/* Legend for highlighted regions */}
+      {highlightMode !== 'off' && legendItems.length > 0 && (
+        <div style={{ maxHeight: 140, overflowY: 'auto', padding: '6px 8px', background: theme.colors.surfaceAlt || theme.colors.surface, borderTop: `1px solid ${theme.colors.border}`, fontSize: theme.fontSizes.xs, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          {legendItems.map(item => (
+            <button
+              key={item.name}
+              onClick={() => setFocusName(item.name)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 4,
+                background: 'transparent',
+                border: `1px solid ${theme.colors.border}`,
+                padding: '2px 6px',
+                borderRadius: 4,
+                cursor: 'pointer',
+                color: theme.colors.text,
+                fontSize: 'inherit',
+                opacity: focusName && focusName !== item.name ? 0.6 : 1,
+                transition: 'opacity 0.15s'
+              }}
+              title={`Focus ${item.name}`}
+            >
+              <span style={{ width: 12, height: 12, background: item.color, borderRadius: 2, border: '1px solid rgba(0,0,0,0.2)' }} />
+              <span style={{ whiteSpace: 'nowrap' }}>{item.name}</span>
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

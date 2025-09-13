@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { useMap } from "react-leaflet";
 import * as topojson from "topojson-client";
-import world110m from "world-atlas/countries-110m.json";
+import world110m from "world-atlas/countries-50m.json";
 import usStates10m from "us-atlas/states-10m.json";
 import L from "leaflet";
 
@@ -31,6 +31,7 @@ const COUNTRY_SYNONYMS = new Map([
   ["south korea", "korea, republic of"],
   ["north korea", "korea, democratic people's republic of"],
   ["vietnam", "viet nam"],
+  ["dominican republic", "dominican rep."]
 ]);
 
 function normalizeCountryName(name) {
@@ -62,9 +63,20 @@ function normalizeUSStateName(name) {
   return normalizeBase(chosen);
 }
 
-export default function HighlightLayer({ mode, visitedCountries, visitedStates, styleColors }) {
+export default function HighlightLayer({ mode, visitedCountries, visitedStates, styleColors, onFeatureData, focusFeature }) {
   const map = useMap();
   const layerRef = useRef(null);
+  const featureDataRef = useRef([]);
+
+  // Simple HSL -> Hex converter
+  function hslToHex(h, s, l) {
+    s /= 100; l /= 100;
+    const k = n => (n + h / 30) % 12;
+    const a = s * Math.min(l, 1 - l);
+    const f = n => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
+    const toHex = x => Math.round(x * 255).toString(16).padStart(2, '0');
+    return `#${toHex(f(0))}${toHex(f(8))}${toHex(f(4))}`;
+  }
 
   useEffect(() => {
     if (layerRef.current) {
@@ -84,24 +96,53 @@ export default function HighlightLayer({ mode, visitedCountries, visitedStates, 
       opacity: 0.9,
     };
 
+    featureDataRef.current = [];
+    let features = [];
     if (mode === "countries") {
       const namesSet = new Set(Array.from(visitedCountries || []).map(normalizeCountryName));
-      const filtered = {
-        type: "FeatureCollection",
-        features: worldCountries.features.filter((f) => namesSet.has(normalizeCountryName(f.properties?.name))),
-      };
-      if (filtered.features.length) {
-        layerRef.current = L.geoJSON(filtered, { style: baseStyle }).addTo(map);
-      }
+      features = worldCountries.features.filter((f) => namesSet.has(normalizeCountryName(f.properties?.name)));
     } else if (mode === "states") {
       const namesSet = new Set(Array.from(visitedStates || []).map(normalizeUSStateName));
-      const filtered = {
-        type: "FeatureCollection",
-        features: usStates.features.filter((f) => namesSet.has(normalizeBase(f.properties?.name))),
-      };
-      if (filtered.features.length) {
-        layerRef.current = L.geoJSON(filtered, { style: baseStyle }).addTo(map);
+      features = usStates.features.filter((f) => namesSet.has(normalizeBase(f.properties?.name)));
+    }
+
+    if (features.length) {
+      // Sort to keep color assignment stable
+      features = [...features].sort((a, b) => (a.properties?.name || '').localeCompare(b.properties?.name || ''));
+      const colorMap = new Map();
+      features.forEach((f, idx) => {
+        const hue = (idx * 137.508) % 360; // Golden angle for even distribution
+        const c = hslToHex(hue, 60, 50);
+        colorMap.set(f, c);
+      });
+
+      layerRef.current = L.geoJSON({ type: 'FeatureCollection', features }, {
+        style: (feature) => {
+          const f = features.find(ff => ff === feature); // reference equality
+          const c = colorMap.get(f) || baseStyle.fillColor;
+          return { ...baseStyle, color: c, fillColor: c, fillOpacity: 0.25 };
+        }
+      }).addTo(map);
+
+      // Build feature data with bounds
+      const temp = [];
+      layerRef.current.eachLayer((lyr) => {
+        try {
+          if (lyr.feature) {
+            const name = lyr.feature.properties?.name;
+            const color = colorMap.get(lyr.feature) || baseStyle.fillColor;
+            const bounds = lyr.getBounds();
+            temp.push({ name, color, bounds });
+          }
+        } catch {}
+      });
+      featureDataRef.current = temp;
+      if (onFeatureData) {
+        // Provide serializable version (no Leaflet bounds object) plus index to reconstruct if needed
+        onFeatureData(temp.map(f => ({ name: f.name, color: f.color })));
       }
+    } else {
+      if (onFeatureData) onFeatureData([]);
     }
 
     return () => {
@@ -110,7 +151,18 @@ export default function HighlightLayer({ mode, visitedCountries, visitedStates, 
         layerRef.current = null;
       }
     };
-  }, [map, mode, visitedCountries, visitedStates, styleColors]);
+  }, [map, mode, visitedCountries, visitedStates, styleColors, onFeatureData]);
+
+  // Focus on a feature when requested
+  useEffect(() => {
+    if (!focusFeature || !map) return;
+    const target = featureDataRef.current.find(f => f.name === focusFeature);
+    if (target && target.bounds) {
+      try {
+        map.fitBounds(target.bounds.pad(0.5), { animate: true });
+      } catch {}
+    }
+  }, [focusFeature, map]);
 
   return null;
 }

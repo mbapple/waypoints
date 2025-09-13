@@ -134,3 +134,4 @@ app container
 	- [ ] Clean up this
 - [ ] Add overall calendar of travel
 - [ ] osm_id not being saved????
+- [ ] Fix consistencies in whether states are counted by nodes or stops

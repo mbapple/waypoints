@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
 import styled, { useTheme } from "styled-components";
 import { Card, Grid, Text, Flex, Badge, Button } from "../styles/components";
 import { PageHeader } from "../components/page-components";
@@ -42,9 +42,11 @@ const SectionTitle = styled.h2`
 `;
 
 const ChartCard = styled(Card)`
-	overflow: hidden;
-	/* Removed fixed height + flex so card shrinks to content */
 	margin-bottom: 0;
+`;
+const StopsContent = styled.div`
+	overflow-y: auto;
+	padding-right: 2px; /* room for scrollbar */
 `;
 
 // Removed stacked column helpers (ColumnStack, GrowChartCard) per new simplified layout
@@ -168,6 +170,10 @@ const typeColor = (theme, type) => {
 
 export default function Statistics() {
 	const theme = useTheme();
+	// Reintroduce measurement to enforce equal outer card heights (stops card not taller than miles card)
+	const milesCardRef = useRef(null);
+	const stopsCardRef = useRef(null);
+	const stopsListRef = useRef(null);
 	const [data, setData] = useState(null);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState("");
@@ -197,6 +203,29 @@ export default function Statistics() {
 			.map(([k, v]) => ({ type: k, miles: Number(v || 0) }))
 			.sort((a, b) => b.miles - a.miles);
 	}, [data]);
+
+	const stopCategoryCount = useMemo(() => Object.keys(data?.stops_by_category || {}).length, [data]);
+
+// Height syncing: ensure stops card height <= miles card height and list scrolls
+useEffect(() => {
+	function syncHeights() {
+		if (!milesCardRef.current || !stopsCardRef.current || !stopsListRef.current) return;
+		const milesH = milesCardRef.current.offsetHeight;
+		// Set maxHeight on stops card
+		stopsCardRef.current.style.maxHeight = milesH + 'px';
+		// Compute space above list inside stops card
+		const cardTop = stopsCardRef.current.getBoundingClientRect().top;
+		const listTop = stopsListRef.current.getBoundingClientRect().top;
+		const listAvailable = milesH - (listTop - cardTop) - 12; // padding bottom allowance
+		if (listAvailable > 60) {
+			stopsListRef.current.style.height = listAvailable + 'px';
+		}
+	}
+	// Run after paint
+	const raf = requestAnimationFrame(syncHeights);
+	window.addEventListener('resize', syncHeights);
+	return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', syncHeights); };
+}, [milesByTypeArr.length, stopCategoryCount]);
 
 	const maxMiles = useMemo(() => {
 		return milesByTypeArr.length ? Math.max(...milesByTypeArr.map(x => x.miles || 0)) : 0;
@@ -458,9 +487,9 @@ export default function Statistics() {
 						</StatCard>
 					</SectionGrid>
 
-					{/* Miles by type & Stops by category side-by-side */}
+					{/* Miles by type & Stops by category side-by-side (equal height) */}
 					<SectionGrid columns={2} style={{ alignItems: 'flex-start' }}>
-						<ChartCard>
+						<ChartCard ref={milesCardRef}>
 							<SectionTitle>Miles by type</SectionTitle>
 							{milesByTypeArr.length === 0 && (
 								<Empty variant="muted">No mileage yet</Empty>
@@ -483,22 +512,24 @@ export default function Statistics() {
 								</BarRow>
 							))}
 						</ChartCard>
-						<ChartCard>
+						<ChartCard ref={stopsCardRef}>
 							<SectionTitle>Stops by category</SectionTitle>
-							{Object.entries(data.stops_by_category || {}).map(([cat, count]) => {
-								const displayCat = cat ? cat.charAt(0).toUpperCase() + cat.slice(1) : cat;
-								return (
-									<Flex
-										key={cat}
-										justify="space-between"
-										style={{ padding: '0.35rem 0', borderBottom: `1px solid ${theme.colors.border}`, cursor: 'pointer' }}
-										onClick={() => openStopsByCategory(cat)}
-									>
-										<Text>{displayCat}</Text>
-										<Badge variant="primary">{formatNumber(count)}</Badge>
-									</Flex>
-								);
-							})}
+							<StopsContent ref={stopsListRef}>
+								{Object.entries(data.stops_by_category || {}).map(([cat, count]) => {
+									const displayCat = cat ? cat.charAt(0).toUpperCase() + cat.slice(1) : cat;
+									return (
+										<Flex
+											key={cat}
+											justify="space-between"
+											style={{ padding: '0.35rem 0', borderBottom: `1px solid ${theme.colors.border}`, cursor: 'pointer' }}
+											onClick={() => openStopsByCategory(cat)}
+										>
+											<Text>{displayCat}</Text>
+											<Badge variant="primary">{formatNumber(count)}</Badge>
+										</Flex>
+									);
+								})}
+							</StopsContent>
 						</ChartCard>
 					</SectionGrid>
 

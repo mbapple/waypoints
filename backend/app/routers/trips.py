@@ -249,7 +249,14 @@ def get_trip_statistics():
     country_row = cur.fetchone()
     country_count = country_row["country_count"] if country_row and country_row["country_count"] is not None else 0
 
-    cur.execute("SELECT COUNT(DISTINCT osm_state) AS state_count FROM nodes WHERE osm_state IS NOT NULL")
+    cur.execute("""
+        SELECT COUNT(DISTINCT osm_state) AS state_count
+        FROM (
+            SELECT osm_state FROM nodes WHERE osm_state IS NOT NULL
+            UNION
+            SELECT osm_state FROM stops WHERE osm_state IS NOT NULL
+        ) AS s
+    """)
     state_row = cur.fetchone()
     state_count = state_row["state_count"] if state_row and state_row["state_count"] is not None else 0
 

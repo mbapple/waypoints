@@ -67,7 +67,7 @@ app container
 - [X] Add features to API and implement on frontend:
 	- [X] Total miles of a given trip
 	- [X] Total destination count
-- [ ] Add flights/trains/etc. to API
+- [X] Add flights/trains/etc. to API
 	- [X] On AddLeg, add a box that appears below to get all this info
 - [X] Integrate into a map view with Leaflet
 - [X] Integrate into online services 
@@ -76,7 +76,7 @@ app container
 - [X] Provide statistics about travel: distances, destination lists
 - [X] Fine tune styling
 - [X] Figure out how to update database without breaking
-- [ ] Figure out how to backup database
+- [X] Figure out how to backup database
 - [X] Organize page files
 - [X] Pull out redundant functions into separate file
 - [X] Add ability to customize style and light/dark mode
@@ -90,7 +90,7 @@ app container
 	- [X] Fix light mode color scheme
 	- [X] General cleanup of code and pulling out functions/reused components
 	- [X] Clean up what is show on TripDetails page
-	- [ ] Dates not being saved w/ Quick Create
+	- [X] Dates not being saved w/ Quick Create
 	- [x] Make only one date appear on first/last nodes
 	- [X] Visually separate legs from nodes
 	- [X] Fix styling of dropdown when uploading photo
@@ -119,13 +119,13 @@ app container
 - [X] Auto fill distances on all leg types
 - [ ] Make browser display name based on current page
 - [ ] Design logo and implement
-- [ ] Fix mess that is MapView getting data from the page itself and in the MapView
+- [X] Fix mess that is MapView getting data from the page itself and in the MapView
 - [ ] Fix container so it doesn't rebuild frontend each time
 - [X] Possibly refactor so that limited data is sent via API and specific components call for full data
 - [X] Not all data is shown in editing forms
 - [X] Simplify statistics page code
 - [ ] Add airport statistics
-- [ ] Make trip details display look better
+- [X] Make trip details display look better
 - [X] Add date to stops
 	- [X] API
 	- [X] Form
@@ -134,20 +134,20 @@ app container
 	- [ ] Clean up this
 - [X] Add overall calendar of travel
 - [X] osm_id not being saved????
-- [ ] Fix consistencies in whether states are counted by nodes or stops
-- [ ] Add global search feature
-- [ ] Major refactor:
+- [X] Fix consistencies in whether states are counted by nodes or stops
+- [X] Add global search feature
+- [X] Major refactor:
 	- [X] Lighten up what is sent over API for a nodes/stops by trip, lazy load the rest of the details
 		- Can't really do this as it messes up Mapview where 90% of data is needed anyways
 	- [X] Move the pop up component from Statistics into a general use so it can be reused
-	- [ ] Rather than expand cards, use the pop up to show more details
-		- [ ] Remove expand code
-		- [ ] Link to pop up
+	- [X] Rather than expand cards, use the pop up to show more details
+		- [X] Remove expand code
+		- [X] Link to pop up
 - [X] Make at least somewhat mobile friendly
 	- [X] Fix navigation bar issue
-	- [ ] Fix any other pages
-	- [ ] Fix call to API
-- [ ] Add stop/end dates to stops so ex. hotels can be spread across multiple days
+	- [X] Fix any other pages
+	- [X] Fix call to API
+- [X] Add stop/end dates to stops so ex. hotels can be spread across multiple days
 - [X] Add ability to add categories to stops
 - [ ] Add ability to upload multiple pohotos at once
 - [X] Fix look of buttons on map
@@ -156,3 +156,12 @@ app container
 - [X] Add pop ups to show more details in trips, figure out way to cleanly display stops
 - [ ] Make links on map auto pop up node/stop details rather than just linking to trip
 - [ ] Add new data type to represent single adventures
+	- [ ] Separate table
+	- [ ] New page to view adventures
+	- [ ] Add to calendar
+	- [ ] Add to search function
+	- [ ] Add to statistics page, count under stops, display in separated list
+	- [ ] Include in state count
+- [ ] Fix issue where it freezes randomly
+- [X] Ensure all OSM fields are updated when you change location
+- [ ] fix frame rate when zooming on map

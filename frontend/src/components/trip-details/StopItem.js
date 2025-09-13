@@ -8,7 +8,7 @@ import ContextMenu, { ContextMenuItem } from "../common/ContextMenu";
 import useExpandPhotos from "./useExpandPhotos";
 import { listPhotosByStop } from "../../api/photos";
 
-function StopItem({ stop, tripID, expanded, setExpanded, entityPhotos, setEntityPhotos, onEntityClick }) {
+function StopItem({ stop, tripID, expanded, setExpanded, entityPhotos, setEntityPhotos, onEntityClick, hideDates = false, currentDate }) {
   const key = `stop:${stop.id}`;
   const fetchPhotos = useCallback(() => listPhotosByStop(stop.id), [stop.id]);
   const { photos, refresh } = useExpandPhotos({ key, expanded, setExpanded, entityPhotos, setEntityPhotos, fetchPhotos });
@@ -45,7 +45,7 @@ function StopItem({ stop, tripID, expanded, setExpanded, entityPhotos, setEntity
           {stop.name} &nbsp;&nbsp; <Badge variant="info">{stop.category}</Badge>
         </h5>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          {(stop.start_date || stop.end_date) && (
+          {!hideDates && (stop.start_date || stop.end_date) && (
             <Flex gap={3} align="center">
               <Badge variant="primary">
                 {stop.start_date && stop.end_date && stop.start_date !== stop.end_date

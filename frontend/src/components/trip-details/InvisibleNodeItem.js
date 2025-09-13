@@ -8,7 +8,7 @@ import ContextMenu, { ContextMenuItem } from "../common/ContextMenu";
 import useExpandPhotos from "./useExpandPhotos";
 import { listPhotosByNode } from "../../api/photos";
 
-function InvisibleNodeItem({ node, tripID, expanded, setExpanded, entityPhotos, setEntityPhotos, onEntityClick }) {
+function InvisibleNodeItem({ node, tripID, expanded, setExpanded, entityPhotos, setEntityPhotos, onEntityClick, hideDates = false }) {
   const key = `node:${node.id}`;
   const fetchPhotos = useCallback(() => listPhotosByNode(node.id), [node.id]);
   const { photos, refresh } = useExpandPhotos({ key, expanded, setExpanded, entityPhotos, setEntityPhotos, fetchPhotos });
@@ -27,11 +27,13 @@ function InvisibleNodeItem({ node, tripID, expanded, setExpanded, entityPhotos, 
     <NodeCard onContextMenu={onContextMenu} style={{ position: 'relative', cursor: 'pointer' }} onClick={() => onEntityClick?.('node', node)}>
       <Flex justify="space-between" align="flex-start">
         <h4>{node.name}</h4>
-        <Flex gap={3} align="center">
-          <Badge variant="primary">{node.arrival_date}</Badge>
-          <Text>→</Text>
-          <Badge variant="primary">{node.departure_date}</Badge>
-        </Flex>
+        {!hideDates && (
+          <Flex gap={3} align="center">
+            <Badge variant="primary">{node.arrival_date}</Badge>
+            <Text>→</Text>
+            <Badge variant="primary">{node.departure_date}</Badge>
+          </Flex>
+        )}
       </Flex>
       <Flex style={{ marginBottom: '1.0rem' }}>
         <Link to={getPlaceLink(node.osm_id, node.osm_name)} target="_blank" rel="noopener noreferrer">

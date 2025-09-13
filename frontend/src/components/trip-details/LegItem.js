@@ -9,7 +9,7 @@ import ContextMenu, { ContextMenuItem } from "../common/ContextMenu";
 import useExpandPhotos from "./useExpandPhotos";
 import { listPhotosByLeg } from "../../api/photos";
 
-function LegItem({ leg, tripID, getNodeName, expanded, setExpanded, entityPhotos, setEntityPhotos, stops = [], onEntityClick }) {
+function LegItem({ leg, tripID, getNodeName, expanded, setExpanded, entityPhotos, setEntityPhotos, stops = [], onEntityClick, hideDates = false }) {
   const key = `leg:${leg.id}`;
   const fetchPhotos = useCallback(() => listPhotosByLeg(leg.id), [leg.id]);
   const { isExpanded, photos, toggle } = useExpandPhotos({ key, expanded, setExpanded, entityPhotos, setEntityPhotos, fetchPhotos });
@@ -28,7 +28,7 @@ function LegItem({ leg, tripID, getNodeName, expanded, setExpanded, entityPhotos
         <Flex justify="space-between" align="flex-start">
           <h4>{leg.name || `${getTransportTypeLabel(leg.type)} ${getNodeName(leg.start_node_id)} to ${getNodeName(leg.end_node_id)}`}</h4>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            {leg.date && <Badge variant="primary">{leg.date}</Badge>}
+            {!hideDates && leg.date && <Badge variant="primary">{leg.date}</Badge>}
             {canExpand && (
               <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); toggle(); }}>
                 {isExpanded ? '▴' : '▾'}
@@ -55,6 +55,7 @@ function LegItem({ leg, tripID, getNodeName, expanded, setExpanded, entityPhotos
                     setExpanded={setExpanded}
                     entityPhotos={entityPhotos}
                     setEntityPhotos={setEntityPhotos}
+                    hideDates={hideDates}
                   />
                 ))}
               </div>

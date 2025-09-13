@@ -9,7 +9,7 @@ import ContextMenu, { ContextMenuItem } from "../common/ContextMenu";
 import useExpandPhotos from "./useExpandPhotos";
 import { listPhotosByNode } from "../../api/photos";
 
-function NodeItem({ node, tripID, expanded, setExpanded, entityPhotos, setEntityPhotos, stops = [], onEntityClick }) {
+function NodeItem({ node, tripID, expanded, setExpanded, entityPhotos, setEntityPhotos, stops = [], onEntityClick, hideDates = false }) {
   const key = `node:${node.id}`;
   const fetchPhotos = useCallback(() => listPhotosByNode(node.id), [node.id]);
   const { isExpanded, photos, toggle } = useExpandPhotos({ key, expanded, setExpanded, entityPhotos, setEntityPhotos, fetchPhotos });
@@ -27,16 +27,18 @@ function NodeItem({ node, tripID, expanded, setExpanded, entityPhotos, setEntity
       <Flex justify="space-between" align="flex-start">
         <h4>{node.name}</h4>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          {(!node.arrival_date || !node.departure_date || node.arrival_date === node.departure_date) ? (
-            <Flex gap={3} align="center">
-              <Badge variant="primary">{node.arrival_date || node.departure_date || ''}</Badge>
-            </Flex>
-          ) : (
-            <Flex gap={3} align="center">
-              <Badge variant="primary">{node.arrival_date}</Badge>
-              <Text>→</Text>
-              <Badge variant="primary">{node.departure_date}</Badge>
-            </Flex>
+          {!hideDates && (
+            (!node.arrival_date || !node.departure_date || node.arrival_date === node.departure_date) ? (
+              <Flex gap={3} align="center">
+                <Badge variant="primary">{node.arrival_date || node.departure_date || ''}</Badge>
+              </Flex>
+            ) : (
+              <Flex gap={3} align="center">
+                <Badge variant="primary">{node.arrival_date}</Badge>
+                <Text>→</Text>
+                <Badge variant="primary">{node.departure_date}</Badge>
+              </Flex>
+            )
           )}
           {canExpand && (
             <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); toggle(); }}>
@@ -71,6 +73,7 @@ function NodeItem({ node, tripID, expanded, setExpanded, entityPhotos, setEntity
                   setExpanded={setExpanded}
                   entityPhotos={entityPhotos}
                   setEntityPhotos={setEntityPhotos}
+                  hideDates={hideDates}
                 />
               ))}
             </div>

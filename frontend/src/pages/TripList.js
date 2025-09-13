@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import { Card, Button, Text, Grid, Flex, Badge } from "../styles/components";
 import { listTrips } from "../api/trips";
@@ -21,11 +21,8 @@ const TripCard = styled(Card)`
   }
 `;
 
-const TripLink = styled(Link)`
-  text-decoration: none;
-  color: inherit;
-  display: block;
-`;
+// Removed full-card Link wrapper to allow inner interactive controls (e.g., slideshow arrows)
+// to receive clicks without triggering navigation. We'll navigate via onClick on the card.
 
 const TripTitle = styled.h3`
   color: ${props => props.theme.colors.text};
@@ -51,6 +48,7 @@ function TripList() {
   const [loading, setLoading] = useState(true);
   const [tripPhotos, setTripPhotos] = useState({});
   const [imageHeight, setImageHeight] = useState(200);
+  const navigate = useNavigate();
   
   useEffect(() => {
     const handleResize = () => {
@@ -130,24 +128,37 @@ function TripList() {
       ) : (
         <Grid columns={2}>
           {trips.map(trip => (
-            <TripLink key={trip.id} to={`/trip/${trip.id}`}>
-              <TripCard>
-                {tripPhotos[trip.id] && tripPhotos[trip.id].length > 0 && (
-                  <div style={{ marginBottom: '0.75rem' }}>
-                    <PhotoSlideshowLarge photos={tripPhotos[trip.id]} image_height={imageHeight} />
-                  </div>
-                )}
-                <TripTitle>{trip.name}</TripTitle>
-                <DateRange variant="secondary">
-                  <Badge variant="primary">{trip.start_date}</Badge>
-                  <Text variant="muted">→</Text>
-                  <Badge variant="primary">{trip.end_date}</Badge>
-                </DateRange>
-                <Text variant="muted" size="sm">
-                  Click to view details and manage this trip
-                </Text>
-              </TripCard>
-            </TripLink>
+            <TripCard
+              key={trip.id}
+              role="button"
+              tabIndex={0}
+              onClick={() => navigate(`/trip/${trip.id}`)}
+              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(`/trip/${trip.id}`); } }}
+            >
+              {tripPhotos[trip.id] && tripPhotos[trip.id].length > 0 && (
+                <div
+                  style={{ marginBottom: '0.75rem' }}
+                  onClick={e => { /* Allow slideshow arrow clicks without navigating */ e.stopPropagation(); }}
+                  onMouseDown={e => e.stopPropagation()}
+                >
+                  <PhotoSlideshowLarge photos={tripPhotos[trip.id]} image_height={imageHeight} />
+                </div>
+              )}
+              <TripTitle>
+                <Link
+                  to={`/trip/${trip.id}`}
+                  onClick={e => e.stopPropagation()}
+                  style={{ textDecoration: 'none', color: 'inherit' }}
+                >
+                  {trip.name}
+                </Link>
+              </TripTitle>
+              <DateRange variant="secondary">
+                <Badge variant="primary">{trip.start_date}</Badge>
+                <Text variant="muted">→</Text>
+                <Badge variant="primary">{trip.end_date}</Badge>
+              </DateRange>
+            </TripCard>
           ))}
         </Grid>
       )}

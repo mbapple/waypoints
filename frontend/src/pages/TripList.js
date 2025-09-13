@@ -4,7 +4,7 @@ import styled from "styled-components";
 import { Card, Button, Text, Grid, Flex, Badge } from "../styles/components";
 import { listTrips } from "../api/trips";
 import { listPhotosByTrip } from "../api/photos";
-import PhotoSlideshowSmall from "../components/photos/PhotoSlideshowSmall";
+import PhotoSlideshowLarge from "../components/photos/PhotoSlideshowLarge";
 
 const PageHeader = styled.div`
   margin: ${props => props.theme.space[8]} 0 ${props => props.theme.space[6]} 0;
@@ -50,7 +50,24 @@ function TripList() {
   const [trips, setTrips] = useState([]);
   const [loading, setLoading] = useState(true);
   const [tripPhotos, setTripPhotos] = useState({});
+  const [imageHeight, setImageHeight] = useState(200);
   
+  useEffect(() => {
+    const handleResize = () => {
+      // Adjust image height based on window width
+      if (window.innerWidth < 768) {
+        setImageHeight(150); // Smaller height for smaller screens
+      } else {
+        setImageHeight(200); // Default height for larger screens
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    handleResize(); // Call on initial render
+
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   useEffect(() => {
     fetchTrips();
   }, []);
@@ -117,7 +134,7 @@ function TripList() {
               <TripCard>
                 {tripPhotos[trip.id] && tripPhotos[trip.id].length > 0 && (
                   <div style={{ marginBottom: '0.75rem' }}>
-                    <PhotoSlideshowSmall photos={tripPhotos[trip.id]} />
+                    <PhotoSlideshowLarge photos={tripPhotos[trip.id]} image_height={imageHeight} />
                   </div>
                 )}
                 <TripTitle>{trip.name}</TripTitle>

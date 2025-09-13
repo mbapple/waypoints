@@ -97,6 +97,8 @@ function UpdateStop() {
         longitude: data.longitude || null,
         osm_name: data.osmName || null,
         osm_id: data.osmID || null,
+        osm_country: data.osmCountry || null,
+        osm_state: data.osmState || null,
   start_date: data.start_date || null,
   end_date: data.end_date || null,
       });

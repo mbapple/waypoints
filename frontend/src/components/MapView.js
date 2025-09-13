@@ -92,7 +92,7 @@ export default function MapView({
         maxBounds={[[-85, -180], [85, 180]]}
         maxBoundsViscosity={1.0}
         zoomSnap={0.01}
-        zoomDelta={0.1}
+        zoomDelta={0.01}
         wheelPxPerZoom={90}
       >
         <TileLayer {...getTileLayerConfig(isDark)} noWrap={true} />

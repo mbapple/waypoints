@@ -16,6 +16,9 @@ import PhotoSlideshowLarge from "../components/photos/PhotoSlideshowLarge";
 import PhotoUploadButton from "../components/photos/PhotoUploadButton";
 import TripDetailsList from "../components/trip-details/TripDetailsList";
 import TripDetailsDaily from "../components/trip-details/TripDetailsDaily";
+import NodePopup from "../components/trip-details/popups/NodePopup";
+import LegPopup from "../components/trip-details/popups/LegPopup";
+import StopPopup from "../components/trip-details/popups/StopPopup";
 
 function TripDetails() {
   const { tripID } = useParams();
@@ -30,6 +33,7 @@ function TripDetails() {
   const [uploadTarget, setUploadTarget] = useState(""); // e.g. node:3 / leg:5 / stop:7
   const [carPolylineByLeg, setCarPolylineByLeg] = useState({});
   const [viewMode, setViewMode] = useState('list'); // 'list' | 'daily'
+  const [popupEntity, setPopupEntity] = useState(null); // { type: 'node'|'leg'|'stop', data: obj }
 
   const [miles, setMiles] = useState(0);
 
@@ -213,6 +217,7 @@ function TripDetails() {
             setExpanded={setExpanded}
             entityPhotos={entityPhotos}
             setEntityPhotos={setEntityPhotos}
+            onEntityClick={(type, data) => setPopupEntity({ type, data })}
           />
         ) : (
           <TripDetailsDaily
@@ -225,6 +230,7 @@ function TripDetails() {
             setExpanded={setExpanded}
             entityPhotos={entityPhotos}
             setEntityPhotos={setEntityPhotos}
+            onEntityClick={(type, data) => setPopupEntity({ type, data })}
           />
         )}
       </div>
@@ -280,6 +286,23 @@ function TripDetails() {
         </div>
       </TripInfoCard>
       <AddButtons tripID={tripID} style={{ marginTop: '1.5rem', marginBottom: '3.0rem' }} />
+
+      {/* Centralized popup renderer */}
+      {popupEntity && popupEntity.type === 'node' && (
+        <NodePopup node={popupEntity.data} currentTripId={tripID} onClose={() => setPopupEntity(null)} />
+      )}
+      {popupEntity && popupEntity.type === 'leg' && (() => { const startNode = nodes.find(n=>n.id===popupEntity.data.start_node_id); const endNode = nodes.find(n=>n.id===popupEntity.data.end_node_id); return (
+        <LegPopup
+          leg={popupEntity.data}
+          startName={startNode?.name || 'Start'}
+            endName={endNode?.name || 'End'}
+          startNode={startNode}
+          endNode={endNode}
+          onClose={() => setPopupEntity(null)}
+        />); })()}
+      {popupEntity && popupEntity.type === 'stop' && (
+        <StopPopup stop={popupEntity.data} onClose={() => setPopupEntity(null)} />
+      )}
     </div>
   );
 }

@@ -8,7 +8,7 @@ import ContextMenu, { ContextMenuItem } from "../common/ContextMenu";
 import useExpandPhotos from "./useExpandPhotos";
 import { listPhotosByStop } from "../../api/photos";
 
-function StopItem({ stop, tripID, expanded, setExpanded, entityPhotos, setEntityPhotos }) {
+function StopItem({ stop, tripID, expanded, setExpanded, entityPhotos, setEntityPhotos, onEntityClick }) {
   const key = `stop:${stop.id}`;
   const fetchPhotos = useCallback(() => listPhotosByStop(stop.id), [stop.id]);
   const { photos, refresh } = useExpandPhotos({ key, expanded, setExpanded, entityPhotos, setEntityPhotos, fetchPhotos });
@@ -35,7 +35,11 @@ function StopItem({ stop, tripID, expanded, setExpanded, entityPhotos, setEntity
   }, [menu.open]);
 
   return (
-    <StopCard onContextMenu={onContextMenu} style={{ position: 'relative' }}>
+    <StopCard
+      onContextMenu={onContextMenu}
+      style={{ position: 'relative', cursor: 'pointer' }}
+      onClick={(e) => { e.stopPropagation(); onEntityClick?.('stop', stop); }}
+    >
       <Flex justify="space-between" align="center">
         <h5>
           {stop.name} &nbsp;&nbsp; <Badge variant="info">{stop.category}</Badge>
@@ -57,21 +61,16 @@ function StopItem({ stop, tripID, expanded, setExpanded, entityPhotos, setEntity
       </Flex>
       <div style={{ marginTop: '0.5rem' }}>
         {photos && photos.length > 0 && (
-          <div style={{ marginBottom: '0.5rem' }}>
+          <div style={{ marginBottom: '0.25rem' }}>
             <PhotoSlideshowSmall photos={photos} />
           </div>
         )}
-        {stop.notes && (
-          <Text variant="muted" size="sm">
-            <strong>Notes:</strong> {stop.notes}
-          </Text>
-        )}
       </div>
-          <ContextMenu open={menu.open} x={menu.x} y={menu.y} onClose={() => setMenu((m) => ({ ...m, open: false }))}>
-            <Link to={`/trip/${tripID}/update-stop?stopID=${stop.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
-              <ContextMenuItem>Edit</ContextMenuItem>
-            </Link>
-          </ContextMenu>
+      <ContextMenu open={menu.open} x={menu.x} y={menu.y} onClose={() => setMenu((m) => ({ ...m, open: false }))}>
+        <Link to={`/trip/${tripID}/update-stop?stopID=${stop.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+          <ContextMenuItem>Edit</ContextMenuItem>
+        </Link>
+      </ContextMenu>
     </StopCard>
   );
 }

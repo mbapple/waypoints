@@ -155,3 +155,4 @@ app container
 - [ ] Fix calendar list view
 - [ ] Add pop ups to show more details in trips, figure out way to cleanly display stops
 - [ ] Make links on map auto pop up node/stop details rather than just linking to trip
+- [ ] Add new data type to represent single adventures

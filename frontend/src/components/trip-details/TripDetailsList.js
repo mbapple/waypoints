@@ -9,7 +9,7 @@ import { Grid, Flex, Button, Text } from "../../styles/components";
  * TripDetailsList
  * Renders the existing itinerary list view with grouping of legs passing through invisible nodes.
  */
-function TripDetailsList({ tripID, nodes, legs, stops, expanded, setExpanded, entityPhotos, setEntityPhotos }) {
+function TripDetailsList({ tripID, nodes, legs, stops, expanded, setExpanded, entityPhotos, setEntityPhotos, onEntityClick }) {
   const getNodeName = (nodeID) => {
     const node = nodes.find(n => n.id === nodeID);
     return node ? node.name : `Node ${nodeID}`;
@@ -100,6 +100,7 @@ function TripDetailsList({ tripID, nodes, legs, stops, expanded, setExpanded, en
                   entityPhotos={entityPhotos}
                   setEntityPhotos={setEntityPhotos}
                   stops={getStopsForNode(entry.node.id)}
+                  onEntityClick={onEntityClick}
                 />
               ) : entry.kind === 'leg' ? (
                 <LegItem
@@ -111,6 +112,7 @@ function TripDetailsList({ tripID, nodes, legs, stops, expanded, setExpanded, en
                   entityPhotos={entityPhotos}
                   setEntityPhotos={setEntityPhotos}
                   stops={getStopsForLeg(entry.leg.id)}
+                  onEntityClick={onEntityClick}
                 />
               ) : entry.kind === 'travel-group' ? (
                 <TravelGroupCard>
@@ -140,6 +142,7 @@ function TripDetailsList({ tripID, nodes, legs, stops, expanded, setExpanded, en
                             entityPhotos={entityPhotos}
                             setEntityPhotos={setEntityPhotos}
                             stops={getStopsForLeg(seg.leg.id)}
+                            onEntityClick={onEntityClick}
                           />
                         ) : (
                           <InvisibleNodeItem
@@ -150,6 +153,7 @@ function TripDetailsList({ tripID, nodes, legs, stops, expanded, setExpanded, en
                             setExpanded={setExpanded}
                             entityPhotos={entityPhotos}
                             setEntityPhotos={setEntityPhotos}
+                            onEntityClick={onEntityClick}
                           />
                         )
                       ))}

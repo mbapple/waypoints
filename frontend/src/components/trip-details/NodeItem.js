@@ -9,7 +9,7 @@ import ContextMenu, { ContextMenuItem } from "../common/ContextMenu";
 import useExpandPhotos from "./useExpandPhotos";
 import { listPhotosByNode } from "../../api/photos";
 
-function NodeItem({ node, tripID, expanded, setExpanded, entityPhotos, setEntityPhotos, stops = [] }) {
+function NodeItem({ node, tripID, expanded, setExpanded, entityPhotos, setEntityPhotos, stops = [], onEntityClick }) {
   const key = `node:${node.id}`;
   const fetchPhotos = useCallback(() => listPhotosByNode(node.id), [node.id]);
   const { isExpanded, photos, toggle } = useExpandPhotos({ key, expanded, setExpanded, entityPhotos, setEntityPhotos, fetchPhotos });
@@ -21,8 +21,9 @@ function NodeItem({ node, tripID, expanded, setExpanded, entityPhotos, setEntity
     setMenu({ open: true, x: e.clientX, y: e.clientY });
   };
 
+  const canExpand = (stops && stops.length > 0); // only show expand if there are stops for this node
   return (
-    <NodeCard onContextMenu={onContextMenu} style={{ position: 'relative' }}>
+  <NodeCard onContextMenu={onContextMenu} style={{ position: 'relative', cursor: 'pointer' }} onClick={() => onEntityClick?.('node', node)}>
       <Flex justify="space-between" align="flex-start">
         <h4>{node.name}</h4>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -37,9 +38,11 @@ function NodeItem({ node, tripID, expanded, setExpanded, entityPhotos, setEntity
               <Badge variant="primary">{node.departure_date}</Badge>
             </Flex>
           )}
-          <Button variant="ghost" size="sm" onClick={toggle}>
-            {isExpanded ? '▴' : '▾'}
-          </Button>
+          {canExpand && (
+            <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); toggle(); }}>
+              {isExpanded ? '▴' : '▾'}
+            </Button>
+          )}
         </div>
       </Flex>
       <Flex style={{ marginBottom: '1.0rem' }}>
@@ -49,22 +52,12 @@ function NodeItem({ node, tripID, expanded, setExpanded, entityPhotos, setEntity
           </Text>
         </Link>
       </Flex>
-      {isExpanded && (
+  {isExpanded && canExpand && (
         <div style={{ marginTop: '0.75rem' }}>
           {photos && photos.length > 0 && (
-            <div style={{ marginBottom: '0.75rem' }}>
+            <div style={{ marginBottom: '0.5rem' }}>
               <PhotoSlideshowSmall photos={photos} />
             </div>
-          )}
-          {node.description && (
-            <Text variant="secondary" size="sm" style={{ marginBottom: '0.75rem' }}>
-              {node.description}
-            </Text>
-          )}
-          {node.notes && (
-            <Text variant="muted" size="sm">
-              <strong>Notes:</strong> {node.notes}
-            </Text>
           )}
           {/* Nested Stops inside expanded Node */}
           {stops && stops.length > 0 && (

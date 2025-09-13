@@ -172,7 +172,7 @@ function buildDayColumns(trip, nodes, legs) {
   });
 }
 
-function TripDetailsDaily({ trip, tripID, nodes, legs, stops, expanded, setExpanded, entityPhotos, setEntityPhotos }) {
+function TripDetailsDaily({ trip, tripID, nodes, legs, stops, expanded, setExpanded, entityPhotos, setEntityPhotos, onEntityClick }) {
   const dayColumns = useMemo(() => buildDayColumns(trip, nodes, legs), [trip, nodes, legs]);
   const getNodeName = (id) => nodes.find(n => n.id === id)?.name || `Node ${id}`;
 
@@ -264,6 +264,7 @@ function TripDetailsDaily({ trip, tripID, nodes, legs, stops, expanded, setExpan
                       setExpanded={dayExpansion.setExpanded}
                       entityPhotos={entityPhotos}
                       setEntityPhotos={setEntityPhotos}
+                      onEntityClick={onEntityClick}
                     />
                   );
                 }
@@ -299,6 +300,7 @@ function TripDetailsDaily({ trip, tripID, nodes, legs, stops, expanded, setExpan
                         entityPhotos={entityPhotos}
                         setEntityPhotos={setEntityPhotos}
                         stops={getStopsForNodeOnDate(item.node.id, day.date)}
+                        onEntityClick={onEntityClick}
                       />
                     </div>
                   );
@@ -315,6 +317,7 @@ function TripDetailsDaily({ trip, tripID, nodes, legs, stops, expanded, setExpan
                       entityPhotos={entityPhotos}
                       setEntityPhotos={setEntityPhotos}
                       stops={getStopsForLegOnDate(item.leg.id, day.date)}
+                      onEntityClick={onEntityClick}
                     />
                   );
                 }

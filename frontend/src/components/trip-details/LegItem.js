@@ -1,7 +1,7 @@
 import React, { useCallback } from "react";
 import { Link } from "react-router-dom";
 import { LegCard } from "./trip-detail-components";
-import { Button, Text, Flex, Badge } from "../../styles/components";
+import { Button, Flex, Badge } from "../../styles/components";
 import { getTransportTypeLabel } from "../../utils/format";
 import PhotoSlideshowSmall from "../photos/PhotoSlideshowSmall";
 import StopItem from "./StopItem";
@@ -9,7 +9,7 @@ import ContextMenu, { ContextMenuItem } from "../common/ContextMenu";
 import useExpandPhotos from "./useExpandPhotos";
 import { listPhotosByLeg } from "../../api/photos";
 
-function LegItem({ leg, tripID, getNodeName, expanded, setExpanded, entityPhotos, setEntityPhotos, stops = [] }) {
+function LegItem({ leg, tripID, getNodeName, expanded, setExpanded, entityPhotos, setEntityPhotos, stops = [], onEntityClick }) {
   const key = `leg:${leg.id}`;
   const fetchPhotos = useCallback(() => listPhotosByLeg(leg.id), [leg.id]);
   const { isExpanded, photos, toggle } = useExpandPhotos({ key, expanded, setExpanded, entityPhotos, setEntityPhotos, fetchPhotos });
@@ -21,34 +21,27 @@ function LegItem({ leg, tripID, getNodeName, expanded, setExpanded, entityPhotos
     setMenu({ open: true, x: e.clientX, y: e.clientY });
   };
 
+  const canExpand = (stops && stops.length > 0); // only show expand when there are stops
   return (
-    <LegCard onContextMenu={onContextMenu} style={{ position: 'relative' }}>
+  <LegCard onContextMenu={onContextMenu} style={{ position: 'relative', cursor: 'pointer' }} onClick={() => onEntityClick?.('leg', leg)}>
       <>
         <Flex justify="space-between" align="flex-start">
           <h4>{leg.name || `${getTransportTypeLabel(leg.type)} ${getNodeName(leg.start_node_id)} to ${getNodeName(leg.end_node_id)}`}</h4>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             {leg.date && <Badge variant="primary">{leg.date}</Badge>}
-            <Button variant="ghost" size="sm" onClick={toggle}>
-              {isExpanded ? '▴' : '▾'}
-            </Button>
+            {canExpand && (
+              <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); toggle(); }}>
+                {isExpanded ? '▴' : '▾'}
+              </Button>
+            )}
           </div>
         </Flex>
-        {isExpanded && (
+        {isExpanded && canExpand && (
           <div style={{ marginTop: '0.75rem' }}>
             {photos && photos.length > 0 && (
-              <div style={{ marginBottom: '0.75rem' }}>
+              <div style={{ marginBottom: '0.5rem' }}>
                 <PhotoSlideshowSmall photos={photos} />
               </div>
-            )}
-            {leg.description && (
-              <Text variant="secondary" size="sm" style={{ marginBottom: '0.75rem' }}>
-                {leg.description}
-              </Text>
-            )}
-            {leg.notes && (
-              <Text variant="muted" size="sm" style={{ marginBottom: '0.75rem' }}>
-                <strong>Notes:</strong> {leg.notes}
-              </Text>
             )}
             {/* Nested Stops inside expanded Leg */}
             {stops && stops.length > 0 && (

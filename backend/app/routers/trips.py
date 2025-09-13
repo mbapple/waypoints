@@ -564,11 +564,15 @@ def get_stops_by_category(category: str):
     cur = conn.cursor()
     cur.execute(
         """
-        SELECT s.name AS stop_name, s.date AS stop_date, t.id AS trip_id, t.name AS trip_name
+    SELECT s.name AS stop_name,
+           t.id AS trip_id,
+           t.name AS trip_name,
+           t.start_date AS trip_start_date,
+           t.end_date AS trip_end_date
         FROM stops s
         LEFT JOIN trips t ON t.id = s.trip_id
         WHERE s.category = %s
-        ORDER BY s.date DESC NULLS LAST, s.id ASC
+        ORDER BY s.start_date DESC NULLS LAST, s.id ASC
         """,
         (category,)
     )
@@ -578,9 +582,10 @@ def get_stops_by_category(category: str):
     return [
         {
             "name": r["stop_name"],
-            "date": r["stop_date"],
             "trip_id": r.get("trip_id"),
             "trip_name": r.get("trip_name"),
+        "trip_start_date": r.get("trip_start_date"),
+        "trip_end_date": r.get("trip_end_date"),
         }
         for r in rows
     ]

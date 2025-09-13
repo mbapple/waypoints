@@ -144,14 +144,14 @@ const Empty = styled(Text)`
 	padding: ${p => p.theme.space[12]} 0;
 `;
 
-const EmptyDash = styled.div`
+/* const EmptyDash = styled.div`
 	height: 6px;
 	width: 64px;
 	border-radius: ${p => p.theme.radii.full};
 	background: ${p => p.theme.colors.backgroundTertiary};
 	opacity: 0.6;
 `;
-
+ */
 // use shared formatNumber from utils/format
 
 const typeColor = (theme, type) => {
@@ -556,7 +556,7 @@ useEffect(() => {
 												</div>
 											) : (
 												<div style={{ marginTop: '0.5rem' }}>
-													<EmptyDash />
+													{/* <EmptyDash /> */}
 												</div>
 											)}
 							</CountryRow>

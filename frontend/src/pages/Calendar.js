@@ -192,27 +192,7 @@ const StopBar = styled(Link)`
 `;
 
 
-const Legend = styled.div`
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px 12px;
-    margin-top: 1rem;
-    font-size: .75rem;
-`;
-
-const LegendItem = styled.div`
-    display: flex;
-    align-items: center;
-    gap: 6px;
-`;
-
-const ColorSwatch = styled.span`
-    width: 16px;
-    height: 16px;
-    border-radius: 4px;
-    background: ${p => p.color};
-    display: inline-block;
-`;
+// Legend components removed (calendar legend currently disabled). Re-add if legend UI returns.
 
 // Month shell (detailed view wrapper)
 const MonthCalendarShell = styled.div`
@@ -283,6 +263,8 @@ function Calendar() {
                 if (!s || !e) return false;
                 return e >= yearStart && s <= yearEnd;
             }));
+            // Minimal debug: comment out if not needed
+            // console.log('[Calendar][fetchTrips] Raw trips response:', res);
         } catch (e) {
             console.error(e);
         } finally { setLoading(false); }
@@ -293,11 +275,13 @@ function Calendar() {
     const monthTrips = useMemo(() => {
         const ms = new Date(Date.UTC(year, selectedMonth, 1));
         const me = new Date(Date.UTC(year, selectedMonth, daysInMonth(year, selectedMonth)));
-        return trips.filter(t => {
+    const filtered = trips.filter(t => {
             const s = parseISO(t.start_date); const e = parseISO(t.end_date);
             if (!s || !e) return false;
             return e >= ms && s <= me;
         });
+    // console.log('[Calendar][monthTrips] Computed monthTrips for month', selectedMonth, 'year', year, filtered);
+    return filtered;
     }, [trips, year, selectedMonth]);
 
     const loadDetailsForMonth = useCallback(async () => {
@@ -346,6 +330,7 @@ function Calendar() {
                         ...prev,
                         [t.id]: { nodes, stops, monthLayout: { layoutNodes } }
                     }));
+                    // console.log(`[Calendar][loadDetailsForMonth] Trip ${t.id} details loaded`, { nodesCount: nodes.length, stopsCount: stops.length });
                 } catch (err) {
                     console.warn('Failed loading trip details', t.id, err);
                 }
@@ -354,6 +339,8 @@ function Calendar() {
     }, [monthTrips, tripDetails]);
 
     useEffect(() => { if (view === 'month') loadDetailsForMonth(); }, [view, selectedMonth, loadDetailsForMonth]);
+
+    // (Verbose debug logging removed)
 
     function renderYearView() {
         return (
@@ -390,7 +377,7 @@ function Calendar() {
                             <MonthCard key={mName} onClick={() => { setSelectedMonth(idx); setView('month'); }}>
                                 <MonthTitle>{mName}</MonthTitle>
                                 <MiniMonthGrid>
-                                    {['S','M','T','W','T','F','S'].map(h => <MiniDay key={h} isHeader>{h}</MiniDay>)}
+                                    {['S','M','T','W','T','F','S'].map((h, hi) => <MiniDay key={`${h}-${hi}`} isHeader>{h}</MiniDay>)}
                                     {cells.map((c, i) => {
                                         const tripsForDay = c.dayIndex>=0 ? dayTrips[c.dayIndex] : [];
                                         const style = {};
@@ -490,7 +477,7 @@ function Calendar() {
                                         const activeSpanKeys = [];
                                         const spanInfos = []; // { key, start, end, make }
                                         // Build ordered spans (node then its multi-day stops)
-                    details.monthLayout.layoutNodes.forEach(ln => {
+                                        details.monthLayout.layoutNodes.forEach(ln => {
                                             const nStart = parseISO(ln.spanStart); const nEnd = parseISO(ln.spanEnd);
                                             const nActive = nStart && nEnd && c.date >= nStart && c.date <= nEnd;
                                             if (nActive) {

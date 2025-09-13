@@ -25,8 +25,9 @@ function CreateTripQuick() {
 
   // Nodes list
   const [nodes, setNodes] = useState([
-    { name: "", ...placeToOsmFields({}) },
-    { name: "", ...placeToOsmFields({}) },
+  // Include arrivalDate/departureDate (optional) explicitly for clarity
+  { name: "", arrivalDate: "", departureDate: "", ...placeToOsmFields({}) },
+  { name: "", arrivalDate: "", departureDate: "", ...placeToOsmFields({}) },
   ]);
 
   // Legs derived between nodes; overrides and details per leg
@@ -86,7 +87,7 @@ function CreateTripQuick() {
     setLegs(prev => prev.map((l, i) => (i === idx ? { ...l, ...patch } : l)));
   };
 
-  const addNode = () => setNodes(prev => [...prev, { name: "", ...placeToOsmFields({}) }]);
+  const addNode = () => setNodes(prev => [...prev, { name: "", arrivalDate: "", departureDate: "", ...placeToOsmFields({}) }]);
   const removeNode = (idx) => setNodes(prev => prev.filter((_, i) => i !== idx));
 
   const effectiveLegEndpoints = (i) => {
@@ -113,6 +114,7 @@ function CreateTripQuick() {
       const n = nodes[i];
       if (!n.name) return `Node ${i + 1} needs a display name`;
       if (!n.latitude || !n.longitude) return `Node ${i + 1} needs a location`;
+      // Node arrival/departure dates are optional; no validation required
     }
     for (let i = 0; i < legs.length; i++) {
       const l = legs[i];
@@ -147,8 +149,9 @@ function CreateTripQuick() {
           trip_id: Number(tripId),
           name: n.name,
           description: null,
-          arrival_date: n.arrivalDate,
-          departure_date: n.departureDate,
+          // Dates are optional
+          arrival_date: n.arrivalDate || null,
+          departure_date: n.departureDate || null,
           notes: null,
           latitude: n.latitude ? Number(n.latitude) : null,
           longitude: n.longitude ? Number(n.longitude) : null,
@@ -286,13 +289,23 @@ function CreateTripQuick() {
               
               <Flex gap={4}>
                 <FormGroup style={{ flex: 1 }}>
-                  <Label htmlFor="arrivalDate">Arrival Date *</Label>
-                  <Input type="date" value={node.arrivalDate} onChange={(e) => updateNodeField(idx, { name: e.target.value })} required />
+                  <Label htmlFor="arrivalDate">Arrival Date</Label>
+                  <Input
+                    type="date"
+                    value={node.arrivalDate || ""}
+                    onChange={(e) => updateNodeField(idx, { arrivalDate: e.target.value })}
+                  />
                 </FormGroup>
 
                 <FormGroup style={{ flex: 1 }}>
-                  <Label htmlFor="departureDate">Departure Date *</Label>
-                  <Input type="date" value={node.departureDate} onChange={(e) => updateNodeField(idx, { name: e.target.value })} required min={node.departureDate} />
+                  <Label htmlFor="departureDate">Departure Date</Label>
+                  <Input
+                    type="date"
+                    value={node.departureDate || ""}
+                    onChange={(e) => updateNodeField(idx, { departureDate: e.target.value })}
+                    // Use arrivalDate as a logical min if present (dates optional)
+                    min={node.arrivalDate || undefined}
+                  />
                 </FormGroup>
               </Flex>
 

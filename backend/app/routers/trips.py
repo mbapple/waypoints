@@ -332,11 +332,17 @@ def get_trip_statistics():
     for key in ('hotel','restaurant','attraction','park','other'):
         categories.setdefault(key, 0)
 
+    # Trip count
+    cur.execute("SELECT COUNT(*) AS trip_count FROM trips")
+    trip_row = cur.fetchone()
+    trip_count = trip_row["trip_count"] if trip_row and trip_row["trip_count"] is not None else 0
+
     cur.close()
     conn.close()
 
     return {
         "all_trip_miles": all_trip_miles,
+        "trip_count": trip_count,
         "unique_destination_count": unique_destination_count,
         "country_count": country_count,
         "state_count": state_count,
@@ -542,3 +548,32 @@ def get_trips_by_osm(osm_id: str):
     cur.close()
     conn.close()
     return [{"id": r["id"], "name": r["name"]} for r in rows]
+
+@router.get("/data/stops_by_category")
+def get_stops_by_category(category: str):
+    if not category:
+        raise HTTPException(status_code=400, detail="category is required")
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute(
+        """
+        SELECT s.name AS stop_name, s.date AS stop_date, t.id AS trip_id, t.name AS trip_name
+        FROM stops s
+        LEFT JOIN trips t ON t.id = s.trip_id
+        WHERE s.category = %s
+        ORDER BY s.date DESC NULLS LAST, s.id ASC
+        """,
+        (category,)
+    )
+    rows = cur.fetchall() or []
+    cur.close()
+    conn.close()
+    return [
+        {
+            "name": r["stop_name"],
+            "date": r["stop_date"],
+            "trip_id": r.get("trip_id"),
+            "trip_name": r.get("trip_name"),
+        }
+        for r in rows
+    ]

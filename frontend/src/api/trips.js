@@ -13,3 +13,4 @@ export const getLegsByType = (type) => api.get('/trips/data/legs_by_type', { par
 export const getNodesByCountry = (country) => api.get('/trips/data/nodes_by_country', { params: { country } }).then(r => r.data);
 export const getNodesByState = (state, country) => api.get('/trips/data/nodes_by_state', { params: { state, country } }).then(r => r.data);
 export const getTripsByOsm = (osm_id) => api.get('/trips/data/trips_by_osm', { params: { osm_id } }).then(r => r.data);
+export const getStopsByCategory = (category) => api.get('/trips/data/stops_by_category', { params: { category } }).then(r => r.data);

@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import styled, { useTheme } from "styled-components";
 import { Card, Grid, Text, Flex, Badge, Button } from "../styles/components";
 import { PageHeader } from "../components/page-components";
-import { getTripStatistics, getTripsByMiles, getTripsByNights, getLegsByType, getNodesByCountry, getNodesByState, getTripsByOsm, getTrip } from "../api/trips";
+import { getTripStatistics, getTripsByMiles, getTripsByNights, getLegsByType, getNodesByCountry, getNodesByState, getTripsByOsm, getTrip, getStopsByCategory } from "../api/trips";
 import { Link } from "react-router-dom";
 import Popup from "../components/common/Popup";
 import { getTransportTypeLabel, formatNumber } from "../utils/format";
@@ -11,7 +11,16 @@ const StatCard = styled(Card)`
 	margin-bottom: 0;
 	display: flex;
 	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	text-align: center;
 	height: 100%;
+
+	&.align-left {
+		align-items: flex-start;
+		justify-content: flex-start;
+		text-align: left;
+	}
 `;
 
 const StatValue = styled.div`
@@ -27,34 +36,18 @@ const StatLabel = styled(Text)`
 `;
 
 const SectionTitle = styled.h2`
-	margin-top: ${p => p.theme.space[8]};
-	margin-bottom: ${p => p.theme.space[4]};
+	/* Reduced margins to tighten vertical spacing throughout page */
+	margin-top: ${p => p.theme.space[4]};
+	margin-bottom: ${p => p.theme.space[3]};
 `;
 
 const ChartCard = styled(Card)`
 	overflow: hidden;
-	height: 100%;
+	/* Removed fixed height + flex so card shrinks to content */
 	margin-bottom: 0;
-	display: flex;
-	flex-direction: column;
 `;
 
-// Right-column stack helper: make children stack and fill available height
-const ColumnStack = styled.div`
-	display: flex;
-	flex-direction: column;
-	height: 100%;
-	min-height: 0; /* allow inner flex to not force the grid row taller */
-`;
-
-// A ChartCard that grows to fill remaining vertical space in a ColumnStack
-const GrowChartCard = styled(ChartCard)`
-	flex: 1 1 auto;
-	display: flex;
-	flex-direction: column;
-	min-height: 0; /* allow flex child to shrink inside grid cell */
-	overflow: auto; /* scroll long content instead of expanding */
-`;
+// Removed stacked column helpers (ColumnStack, GrowChartCard) per new simplified layout
 
 // Add vertical spacing between stacked grid sections and stretch children for equal height
 const SectionGrid = styled(Grid)`
@@ -64,10 +57,11 @@ const SectionGrid = styled(Grid)`
 
 const BarRow = styled.div`
 	display: grid;
-	grid-template-columns: 140px 1fr auto;
+	/* Fixed label column so all bars start at the same x position, reducing previous large gap */
+	grid-template-columns: 90px 1fr 88px;
 	align-items: center;
-	gap: ${p => p.theme.space[4]};
-	margin-bottom: ${p => p.theme.space[3]};
+	gap: ${p => p.theme.space[3]};
+	margin-bottom: ${p => p.theme.space[2]};
 
 	@media (max-width: ${p => p.theme.breakpoints.sm}) {
 		grid-template-columns: 1fr;
@@ -93,6 +87,7 @@ const BarFill = styled.div`
 const TypeWrap = styled(Flex)`
 	align-items: center;
 	gap: ${p => p.theme.space[2]};
+	width: 90px; /* match first grid column for consistent alignment */
 `;
 
 const Swatch = styled.span`
@@ -375,6 +370,45 @@ export default function Statistics() {
 			}
 		};
 
+			// Stops by category popup loader
+			const openStopsByCategory = async (category) => {
+				const displayCat = category ? category.charAt(0).toUpperCase() + category.slice(1) : category;
+				setPopup({ open: true, title: `${displayCat} stops`, content: <Empty variant="muted">Loading…</Empty> });
+				try {
+					const rows = await getStopsByCategory(category);
+					setPopup({
+						open: true,
+						title: `${displayCat} stops`,
+						content: (
+							<div>
+								<RowHeader>
+									<Text weight="semibold">{displayCat} stops</Text>
+								</RowHeader>
+								{(rows || []).length === 0 && (
+									<Empty variant="muted">No stops in this category.</Empty>
+								)}
+								{(rows || []).map(r => {
+									const stopName = r.stop_name || r.name || 'Unnamed stop';
+									const tripName = r.trip_name || 'Unknown trip';
+									const tripId = r.trip_id;
+									const key = r.stop_id || stopName + tripId;
+									return (
+										<SubRow key={key} direction="column" style={{ alignItems: 'flex-start' }}>
+											<Text weight="semibold">{stopName}</Text>
+											{tripId && (
+												<Link to={`/trip/${tripId}`}>{tripName}</Link>
+											)}
+										</SubRow>
+									);
+								})}
+							</div>
+						)
+					});
+				} catch (e) {
+					setPopup({ open: true, title: `${displayCat} stops`, content: <Text variant="danger">Failed to load</Text> });
+				}
+			};
+
 	return (
 		<div>
 			<PageHeader>
@@ -394,17 +428,27 @@ export default function Statistics() {
 
 			{!loading && !error && data && (
 				<>
-					{/* Top summary stats */}
+					{/* Summary stats now arranged in two rows (3 columns each) including trips & nights */}
 					<SectionGrid columns={3}>
-						<StatCard as={Button} onClick={openTripsByMiles} style={{ textAlign: 'left' }}>
+						<StatCard as={Button} onClick={openTripsByMiles}>
 							<StatValue>{formatNumber(data.all_trip_miles)}</StatValue>
 							<StatLabel variant="muted">Total miles</StatLabel>
 						</StatCard>
-						<StatCard style={{ textAlign: 'left' }}>
+						<StatCard>
+							<StatValue>{formatNumber(data.trip_count)}</StatValue>
+							<StatLabel variant="muted">Trips</StatLabel>
+						</StatCard>
+						<StatCard as={Button} onClick={openTripsByNights}>
+							<StatValue>{formatNumber(data.total_nights)}</StatValue>
+							<StatLabel variant="muted">Total nights</StatLabel>
+						</StatCard>
+					</SectionGrid>
+					<SectionGrid columns={3}>
+						<StatCard>
 							<StatValue>{formatNumber(data.unique_destination_count)}</StatValue>
 							<StatLabel variant="muted">Unique destinations</StatLabel>
 						</StatCard>
-						<StatCard style={{ textAlign: 'left' }}>
+						<StatCard>
 							<StatValue>{formatNumber(data.country_count)}</StatValue>
 							<StatLabel variant="muted">Countries visited</StatLabel>
 						</StatCard>
@@ -412,52 +456,51 @@ export default function Statistics() {
 							<StatValue>{formatNumber(data.state_count)}</StatValue>
 							<StatLabel variant="muted">States visited</StatLabel>
 						</StatCard>
-					  </SectionGrid>
+					</SectionGrid>
 
-					  <SectionGrid columns={2}>
-						{/* Miles by type */}
+					{/* Miles by type & Stops by category side-by-side */}
+					<SectionGrid columns={2} style={{ alignItems: 'flex-start' }}>
 						<ChartCard>
 							<SectionTitle>Miles by type</SectionTitle>
 							{milesByTypeArr.length === 0 && (
 								<Empty variant="muted">No mileage yet</Empty>
 							)}
-											{milesByTypeArr.map(({ type, miles }) => (
-												<BarRow key={type} onClick={() => openLegsByType(type)} style={{ cursor: 'pointer' }}>
-													<TypeWrap>
-														<Swatch color={typeColor(theme, type)} />
-														<TypeLabel>{type}</TypeLabel>
-													</TypeWrap>
+							{milesByTypeArr.map(({ type, miles }) => (
+								<BarRow key={type} onClick={() => openLegsByType(type)} style={{ cursor: 'pointer' }}>
+									<TypeWrap>
+										<Swatch color={typeColor(theme, type)} />
+										<TypeLabel>{type}</TypeLabel>
+									</TypeWrap>
 									<BarTrack>
-														{maxMiles > 0 && miles > 0 && (
-															<BarFill
-																width={Math.round((miles / maxMiles) * 100)}
-																color={typeColor(theme, type)}
-															/>
-														)}
+										{maxMiles > 0 && miles > 0 && (
+											<BarFill
+												width={Math.round((miles / maxMiles) * 100)}
+												color={typeColor(theme, type)}
+											/>
+										)}
 									</BarTrack>
 									<Text>{formatNumber(miles)} mi</Text>
 								</BarRow>
 							))}
 						</ChartCard>
-
-						{/* Total nights + Stops by category (stacked to match left card height) */}
-						<ColumnStack>
-							<StatCard as={Button} onClick={openTripsByNights} style={{ textAlign: 'left', marginBottom: '1rem' }}>
-								<SectionTitle>Total nights</SectionTitle>
-								<StatValue>{formatNumber(data.total_nights)}</StatValue>
-								<StatLabel variant="muted">Nights between trip start/end</StatLabel>
-							</StatCard>
-							<GrowChartCard>
-								<SectionTitle>Stops by category</SectionTitle>
-								{Object.entries(data.stops_by_category || {}).map(([cat, count]) => (
-									<Flex key={cat} justify="space-between" style={{ padding: '0.35rem 0', borderBottom: `1px solid ${theme.colors.border}` }}>
-										<Text>{cat}</Text>
+						<ChartCard>
+							<SectionTitle>Stops by category</SectionTitle>
+							{Object.entries(data.stops_by_category || {}).map(([cat, count]) => {
+								const displayCat = cat ? cat.charAt(0).toUpperCase() + cat.slice(1) : cat;
+								return (
+									<Flex
+										key={cat}
+										justify="space-between"
+										style={{ padding: '0.35rem 0', borderBottom: `1px solid ${theme.colors.border}`, cursor: 'pointer' }}
+										onClick={() => openStopsByCategory(cat)}
+									>
+										<Text>{displayCat}</Text>
 										<Badge variant="primary">{formatNumber(count)}</Badge>
 									</Flex>
-								))}
-							</GrowChartCard>
-						</ColumnStack>
-						  </SectionGrid>
+								);
+							})}
+						</ChartCard>
+					</SectionGrid>
 
 								{/* By Country */}
 					<CountryList>

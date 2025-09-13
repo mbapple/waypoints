@@ -123,7 +123,7 @@ app container
 - [ ] Fix container so it doesn't rebuild frontend each time
 - [X] Possibly refactor so that limited data is sent via API and specific components call for full data
 - [X] Not all data is shown in editing forms
-- [ ] Simplify statistics page code
+- [X] Simplify statistics page code
 - [ ] Add airport statistics
 - [ ] Make trip details display look better
 - [X] Add date to stops
@@ -132,7 +132,7 @@ app container
 	- [X] Display
 - [X] Add day by day itenerary of each trip
 	- [ ] Clean up this
-- [ ] Add overall calendar of travel
+- [X] Add overall calendar of travel
 - [X] osm_id not being saved????
 - [ ] Fix consistencies in whether states are counted by nodes or stops
 - [ ] Add global search feature
@@ -148,5 +148,5 @@ app container
 	- [ ] Fix any other pages
 	- [ ] Fix call to API
 - [ ] Add stop/end dates to stops so ex. hotels can be spread across multiple days
-- [ ] Add ability to add categories to stops
+- [X] Add ability to add categories to stops
 - [ ] Add ability to upload multiple pohotos at once

@@ -21,6 +21,7 @@ import UpdateLeg from "./pages/Update/UpdateLeg";
 import UpdateStop from "./pages/Update/UpdateStop";
 import Statistics from "./pages/Statistics";
 import Calendar from "./pages/Calendar";
+import SearchPage from "./pages/Search";
 
 const ThemedApp = () => {
   const { settings } = useSettings();
@@ -53,6 +54,7 @@ const ThemedApp = () => {
             <Route path="/trip/:tripID/update-stop" element={<UpdateStop />} />
             <Route path="/statistics" element={<Statistics />} />
             <Route path="/calendar" element={<Calendar />} />
+            <Route path="/search" element={<SearchPage />} />
           </Routes>
         </Container>
       </Router>

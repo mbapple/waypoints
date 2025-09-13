@@ -172,6 +172,12 @@ const Navigation = () => {
             >
               Settings
             </NavLink>
+            <NavLink
+              to="/search"
+              className={location.pathname === '/search' ? 'active' : ''}
+            >
+              Search
+            </NavLink>
           </NavLinks>
         </Flex>
       </Container>

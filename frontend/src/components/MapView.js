@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from "react";
+import L from 'leaflet';
 import { Link } from "react-router-dom";
 import { MapContainer, TileLayer, Marker, Polyline, Popup, Tooltip, useMap, useMapEvent } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
@@ -46,6 +47,7 @@ export default function MapView({
   visitedStates,
   pathForTripId = (id) => `/trip/${id}`,
   linkLabel = "View trip",
+  focusTripId = null,
 }) {
   const { settings } = useSettings();
   const theme = useTheme();
@@ -103,6 +105,9 @@ export default function MapView({
           onFeatureData={(items)=> setLegendItems(items)}
           focusFeature={focusName}
         />
+        {focusTripId && (
+          <FocusTrip tripId={focusTripId} markers={markers} />
+        )}
 
         {markers.map((m) => (
           <Marker
@@ -203,7 +208,7 @@ export default function MapView({
           />
         ))}
 
-        {bounds && <FitToBounds bounds={bounds} />}
+  {bounds && !focusTripId && <FitToBounds bounds={bounds} />}
       </MapContainer>
       <MapGlobalStyles />
       </div>
@@ -238,4 +243,23 @@ export default function MapView({
       )}
     </div>
   );
+}
+
+// Focus map on all markers belonging to a tripId
+function FocusTrip({ tripId, markers }) {
+  const map = useMap();
+  React.useEffect(() => {
+    if (!tripId) return;
+    const pts = markers.filter(m => m.tripId === tripId).map(m => m.pos).filter(Boolean);
+    if (!pts.length) return;
+    try {
+      if (pts.length === 1) {
+        map.flyTo(pts[0], Math.max(map.getZoom(), 6), { animate: true });
+      } else {
+        const b = L.latLngBounds(pts);
+        map.fitBounds(b.pad(0.1), { animate: true });
+      }
+    } catch {}
+  }, [tripId, markers, map]);
+  return null;
 }

@@ -24,6 +24,7 @@ function MapPage() {
 	const [totalDestinations, setTotalDestinations] = useState(0);
 	const [totalCountries, setTotalCountries] = useState(0);
 	const [highlightMode, setHighlightMode] = useState("off"); // off | countries | states
+	const [focusTripId, setFocusTripId] = useState(null);
 
 	useEffect(() => {
 		let cancelled = false;
@@ -95,6 +96,9 @@ function MapPage() {
 		buildMapLayersForAllTrips({ nodesByTrip, legsByTrip, stopsByTrip, carPolylineByLeg })
 	, [nodesByTrip, legsByTrip, stopsByTrip, carPolylineByLeg]);
 
+	// Recompute focus positions when focusTripId changes or underlying data updates
+	// (FocusTrip logic now handled inside MapView)
+
 	return (
 		<div>
 			<PageHeader>
@@ -121,15 +125,32 @@ function MapPage() {
 					visitedStates={visitedStates}
 					pathForTripId={(id) => `/trip/${id}`}
 					linkLabel="View trip"
+					focusTripId={focusTripId}
 				/>
 			</div>
 
 			<Flex gap={2} style={{ marginTop: 12, flexWrap: "wrap" }}>
 				{trips.map((t) => (
-					<Flex key={t.id} align="center" gap={2}>
+					<button
+						key={t.id}
+						onClick={() => setFocusTripId(focusTripId === t.id ? null : t.id)}
+						style={{
+							display: 'flex',
+							alignItems: 'center',
+							gap: 8,
+							background: 'transparent',
+							border: `1px solid var(--border-color, #444)`,
+							padding: '4px 8px',
+							borderRadius: 6,
+							cursor: 'pointer',
+							fontSize: '0.75rem',
+							opacity: focusTripId && focusTripId !== t.id ? 0.6 : 1
+						}}
+						title={focusTripId === t.id ? 'Clear focus' : 'Center map on trip'}
+					>
 						<span style={{ display: "inline-block", width: 10, height: 10, borderRadius: 9999, background: getTripColor(t.id) }} />
-						<Badge variant="outline">{t.name}</Badge>
-					</Flex>
+						<Badge variant="outline" style={{ border: 'none', padding: 0 }}>{t.name}</Badge>
+					</button>
 				))}
 			</Flex>
 			

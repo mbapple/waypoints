@@ -150,3 +150,8 @@ app container
 - [ ] Add stop/end dates to stops so ex. hotels can be spread across multiple days
 - [X] Add ability to add categories to stops
 - [ ] Add ability to upload multiple pohotos at once
+- [X] Fix look of buttons on map
+- [ ] Fix trip itenerary view
+- [ ] Fix calendar list view
+- [ ] Add pop ups to show more details in trips, figure out way to cleanly display stops
+- [ ] Make links on map auto pop up node/stop details rather than just linking to trip

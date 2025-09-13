@@ -533,6 +533,11 @@ export const Badge = styled.span`
           background: rgba(239, 68, 68, 0.2);
           color: ${props.theme.colors.danger};
         `;
+      case 'invisible':
+        return `
+          background: rbga(0,0,0,0);
+          color: ${props.theme.colors.text}
+        `;
       default:
         return `
           background: ${props.theme.colors.surfaceHover};

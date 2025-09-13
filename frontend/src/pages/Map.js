@@ -131,7 +131,7 @@ function MapPage() {
 
 			<Flex gap={2} style={{ marginTop: 12, flexWrap: "wrap" }}>
 				{trips.map((t) => (
-					<button
+					<Button
 						key={t.id}
 						onClick={() => setFocusTripId(focusTripId === t.id ? null : t.id)}
 						style={{
@@ -144,13 +144,13 @@ function MapPage() {
 							borderRadius: 6,
 							cursor: 'pointer',
 							fontSize: '0.75rem',
-							opacity: focusTripId && focusTripId !== t.id ? 0.6 : 1
+							opacity: focusTripId && focusTripId !== t.id ? 0.3 : 1
 						}}
 						title={focusTripId === t.id ? 'Clear focus' : 'Center map on trip'}
 					>
 						<span style={{ display: "inline-block", width: 10, height: 10, borderRadius: 9999, background: getTripColor(t.id) }} />
-						<Badge variant="outline" style={{ border: 'none', padding: 0 }}>{t.name}</Badge>
-					</button>
+						<Badge variant="invisible" style={{ border: 'none', padding: 0 }}>{t.name}</Badge>
+					</Button>
 				))}
 			</Flex>
 			

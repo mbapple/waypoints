@@ -137,28 +137,16 @@ const Navigation = () => {
           </HamburgerButton>
           <NavLinks $open={open}>
             <NavLink
-              to="/map"
-              className={location.pathname === '/map' ? 'active' : ''}
-            >
-              Map
-            </NavLink>
-            <NavLink
               to="/"
               className={location.pathname === '/' ? 'active' : ''}
             >
               All Trips
             </NavLink>
             <NavLink
-              to="/statistics"
-              className={location.pathname === '/statistics' ? 'active' : ''}
+              to="/map"
+              className={location.pathname === '/map' ? 'active' : ''}
             >
-              Statistics
-            </NavLink>
-            <NavLink
-              to="/create"
-              className={location.pathname === '/create' ? 'active' : ''}
-            >
-              Create Trip
+              Map
             </NavLink>
             <NavLink
               to="/calendar"
@@ -167,16 +155,28 @@ const Navigation = () => {
               Calendar
             </NavLink>
             <NavLink
-              to="/settings"
-              className={location.pathname === '/settings' ? 'active' : ''}
+              to="/statistics"
+              className={location.pathname === '/statistics' ? 'active' : ''}
             >
-              Settings
+              Statistics
             </NavLink>
             <NavLink
               to="/search"
               className={location.pathname === '/search' ? 'active' : ''}
             >
               Search
+            </NavLink>
+            <NavLink
+              to="/create"
+              className={location.pathname === '/create' ? 'active' : ''}
+            >
+              Create Trip
+            </NavLink>
+            <NavLink
+              to="/settings"
+              className={location.pathname === '/settings' ? 'active' : ''}
+            >
+              Settings
             </NavLink>
           </NavLinks>
         </Flex>

@@ -14,7 +14,8 @@ class Stop(BaseModel):
     description: str | None = None
     category: str | None = None
     notes: str | None = None
-    date: str | None = None
+    start_date: str | None = None
+    end_date: str | None = None
     latitude: float | None = None
     longitude: float | None = None
     osm_name: str | None = None
@@ -31,7 +32,8 @@ class StopUpdate(BaseModel):
     description: str | None = None
     category: str | None = None
     notes: str | None = None
-    date: str | None = None
+    start_date: str | None = None
+    end_date: str | None = None
     latitude: float | None = None
     longitude: float | None = None
     osm_name: str | None = None
@@ -45,10 +47,10 @@ def get_stops_by_leg(leg_id: int):
     conn = get_db()
     cur = conn.cursor()
     cur.execute("""
-        SELECT id, trip_id, name, notes, category, leg_id, date, latitude, longitude, osm_name, osm_id, osm_country, osm_state
+    SELECT id, trip_id, name, notes, category, leg_id, start_date, end_date, latitude, longitude, osm_name, osm_id, osm_country, osm_state
         FROM stops
         WHERE leg_id = %s
-        ORDER BY date ASC NULLS LAST, updated_at ASC NULLS LAST
+    ORDER BY start_date ASC NULLS LAST, updated_at ASC NULLS LAST
     """, (leg_id,))
     rows = cur.fetchall()
     cur.close()
@@ -62,7 +64,8 @@ def get_stops_by_leg(leg_id: int):
             "notes": r["notes"] if r["notes"] else None,
             "category": r["category"],
             "leg_id": r["leg_id"],
-            "date": r["date"],
+            "start_date": r["start_date"],
+            "end_date": r["end_date"],
             "latitude": r["latitude"],
             "longitude": r["longitude"],
             "osm_name": r["osm_name"],
@@ -79,10 +82,10 @@ def get_stops_by_node(node_id: int):
     conn = get_db()
     cur = conn.cursor()
     cur.execute("""
-        SELECT id, trip_id, name, notes, category, node_id, date, latitude, longitude, osm_name, osm_id, osm_country, osm_state
+    SELECT id, trip_id, name, notes, category, node_id, start_date, end_date, latitude, longitude, osm_name, osm_id, osm_country, osm_state
         FROM stops
         WHERE node_id = %s
-        ORDER BY date ASC NULLS LAST, updated_at ASC NULLS LAST
+    ORDER BY start_date ASC NULLS LAST, updated_at ASC NULLS LAST
     """, (node_id,))
     rows = cur.fetchall()
     cur.close()
@@ -96,7 +99,8 @@ def get_stops_by_node(node_id: int):
             "notes": r["notes"] if r["notes"] else None,
             "category": r["category"],
             "node_id": r["node_id"],
-            "date": r["date"],
+            "start_date": r["start_date"],
+            "end_date": r["end_date"],
             "latitude": r["latitude"],
             "longitude": r["longitude"],
             "osm_name": r["osm_name"],
@@ -113,10 +117,10 @@ def get_stops_by_node(trip_id: int):
     conn = get_db()
     cur = conn.cursor()
     cur.execute("""
-        SELECT id, trip_id, name, notes, category, node_id, leg_id, date, latitude, longitude, osm_name, osm_id, osm_country, osm_state
+    SELECT id, trip_id, name, notes, category, node_id, leg_id, start_date, end_date, latitude, longitude, osm_name, osm_id, osm_country, osm_state
         FROM stops
         WHERE trip_id = %s
-        ORDER BY date ASC NULLS LAST, updated_at ASC NULLS LAST
+    ORDER BY start_date ASC NULLS LAST, updated_at ASC NULLS LAST
     """, (trip_id,))
     rows = cur.fetchall()
     cur.close()
@@ -131,7 +135,8 @@ def get_stops_by_node(trip_id: int):
             "category": r["category"],
             "node_id": r["node_id"],
             "leg_id": r["leg_id"],
-            "date": r["date"],
+            "start_date": r["start_date"],
+            "end_date": r["end_date"],
             "latitude": r["latitude"],
             "longitude": r["longitude"],
             "osm_name": r["osm_name"],
@@ -147,8 +152,8 @@ def create_stop(stop: Stop):
     conn = get_db()
     cur = conn.cursor()
     cur.execute("""
-        INSERT INTO stops (trip_id, name, leg_id, node_id, category, notes, date, latitude, longitude, osm_name, osm_id, osm_country, osm_state)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+    INSERT INTO stops (trip_id, name, leg_id, node_id, category, notes, start_date, end_date, latitude, longitude, osm_name, osm_id, osm_country, osm_state)
+    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
     """, (
         stop.trip_id,
         stop.name,
@@ -156,7 +161,8 @@ def create_stop(stop: Stop):
         stop.node_id,
         stop.category,
         stop.notes,
-        stop.date,
+    stop.start_date,
+    stop.end_date,
         stop.latitude,
         stop.longitude,
         stop.osm_name,
@@ -174,7 +180,7 @@ def get_stop_by_id(stop_id: int):
     conn = get_db()
     cur = conn.cursor()
     cur.execute("""
-        SELECT id, trip_id, name, notes, category, leg_id, node_id, date, latitude, longitude, osm_name, osm_id, osm_country, osm_state
+    SELECT id, trip_id, name, notes, category, leg_id, node_id, start_date, end_date, latitude, longitude, osm_name, osm_id, osm_country, osm_state
         FROM stops
         WHERE id = %s
     """, (stop_id,))
@@ -191,7 +197,8 @@ def get_stop_by_id(stop_id: int):
             "category": row["category"],
             "leg_id": row["leg_id"],
             "node_id": row["node_id"],
-            "date": row["date"],
+            "start_date": row["start_date"],
+            "end_date": row["end_date"],
             "latitude": row["latitude"],
             "longitude": row["longitude"],
             "osm_name": row["osm_name"],
@@ -206,7 +213,7 @@ def get_stop_by_id(stop_id: int):
 @router.put("/{stop_id}")
 def update_stop(stop_id: int, update: StopUpdate):
     data = update.model_dump(exclude_unset=True) if hasattr(update, "model_dump") else update.dict(exclude_unset=True)
-    allowed = {"name", "trip_id", "leg_id", "node_id", "category", "notes", "date", "latitude", "longitude", "osm_name", "osm_id", "osm_country", "osm_state"}
+    allowed = {"name", "trip_id", "leg_id", "node_id", "category", "notes", "start_date", "end_date", "latitude", "longitude", "osm_name", "osm_id", "osm_country", "osm_state"}
     data = {k: v for k, v in data.items() if k in allowed}
     if not data:
         raise HTTPException(status_code=400, detail="No fields provided for update")

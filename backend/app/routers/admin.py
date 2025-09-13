@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Header, Query
+from fastapi import APIRouter, HTTPException, UploadFile, File, Query
 from fastapi.responses import FileResponse
 from pathlib import Path
 from datetime import datetime
@@ -6,17 +6,12 @@ import os
 import subprocess
 import shutil
 
-router = APIRouter(tags=["admin"])
+router = APIRouter(prefix="/api/admin", tags=["admin"])
 
 BACKUP_DIR = Path(os.getenv("BACKUP_DIR", "/workspaces/src/backups")).resolve()
 BACKUP_DIR.mkdir(parents=True, exist_ok=True)
 
 ALLOWED_SUFFIXES = {".dump", ".sql"}
-
-def require_admin(x_admin_token: str | None = Header(default=None, alias="X-Admin-Token")):
-    expected = os.getenv("ADMIN_TOKEN")
-    if not expected or not x_admin_token or x_admin_token != expected:
-        raise HTTPException(status_code=401, detail="Unauthorized")
 
 def _safe_backup_path(name: str) -> Path:
     p = (BACKUP_DIR / name).resolve()
@@ -51,8 +46,8 @@ def _run(cmd: list[str], env: dict | None = None) -> tuple[int, str]:
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.post("/admin/db/backup")
-def create_backup(_: None = Depends(require_admin)):
+@router.post("/db/backup")
+def create_backup():
     ts = datetime.utcnow().strftime("%Y%m%d-%H%M%S")
     filename = f"backup-{ts}.dump"
     dest = (BACKUP_DIR / filename).resolve()
@@ -71,8 +66,8 @@ def create_backup(_: None = Depends(require_admin)):
         "log": log,
     }
 
-@router.get("/admin/db/backups")
-def list_backups(_: None = Depends(require_admin)):
+@router.get("/db/backups")
+def list_backups():
     items = []
     for p in sorted(BACKUP_DIR.glob("*"), key=lambda x: x.stat().st_mtime, reverse=True):
         if p.is_file() and p.suffix.lower() in ALLOWED_SUFFIXES:
@@ -83,16 +78,15 @@ def list_backups(_: None = Depends(require_admin)):
             })
     return items
 
-@router.get("/admin/db/backups/{filename}")
-def download_backup(filename: str, _: None = Depends(require_admin)):
+@router.get("/db/backups/{filename}")
+def download_backup(filename: str):
     path = _safe_backup_path(filename)
     if not path.exists():
         raise HTTPException(status_code=404, detail="Not found")
     return FileResponse(path, filename=path.name, media_type="application/octet-stream")
 
-@router.post("/admin/db/restore")
+@router.post("/db/restore")
 def restore_database(
-    _: None = Depends(require_admin),
     filename: str | None = Query(default=None, description="Existing backup filename"),
     file: UploadFile | None = File(default=None, description="Upload a .dump or .sql"),
 ):

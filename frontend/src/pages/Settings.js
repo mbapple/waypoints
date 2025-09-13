@@ -14,6 +14,8 @@ const Settings = () => {
     const [newCategory, setNewCategory] = useState('');
     const [catLoading, setCatLoading] = useState(false);
     const [catError, setCatError] = useState(null);
+    const [emojiEdits, setEmojiEdits] = useState({}); // id -> draft emoji
+    const [emojiSaving, setEmojiSaving] = useState({}); // id -> saving state
     const [themeLocal, setThemeLocal] = useState(settings.theme || 'dark');
     const [orsKeyLocal, setOrsKeyLocal] = useState(settings.orsApiKey || '');
     const [fontScaleLocal, setFontScaleLocal] = useState(settings.fontScale || 1);
@@ -202,10 +204,54 @@ const Settings = () => {
                 {!catLoading && (
                     <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
                         {categories.map(c => (
-                            <li key={c.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 0', borderBottom: '1px solid #333' }}>
-                                <span>{c.name}</span>
+                            <li key={c.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 0', borderBottom: '1px solid #333', flexWrap: 'wrap' }}>
+                                <span style={{ fontWeight: 500 }}>{c.name}</span>
+                                <input
+                                    type="text"
+                                    aria-label={`Emoji for ${c.name}`}
+                                    maxLength={16}
+                                    value={emojiEdits[c.id] !== undefined ? emojiEdits[c.id] : (c.emoji || '')}
+                                    onChange={(e) => {
+                                        const val = e.target.value;
+                                        setEmojiEdits(prev => ({ ...prev, [c.id]: val }));
+                                    }}
+                                    placeholder="(emoji)"
+                                    style={{
+                                        width: '4.2em',
+                                        textAlign: 'center',
+                                        padding: '4px 6px',
+                                        background: '#1f2330',
+                                        border: '1px solid #555',
+                                        borderRadius: 4,
+                                        color: '#fff',
+                                        caretColor: '#fff',
+                                        fontSize: '1.05rem'
+                                    }}
+                                    disabled={emojiSaving[c.id]}
+                                />
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    type="button"
+                                    disabled={emojiSaving[c.id] || (emojiEdits[c.id] === undefined || emojiEdits[c.id] === (c.emoji || ''))}
+                                    onClick={async () => {
+                                        const draft = emojiEdits[c.id];
+                                        setEmojiSaving(s => ({ ...s, [c.id]: true }));
+                                        setCatError(null);
+                                        try {
+                                            const mod = await import('../api/stop_categories');
+                                            await mod.updateStopCategory(c.id, { emoji: (draft || '').trim() || null });
+                                            // Update local list without full refetch for snappier UX
+                                            setCategories(list => list.map(x => x.id === c.id ? { ...x, emoji: (draft || '').trim() || null } : x));
+                                        } catch (e) {
+                                            setCatError(e.response?.data?.detail || e.message || 'Failed to update emoji');
+                                        } finally {
+                                            setEmojiSaving(s => ({ ...s, [c.id]: false }));
+                                        }
+                                    }}
+                                >{emojiSaving[c.id] ? 'Saving...' : 'Save'}</Button>
                                 {c.name !== 'other' && (
-                                    <Button type="button" variant="danger" onClick={() => deleteCategory(c)} style={{ marginLeft: '12px' }}>Delete</Button>
+                                    <Button type="button" size="sm" variant="danger" onClick={() => deleteCategory(c)} disabled={emojiSaving[c.id]} style={{ marginLeft: 'auto' }}>Delete</Button>
                                 )}
                             </li>
                         ))}

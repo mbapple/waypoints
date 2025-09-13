@@ -42,20 +42,56 @@ export function getTripColor(tripId) {
   return `hsl(${hue} 70% 55%)`;
 }
 
-// Emoji per stop category
-export function getStopEmoji(category) {
-  switch ((category || '').toLowerCase()) {
-    case 'hotel':
-      return '🏨';
-    case 'restaurant':
-      return '🍝';
-    case 'attraction':
-      return '📍';
-    case 'park':
-      return '🌳';
-    default:
-      return '📌';
+// ---------- Dynamic category emoji support ----------
+// We keep a lightweight in-memory cache of categories (id, name, emoji)
+let _stopCategoryCache = [];
+let _lastCategoryFetch = 0;
+let _fetchInFlight = null;
+const CATEGORY_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
+// No per-category fallback; if no custom emoji, use a generic pin
+
+function _shouldRefreshCategories() {
+  return Date.now() - _lastCategoryFetch > CATEGORY_CACHE_TTL_MS || _stopCategoryCache.length === 0;
+}
+
+function _refreshCategories() {
+  if (_fetchInFlight) return _fetchInFlight;
+  _fetchInFlight = import('../api/stop_categories')
+    .then(mod => mod.getStopCategories())
+    .then(data => {
+      _stopCategoryCache = Array.isArray(data) ? data : [];
+      _lastCategoryFetch = Date.now();
+    })
+    .catch(() => { /* swallow; keep old cache */ })
+    .finally(() => { _fetchInFlight = null; });
+  return _fetchInFlight;
+}
+
+// Public function to manually refresh (returns a promise)
+export function refreshStopCategoryEmojis(force = false) {
+  if (force) {
+    _lastCategoryFetch = 0; // invalidate
   }
+  return _refreshCategories();
+}
+
+// Synchronous emoji getter used by map markers. If cache stale, it triggers a background refresh.
+export function getStopEmoji(category) {
+  const key = (category || '').toLowerCase();
+  if (_shouldRefreshCategories()) {
+    // fire & forget
+    _refreshCategories();
+  }
+  const match = _stopCategoryCache.find(c => c.name === key);
+  if (match && match.emoji) return match.emoji;
+  return '📌';
+}
+
+// Optional async variant if a caller wants to await freshest data
+export async function getStopEmojiAsync(category) {
+  await refreshStopCategoryEmojis();
+  return getStopEmoji(category);
 }
 
 // Create a Leaflet DivIcon for a stop, with emoji and optional color border

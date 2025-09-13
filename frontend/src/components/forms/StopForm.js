@@ -27,11 +27,34 @@ export default function StopForm({
   saving = false,
 }) {
   const [formData, setFormData] = useState(initialValues);
+  const [categories, setCategories] = useState([]);
+  const [catLoading, setCatLoading] = useState(false);
+  const [catError, setCatError] = useState(null);
 
   // Sync when initialValues changes (e.g., after async fetch on update page)
   useEffect(() => {
     setFormData(initialValues);
   }, [initialValues]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadCategories = async () => {
+      setCatLoading(true); setCatError(null);
+      try {
+        const mod = await import('../../api/stop_categories');
+        const data = await mod.getStopCategories();
+        if (!cancelled) {
+          setCategories(data);
+        }
+      } catch (e) {
+        if (!cancelled) setCatError(e.message || 'Failed to load categories');
+      } finally {
+        if (!cancelled) setCatLoading(false);
+      }
+    };
+    loadCategories();
+    return () => { cancelled = true; };
+  }, []);
 
   const getNodeName = (nodeID) => {
     const node = nodes.find(n => n.id === nodeID);
@@ -104,15 +127,13 @@ export default function StopForm({
 
       <FormGroup>
         <Label htmlFor="category">Category *</Label>
-        <Select id="category" name="category" value={formData.category} onChange={handleChange} required>
-          <option value="">Select category</option>
-          <option value="hotel">Hotel</option>
-          <option value="restaurant">Restaurant</option>
-          <option value="attraction">Attraction</option>
-          <option value="park">Park</option>
-          <option value="museum">Museum</option>
-          <option value="other">Other</option>
+        <Select id="category" name="category" value={formData.category} onChange={handleChange} required disabled={catLoading || !!catError}>
+          <option value="">{catLoading ? 'Loading categories...' : (catError ? 'Error loading categories' : 'Select category')}</option>
+          {categories.map(c => (
+            <option key={c.id} value={c.name}>{c.name}</option>
+          ))}
         </Select>
+        {catError && <div style={{ color: '#f66', fontSize: 12, marginTop: 4 }}>{catError}</div>}
       </FormGroup>
 
       <FormGroup>

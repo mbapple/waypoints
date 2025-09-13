@@ -121,7 +121,7 @@ app container
 - [ ] Design logo and implement
 - [ ] Fix mess that is MapView getting data from the page itself and in the MapView
 - [ ] Fix container so it doesn't rebuild frontend each time
-- [ ] Possibly refactor so that limited data is sent via API and specific components call for full data
+- [X] Possibly refactor so that limited data is sent via API and specific components call for full data
 - [X] Not all data is shown in editing forms
 - [ ] Simplify statistics page code
 - [ ] Add airport statistics
@@ -137,8 +137,9 @@ app container
 - [ ] Fix consistencies in whether states are counted by nodes or stops
 - [ ] Add global search feature
 - [ ] Major refactor:
-	- [ ] Lighten up what is sent over API for a nodes/stops by trip, lazy load the rest of the details
-	- [ ] Move the pop up component from Statistics into a general use so it can be reused
+	- [X] Lighten up what is sent over API for a nodes/stops by trip, lazy load the rest of the details
+		- Can't really do this as it messes up Mapview where 90% of data is needed anyways
+	- [X] Move the pop up component from Statistics into a general use so it can be reused
 	- [ ] Rather than expand cards, use the pop up to show more details
 		- [ ] Remove expand code
 		- [ ] Link to pop up
@@ -147,3 +148,5 @@ app container
 	- [ ] Fix any other pages
 	- [ ] Fix call to API
 - [ ] Add stop/end dates to stops so ex. hotels can be spread across multiple days
+- [ ] Add ability to add categories to stops
+- [ ] Add ability to upload multiple pohotos at once

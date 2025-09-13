@@ -142,8 +142,8 @@ app container
 	- [ ] Rather than expand cards, use the pop up to show more details
 		- [ ] Remove expand code
 		- [ ] Link to pop up
-- [ ] Make at least somewhat mobile friendly
-	- [ ] Fix navigation bar issue
+- [X] Make at least somewhat mobile friendly
+	- [X] Fix navigation bar issue
 	- [ ] Fix any other pages
 	- [ ] Fix call to API
 - [ ] Add stop/end dates to stops so ex. hotels can be spread across multiple days

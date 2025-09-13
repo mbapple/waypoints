@@ -61,25 +61,50 @@ export default function SearchPage() {
   const [input, setInput] = useState(qp);
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState([]);
+  const [error, setError] = useState(null); // NEW
 
   // Debounced query term actually used to fetch
   const [term, setTerm] = useState(qp);
   useEffect(() => { setInput(qp); setTerm(qp); }, [qp]);
 
   useEffect(() => {
-    if (input.trim() === '') { setResults([]); return; }
+    if (input.trim() === '') {
+      setResults([]);
+      setError(null);
+      // Clear query param cleanly (avoid mutating existing instance)
+      setParams({}, { replace: true });
+      return;
+    }
     const h = setTimeout(() => {
-      setParams(p => { p.set('q', input); return p; }, { replace: true });
+      setParams({ q: input }, { replace: true }); // avoid mutating URLSearchParams
       setTerm(input);
     }, 300);
     return () => clearTimeout(h);
   }, [input, setParams]);
 
   useEffect(() => {
-    if (!term || term.trim().length < 2) { setResults([]); return; }
+    if (!term || term.trim().length < 2) { 
+      setResults([]); 
+      setError(null);
+      return; 
+    }
     let cancelled = false;
     setLoading(true);
-    globalSearch(term).then(data => { if (!cancelled) setResults(data); }).finally(() => { if (!cancelled) setLoading(false); });
+    setError(null);
+    (async () => {
+      try {
+        const data = await globalSearch(term);
+        if (!cancelled) setResults(Array.isArray(data) ? data : []);
+      } catch (e) {
+        if (!cancelled) {
+          setResults([]);
+            // Axios often throws generic "Network Error"; surface something user-friendly
+          setError(e?.message === 'Network Error' ? 'Unable to reach server. Check connection or try again.' : (e?.message || 'Search failed'));
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
     return () => { cancelled = true; };
   }, [term]);
 
@@ -101,7 +126,8 @@ export default function SearchPage() {
         autoFocus
       />
       {loading && <div style={{ marginTop: 12 }}>Searching...</div>}
-      {!loading && term && results.length === 0 && <Empty>No results</Empty>}
+      {!loading && error && <div style={{ marginTop: 12, color: '#f87171' }}>{error}</div>}
+      {!loading && !error && term && results.length === 0 && <Empty>No results</Empty>}
       {order.map(key => (
         grouped[key] && grouped[key].length > 0 ? (
           <div key={key}>

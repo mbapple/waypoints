@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
 import { ThemeProvider } from "styled-components";
 import { themes } from "./styles/theme";
 import { SettingsProvider, useSettings } from "./context/SettingsContext";
@@ -37,13 +37,17 @@ const ThemedApp = () => {
       document.documentElement.style.setProperty('--font-scale', String(settings.fontScale ?? 1));
     } catch {}
   }, [settings.fontScale]);
+  const location = useLocation();
   return (
     <ThemeProvider theme={theme}>
         <GlobalStyles />
-      <Router>
+      {/* Navigation sits outside keyed page container to avoid full remount */}
         <Navigation />
-        <Container>
-          <Routes>
+        {/* Key the page container by pathname so route-level state resets reliably when navigating.
+            This can fix cases where a page appears stale unless a manual reload occurs due to
+            components retaining state across different dynamic params or paths. */}
+        <Container key={location.pathname}>
+          <Routes location={location}>
             <Route path="/map" element={<Map />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/" element={<TripList />} />
@@ -69,7 +73,6 @@ const ThemedApp = () => {
             <Route path="/lists/:id/update" element={<UpdateList />} />
           </Routes>
         </Container>
-      </Router>
     </ThemeProvider>
   );
 }
@@ -77,7 +80,9 @@ const ThemedApp = () => {
 function App() {
   return (
     <SettingsProvider>
-      <ThemedApp />
+      <Router>
+        <ThemedApp />
+      </Router>
     </SettingsProvider>
   );
 }

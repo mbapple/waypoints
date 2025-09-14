@@ -1,39 +1,59 @@
-Running Backend
-```
-uvicorn main:app --host 0.0.0.0 --port 3001 --reload
-```
-
-
-
 #  Waypoints
-Waypoints is a self hosted travel tracking solution. It is an all in one solution to log trips and destinations. Waypoints helps you to visualize your travel providing a detailed map view of your past journeys. It is also data driven, providing overall travel statistics, tracking locations, and more.
+Waypoints is a self hosted travel tracking solution. It is an all in one solution to log trips and destinations. Waypoints helps you to visualize your travel providing a detailed map view of your past journeys. The data driven app collects information on the places you go and the routes you take to visualize and quantify your journeys around the world.
 
 # Database Schema
-In Waypoints, travel is tracked in 4 components.
+The main way to track travel is through the creation of trips and components:
 - `Trips`: Just that, representing a trip be it one night or 2 weeks. The trip stores the dates of travel.
 - `Nodes`: These are the destinations of your trip, usually starting and ending with your home. These are the cities, campsites, wherever you would say you are going.
 - `Legs`: These are the travel between your nodes: flights, road trips, etc. 
-- `Stops`: Stops allow you to track anywhere you want to remember. Be it the hotel you stayed in, a restaurant you stopped at along the way, etc. Stops are attached to either nodes or legs and are meant to be a journal of sorts.
+- `Stops`: Stops allow you to track anywhere you want to remember. Be it the hotel you stayed in, a restaurant you stopped at along the way, etc. Stops are attached to either nodes or legs and are meant to be a journal of sorts. In settings, you can create your own list of categories to represent stops and assign an emoji to represent them on the map.
 
 Nodes, Legs, and Stops are attached to places in Open Street Maps so that their coordinates can automatically be saved to contribute to the map of all your travels.
 
 Photos can also be uploaded and are attached to Trips themselves or any of the other types.
 
-# Installation:
-Waypoints runs in two docker containers, one to handle the postgres database and one to handle the web app itself.
+**Adventures:**
+`Adventures` are another way to track your journeys. They are similar in schema to `stops` but not associated. These are meant for your day trips, hikes, dives, anything special enough you want to track. They appear onside the map alongside the rest of your trips but don't contain the extra travel information.
 
+**Lists:**
+Lists are like travel goals. They can be a list of specific locations, a list of states, or a list of months of travel, whatever you want to see as you track your travel. You can create a custom list by inputting a comma separated list. They can be matched to the countries, state, or location name from OSM. Regex matching allows for automatic matching. You can also manually check off something if it is not automatically matched to a travel component.
+
+**Travel Information:**
+The database also stores additonal information about your legs. For car legs, you can automatically track the route outline and driving time using Open Route Service. For flights you can keep track of the airline and flight information. More integrations coming.
+
+# Features:
+## Map View:
+View all of your trips on a single map. Here you can visualize your waypoints around the world. You can also view any single trip on a map.
+
+## Calendar View:
+View an overview of your trips on the yearly calendar where you can easily see the days you have travelled. A montly view allows for more detailed display destinations and stops.
+
+## Statistics:
+With the statistics view, you can see how many miles you have travelled on each transportation type, how many nights you have spent away from home, and track custom lists of travel goals.
+
+## Backups:
+Backups of the database can be created in the settings menu. These backups can be downloaded and restored.
+Backing up of photos coming.
+
+
+# Installation:
+Waypoints runs in three docker containers. 
+
+The quickest way to get set up:
+```bash
+docker compose up
+```
 
 # Tech Stack:
 ```
 datbase container
 └── PostgreSQL
-app container
-└──backend/
-	└── FastAPI
-└──frontend/
-	└── React app
-		├── Leaflet Integration
-		└── Styled with styled-components 
+backend
+└── FastAPI
+frontend
+└── React app
+	├── Leaflet Integration
+	└── Styled with styled-components 
 ```
 **Integrations:**
 - [Nominatim](https://nominatim.org/): API used to search for places in Open Street Map.
@@ -41,11 +61,14 @@ app container
 
 
 # License:
-     This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation,version 3 of the license.
+    This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation,version 3 of the license.
 
     This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 
     You should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+
+
 
 
 # To Do:
@@ -172,7 +195,8 @@ app container
 	- [ ] Diving
 	- [ ] Hiking
 	- [ ] misc.
-- [ ] Fix issue where map appears over navigation bar
+- [X] Fix issue where map appears over navigation bar
+- [ ] Fix emojis not always loading
 
 Genearal Cleanup to do by hand:
 - [ ] Use the same component when viewing destinations by stop category, by country, by list
@@ -180,4 +204,3 @@ Genearal Cleanup to do by hand:
 - [ ] Have Map show all visits to a node
 - [ ] Fix the itenerary daily view
 - [ ] Remove unnecessary styling across pages
-- [ ] 

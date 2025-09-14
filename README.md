@@ -114,7 +114,7 @@ app container
 - [X] Add ability to custom order stops w/in nodes
 	Hacked by ordering by updated_at
 - [X] Add created_at and updated_at timestamps to all datatypes
-- [ ] Clean up API endpoints to only return relevant data on call
+- [X] Clean up API endpoints to only return relevant data on call
 - [X] Add statistics to statistics: Nights, distances by travel type
 - [X] Auto fill distances on all leg types
 - [ ] Make browser display name based on current page
@@ -131,7 +131,7 @@ app container
 	- [X] Form
 	- [X] Display
 - [X] Add day by day itenerary of each trip
-	- [ ] Clean up this
+	- [X] Clean up this
 - [X] Add overall calendar of travel
 - [X] osm_id not being saved????
 - [X] Fix consistencies in whether states are counted by nodes or stops
@@ -151,7 +151,7 @@ app container
 - [X] Add ability to add categories to stops
 - [ ] Add ability to upload multiple pohotos at once
 - [X] Fix look of buttons on map
-- [ ] Fix trip itenerary view
+- [X] Fix trip itenerary view
 - [X] Fix calendar list view
 - [X] Add pop ups to show more details in trips, figure out way to cleanly display stops
 - [ ] Make links on map auto pop up node/stop details rather than just linking to trip
@@ -166,6 +166,18 @@ app container
 - [X] Ensure all OSM fields are updated when you change location
 - [ ] fix frame rate when zooming on map
 - [ ] Add screenshots and more detailed instructions to README
-- [ ] Add lists table
+- [X] Add lists table
 - [ ] On map, link to all trips when you select a node (use the existing API call)
-- [ ] Add dates to statistics links
+- [ ] Add activities
+	- [ ] Diving
+	- [ ] Hiking
+	- [ ] misc.
+- [ ] Fix issue where map appears over navigation bar
+
+Genearal Cleanup to do by hand:
+- [ ] Use the same component when viewing destinations by stop category, by country, by list
+	- [ ] Show the date in this component
+- [ ] Have Map show all visits to a node
+- [ ] Fix the itenerary daily view
+- [ ] Remove unnecessary styling across pages
+- [ ] 

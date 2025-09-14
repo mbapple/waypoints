@@ -9,7 +9,8 @@ const NavContainer = styled.nav`
   padding: ${props => props.theme.space[4]} 0;
   position: sticky;
   top: 0;
-  z-index: 100;
+  /* Elevated above Leaflet map panes (tile:200, overlay:400, marker:600, popup:700) */
+  z-index: 1100;
   backdrop-filter: blur(10px);
 `;
 

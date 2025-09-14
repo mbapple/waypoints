@@ -26,6 +26,8 @@ import AdventureList from "./pages/AdventureList";
 import AddAdventure from "./pages/Create/AddAdventure";
 import UpdateAdventure from "./pages/Update/UpdateAdventure";
 import AdventureDetails from "./pages/AdventureDetails";
+import AddList from "./pages/Lists/AddList";
+import UpdateList from "./pages/Lists/UpdateList";
 
 const ThemedApp = () => {
   const { settings } = useSettings();
@@ -63,6 +65,8 @@ const ThemedApp = () => {
             <Route path="/adventures/create" element={<AddAdventure />} />
             <Route path="/adventures/update" element={<UpdateAdventure />} />
             <Route path="/adventures/view" element={<AdventureDetails />} />
+            <Route path="/lists/create" element={<AddList />} />
+            <Route path="/lists/:id/update" element={<UpdateList />} />
           </Routes>
         </Container>
       </Router>

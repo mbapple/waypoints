@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState, useRef } from "react";
 import styled, { useTheme } from "styled-components";
 import { Card, Grid, Text, Flex, Badge, Button } from "../styles/components";
+import ListSlideshow from "../components/lists/ListSlideshow";
 import { PageHeader } from "../components/page-components";
 import { getTripStatistics, getTripsByMiles, getTripsByNights, getLegsByType, getNodesByCountry, getNodesByState, getTripsByOsm, getTrip, getStopsByCategory } from "../api/trips";
 import { Link } from "react-router-dom";
@@ -561,6 +562,13 @@ useEffect(() => {
 							</CountryRow>
 						))}
 					</CountryList>
+					{/* Lists slideshow */}
+					<div style={{ marginTop: '1.5rem' }}>
+						<ListSlideshow />
+						<div style={{ marginTop: '0.75rem', textAlign: 'right' }}>
+							<Button size="sm" variant="secondary" onClick={() => window.location.href='/lists/create'}>Add List</Button>
+						</div>
+					</div>
 				</>
 			)}
 				{popup.open && (

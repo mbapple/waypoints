@@ -44,7 +44,7 @@ def list_adventures():
         """
         SELECT id, name, notes, category, start_date, end_date, latitude, longitude, osm_name, osm_id, osm_country, osm_state
         FROM adventures
-        ORDER BY start_date DESC NULLS LAST, id ASC
+        ORDER BY start_date ASC NULLS LAST, id ASC
         """
     )
     rows = cur.fetchall()

@@ -155,14 +155,17 @@ app container
 - [X] Fix calendar list view
 - [X] Add pop ups to show more details in trips, figure out way to cleanly display stops
 - [ ] Make links on map auto pop up node/stop details rather than just linking to trip
-- [ ] Add new data type to represent single adventures
-	- [ ] Separate table
-	- [ ] New page to view adventures
-	- [ ] Add to calendar
-	- [ ] Add to search function
-	- [ ] Add to statistics page, count under stops, display in separated list
+- [X] Add new data type to represent single adventures
+	- [X] Separate table
+	- [X] New page to view adventures
+	- [X] Add to calendar
+	- [X] Add to search function
+	- [X] Add to statistics page, count under stops, display in separated list
 	- [ ] Include in state count
 - [ ] Fix issue where it freezes randomly
 - [X] Ensure all OSM fields are updated when you change location
 - [ ] fix frame rate when zooming on map
 - [ ] Add screenshots and more detailed instructions to README
+- [ ] Add lists table
+- [ ] On map, link to all trips when you select a node (use the existing API call)
+- [ ] Add dates to statistics links

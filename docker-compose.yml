@@ -10,7 +10,7 @@ services:
     #ports:
     #  - "5432:5432"
     volumes:
-      - db_data:/var/lib/postgresql/data
+      - ./db_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U user -d travel_database"]
       interval: 5s
@@ -36,8 +36,9 @@ services:
     #ports:
     #  - "3001:3001"
     volumes:
-      - .:/workspaces/src
+      - ./src:/workspaces/src
       - ./uploads:/workspaces/src/uploads
+      - ./backups:/workspaces/src/backups
     command: ["bash", "-lc", "chmod +x /workspaces/src/backend/app/start.sh && /workspaces/src/backend/app/start.sh"]
 
   frontend:
@@ -52,7 +53,7 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - ./frontend:/app
+      - ./src/frontend:/app
     working_dir: /app
     command: ["bash", "-lc", "npm ci && npm start"]
 

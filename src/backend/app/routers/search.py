@@ -4,7 +4,7 @@ import re
 import datetime as _dt
 import calendar as _cal
 
-from connect import get_db
+from src.backend.app.connect import get_db
 
 router = APIRouter(prefix="/api/search", tags=["search"])
 

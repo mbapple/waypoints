@@ -5,7 +5,8 @@ import re
 import datetime as dt
 import calendar as cal
 
-from src.backend.app.connect import get_db
+#from src.backend.app.routers.connect import get_db
+from .connect import get_db
 
 router = APIRouter(prefix="/api/lists", tags=["lists"])
 

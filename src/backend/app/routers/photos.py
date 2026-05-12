@@ -5,7 +5,8 @@ import os
 import shutil
 import uuid
 
-from src.backend.app.connect import get_db
+#from src.backend.app.routers.connect import get_db
+from .connect import get_db
 
 router = APIRouter(prefix="/api/photos", tags=["photos"])
 

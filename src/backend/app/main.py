@@ -3,18 +3,30 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 
-from src.backend.app.routers import trips
-from src.backend.app.routers import nodes
-from src.backend.app.routers import legs
-from src.backend.app.routers import stops
-from src.backend.app.routers import car_details
-from src.backend.app.routers import flight_details
-from src.backend.app.routers import photos
-from src.backend.app.routers import admin
-from src.backend.app.routers import stop_categories
-from src.backend.app.routers import search
-from src.backend.app.routers import adventures
-from src.backend.app.routers import lists
+#from src.backend.app.routers import trips
+#from src.backend.app.routers import nodes
+#from src.backend.app.routers import legs
+#from src.backend.app.routers import stops
+#from src.backend.app.routers import car_details
+#from src.backend.app.routers import flight_details
+#from src.backend.app.routers import photos
+#from src.backend.app.routers import admin
+#from src.backend.app.routers import stop_categories
+#from src.backend.app.routers import search
+#from src.backend.app.routers import adventures
+#from src.backend.app.routers import lists
+from routers import trips
+from routers import nodes
+from routers import legs
+from routers import stops
+from routers import car_details
+from routers import flight_details
+from routers import photos
+from routers import admin
+from routers import stop_categories
+from routers import search
+from routers import adventures
+from routers import lists
 
 app = FastAPI()
 #app = FastAPI(redirect_slashes=False)

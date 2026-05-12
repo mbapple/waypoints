@@ -36,7 +36,7 @@ services:
     #ports:
     #  - "3001:3001"
     volumes:
-      - ./src:/workspaces/src
+      - ./src/backend:/workspaces/src/backend
       - ./uploads:/workspaces/src/uploads
       - ./backups:/workspaces/src/backups
     command: ["bash", "-lc", "chmod +x /workspaces/src/backend/app/start.sh && /workspaces/src/backend/app/start.sh"]

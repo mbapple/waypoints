@@ -124,6 +124,7 @@ def create_list(payload: ListCreate):
     return row
 
 @router.get("/")
+@router.get("")
 def list_lists():
     conn = get_db(); cur = conn.cursor()
     cur.execute("SELECT id, name, match_type, items, manual_overrides, created_at, updated_at FROM lists ORDER BY name ASC")

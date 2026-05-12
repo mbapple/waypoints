@@ -16,6 +16,7 @@ class StopCategoryUpdate(BaseModel):
 
 
 @router.get("/")
+@router.get("")
 def list_categories():
     conn = get_db()
     cur = conn.cursor()
@@ -35,6 +36,7 @@ def list_categories():
 
 
 @router.post("/")
+@router.post("")
 def create_category(cat: StopCategory):
     name = cat.name.strip().lower()
     emoji = (cat.emoji or '').strip() or None

@@ -91,6 +91,7 @@ def get_legs_by_node(trip_id: int):
 
 # Create a new leg
 @router.post("/")
+@router.post("")
 def create_leg(leg: Leg):
     conn = get_db()
     cur = conn.cursor()

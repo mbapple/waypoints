@@ -37,6 +37,7 @@ class AdventureUpdate(BaseModel):
 
 
 @router.get("/")
+@router.get("")
 def list_adventures():
     conn = get_db()
     cur = conn.cursor()
@@ -102,6 +103,7 @@ def get_adventure(adventure_id: int):
 
 
 @router.post("/")
+@router.post("")
 def create_adventure(adventure: Adventure):
     conn = get_db()
     cur = conn.cursor()

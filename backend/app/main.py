@@ -16,13 +16,14 @@ from routers import search
 from routers import adventures
 from routers import lists
 
-
 app = FastAPI()
+#app = FastAPI(redirect_slashes=False)
 
 # CORS setup
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # React dev server TODO: fix this
+    #allow_origins=["*"], # Allow all origins for development
+    allow_origins=["http://waypoints_frontend:3000"],  # Should only allow frontend container to access
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

@@ -50,6 +50,7 @@ def get_flight_details(leg_id: int):
 
 
 @router.post("/")
+@router.post("")
 def create_flight_details(details: FlightDetails):
     conn = get_db()
     cur = conn.cursor()

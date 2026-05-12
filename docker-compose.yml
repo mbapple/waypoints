@@ -7,8 +7,8 @@ services:
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password
       POSTGRES_DB: travel_database
-    ports:
-      - "5432:5432"
+    #ports:
+    #  - "5432:5432"
     volumes:
       - db_data:/var/lib/postgresql/data
     healthcheck:
@@ -32,9 +32,9 @@ services:
       DB_NAME: travel_database
       DB_USER: user
       DB_PASS: password
-      ALLOWED_ORIGINS: "http://localhost:3000"
-    ports:
-      - "3001:3001"
+      ALLOWED_ORIGINS: "http://waypoints_frontend:3000"
+    #ports:
+    #  - "3001:3001"
     volumes:
       - .:/workspaces/src
       - ./uploads:/workspaces/src/uploads
@@ -48,7 +48,7 @@ services:
       - backend
     environment:
       CHOKIDAR_USEPOLLING: "true"
-      REACT_APP_API_BASE_URL: "http://localhost:3001/api"
+      REACT_APP_API_BASE_URL: "/api"
     ports:
       - "3000:3000"
     volumes:

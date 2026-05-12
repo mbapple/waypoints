@@ -1,9 +1,8 @@
 import axios from "axios";
 
-// Prefer environment variable, fall back to local dev
-//export const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:3001/api";
-export const API_BASE_URL = "http://localhost:3001/api"
-export const API_ORIGIN = API_BASE_URL.replace(/\/?api\/?$/, "");
+// Use relative path - proxy handles routing to backend container
+export const API_BASE_URL = "/api";
+export const API_ORIGIN = "";
 
 export const api = axios.create({ baseURL: API_BASE_URL });
 

@@ -44,6 +44,7 @@ def get_car_details(leg_id: int):
 
 
 @router.post("/")
+@router.post("")
 def create_car_details(details: CarDetails):
 	conn = get_db()
 	cur = conn.cursor()

@@ -61,6 +61,7 @@ def _extract_month_year(raw: str) -> Optional[Tuple[int, int]]:
 
 
 @router.get("/")
+@router.get("")
 def global_search(q: str = Query("", min_length=0), limit: int = Query(50, ge=1, le=200)) -> List[Any]:
     """Global fuzzy-ish search across trips, nodes, legs, and stops.
 

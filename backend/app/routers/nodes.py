@@ -74,6 +74,7 @@ def get_nodes_by_trip(trip_id: int):
 
 # Create a new node
 @router.post("/")
+@router.post("")
 def create_node(node: Node):
     conn = get_db()
     cur = conn.cursor()

@@ -22,6 +22,7 @@ class TripUpdate(BaseModel):
 
 # Return a list of all trips in order by start date
 @router.get("/")
+@router.get("")
 def get_trips():
     conn = get_db()
     #print("Connection is type:", type(conn))
@@ -38,6 +39,7 @@ def get_trips():
 
 # Create a new trip
 @router.post("/")
+@router.post("")
 def create_trip(trip: Trip):
     conn = get_db()
     cur = conn.cursor()

@@ -13,5 +13,18 @@ module.exports = function(app) {
       followRedirects: true,
     })
   );
+
+  app.use(
+    '/uploads',
+    createProxyMiddleware({
+      target: 'http://waypoints_backend:3001',
+      changeOrigin: true,
+      pathRewrite: {
+        '^/uploads': '/uploads',
+      },
+      logLevel: 'debug',
+      followRedirects: true,
+    })
+  );
 };
 

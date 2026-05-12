@@ -7,4 +7,4 @@ pgdata/
 src/node_modules/
 uploads/
 backups/
-
+docker-compose.yml

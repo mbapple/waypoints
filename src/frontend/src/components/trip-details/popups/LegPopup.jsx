@@ -79,8 +79,8 @@ const LegPopup = ({ leg, onClose, startName, endName, startNode, endNode }) => {
           <Text variant="secondary" size="sm" style={{ fontWeight: 600, display: 'block', marginBottom: '0.25rem' }}>Flight Details</Text>
           {flight.flight_number && <Text variant="muted" size="sm" style={{ display: 'block' }}>Flight #: {flight.flight_number}</Text>}
           {flight.airline && <Text variant="muted" size="sm" style={{ display: 'block' }}>Airline: {flight.airline}</Text>}
-          {flight.departure_airport && <Text variant="muted" size="sm" style={{ display: 'block' }}>From: {flight.departure_airport}</Text>}
-          {flight.arrival_airport && <Text variant="muted" size="sm" style={{ display: 'block' }}>To: {flight.arrival_airport}</Text>}
+          {flight.start_airport && <Text variant="muted" size="sm" style={{ display: 'block' }}>From: {flight.start_airport}</Text>}
+          {flight.end_airport && <Text variant="muted" size="sm" style={{ display: 'block' }}>To: {flight.end_airport}</Text>}
           {flight.duration_minutes != null && <Text variant="muted" size="sm" style={{ display: 'block' }}>Duration: {flight.duration_minutes} min</Text>}
           {flight.distance_miles != null && <Text variant="muted" size="sm" style={{ display: 'block' }}>Distance: {flight.distance_miles} mi</Text>}
           <Text variant="muted" size="sm" style={{ display: 'block' }}>Path: {flight.polyline ? `recorded track${flight.track_source === 'opensky' ? ' (OpenSky)' : ''}` : 'great-circle route'}</Text>

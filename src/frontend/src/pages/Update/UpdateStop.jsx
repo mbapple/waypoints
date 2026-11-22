@@ -9,6 +9,7 @@ import { listNodesByTrip } from "../../api/nodes";
 import { listLegsByTrip } from "../../api/legs";
 import { getStop as apiGetStop, updateStop as apiUpdateStop, deleteStop as apiDeleteStop } from "../../api/stops";
 import StopForm from "../../components/forms/StopForm";
+import TripContext from "../../components/forms/TripContext";
 
 function UpdateStop() {
   const { tripID } = useParams();
@@ -136,6 +137,7 @@ function UpdateStop() {
       </PageHeader>
 
       <FormCard>
+        <TripContext tripID={tripID} what="stop" editing />
         <StopForm
           nodes={nodes}
           legs={legs}

@@ -15,8 +15,9 @@ const Banner = styled.div`
   }
 `;
 
-// Top-of-form line on the Add pages: "Adding stop to Family Trip · Jun 6 – 8, 2026"
-export default function TripContext({ tripID, what }) {
+// Top-of-form line on the Add and Update pages:
+// "Adding stop to Family Trip · Jun 6 – 8, 2026" / "Editing stop in Family Trip · …"
+export default function TripContext({ tripID, what, editing = false }) {
   const [trip, setTrip] = useState(null);
 
   useEffect(() => {
@@ -29,7 +30,7 @@ export default function TripContext({ tripID, what }) {
   const range = fmtTripRange(trip.start_date, trip.end_date);
   return (
     <Banner>
-      Adding {what} to <strong>{trip.name}</strong>{range && ` · ${range}`}
+      {editing ? `Editing ${what} in` : `Adding ${what} to`} <strong>{trip.name}</strong>{range && ` · ${range}`}
     </Banner>
   );
 }

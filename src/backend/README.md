@@ -619,6 +619,8 @@ Response:
 ### GET `/api/photos/by_trip/{trip_id}`
 List photos linked to a trip.
 
+The `by_*` list endpoints return each photo's `id`, `url`, `description`, `immich_asset_id` (null for uploaded photos) and its other link ids (`trip_id`, `leg_id`, `node_id`, `stop_id`, `adventure_id`, minus the one filtered on).
+
 ### GET `/api/photos/by_leg/{leg_id}`
 List photos linked to a leg.
 
@@ -627,6 +629,9 @@ List photos linked to a node.
 
 ### GET `/api/photos/by_stop/{stop_id}`
 List photos linked to a stop.
+
+### GET `/api/photos/by_adventure/{adventure_id}`
+List photos linked to an adventure.
 
 ### DELETE `/api/photos/{photo_id}`
 Delete a photo and remove the file if present. For a photo linked from Immich this only removes the link; the photo stays in Immich.
@@ -794,6 +799,9 @@ Response:
 
 ### GET `/api/integrations/immich/adventures/{adventure_id}/assets`
 Same as above for an adventure's `start_date`..`end_date` (`end_date` defaults to `start_date`). 400 if the adventure has no dates. `linked` means already linked to this adventure.
+
+### GET `/api/integrations/immich/assets/{asset_id}/open`
+"Open in Immich": 302 redirect to `<IMMICH_PUBLIC_URL>/photos/<asset_id>` (Immich's web UI; `IMMICH_PUBLIC_URL` defaults to `IMMICH_URL`). This is the only endpoint that sends the browser to Immich; the API key is never included. 400 for a malformed id, 503 if Immich is not configured, 404 if no photo in WayPoints is linked to that asset.
 
 ### GET `/api/integrations/immich/assets/{asset_id}/{size}`
 Image proxy. `size` is `thumbnail` (small) or `preview` (large JPEG/WebP).

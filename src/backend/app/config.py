@@ -42,10 +42,16 @@ OPENSKY_CLIENT_SECRET = os.getenv("OPENSKY_CLIENT_SECRET", "").strip()
 # Immich (self-hosted photo library). All Immich calls are made by the backend;
 # the browser only sees WayPoints' own proxy URLs. Accept the base URL with or
 # without a trailing "/api".
-IMMICH_URL = os.getenv("IMMICH_URL", "").strip().rstrip("/")
-if IMMICH_URL.endswith("/api"):
-    IMMICH_URL = IMMICH_URL[: -len("/api")]
+def _immich_base_url(name: str) -> str:
+    url = os.getenv(name, "").strip().rstrip("/")
+    return url[: -len("/api")] if url.endswith("/api") else url
+
+
+IMMICH_URL = _immich_base_url("IMMICH_URL")
 IMMICH_API_KEY = os.getenv("IMMICH_API_KEY", "").strip()
+# Browser-facing Immich address, used only to redirect "Open in Immich" clicks
+# (GET /api/integrations/immich/assets/<id>/open). Defaults to IMMICH_URL.
+IMMICH_PUBLIC_URL = _immich_base_url("IMMICH_PUBLIC_URL") or IMMICH_URL
 
 # Nominatim (OpenStreetMap geocoder) for the backend's city lookups. The public
 # server allows about 1 request per second; point this at your own instance to

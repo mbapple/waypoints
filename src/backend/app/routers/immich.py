@@ -4,6 +4,9 @@ Every request to Immich is made here, server-side, with IMMICH_URL and
 IMMICH_API_KEY from .env. The browser never talks to Immich: it lists assets
 through this router, loads images through the image proxy below, and linked
 photos are stored with a URL that points at that proxy, not at Immich.
+
+The one exception is "Open in Immich": /assets/<id>/open redirects the browser
+to the photo in Immich's web UI at IMMICH_PUBLIC_URL (the key is never sent).
 """
 import json
 import re
@@ -13,7 +16,7 @@ from datetime import datetime, time, timedelta
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException
-from fastapi.responses import Response
+from fastapi.responses import RedirectResponse, Response
 from pydantic import BaseModel
 
 import config
@@ -242,6 +245,26 @@ def list_trip_assets(trip_id: int):
 def list_adventure_assets(adventure_id: int):
     """Immich photos taken during the adventure (local capture date within its dates)."""
     return _list_assets("adventure_id", adventure_id, _adventure_date_range)
+
+
+# Declared before /assets/{asset_id}/{size} so "open" isn't taken as an image size.
+@router.get("/assets/{asset_id}/open")
+def open_asset(asset_id: str):
+    """Redirect the browser to a linked photo in Immich's web UI (IMMICH_PUBLIC_URL)."""
+    asset_id = _check_asset_id(asset_id)
+    if not (_is_configured() and config.IMMICH_PUBLIC_URL):
+        raise HTTPException(status_code=503, detail="Immich is not configured (set IMMICH_URL and IMMICH_API_KEY in .env)")
+    conn = get_db()
+    try:
+        cur = conn.cursor()
+        cur.execute("SELECT 1 FROM photos WHERE immich_asset_id = %s LIMIT 1", (asset_id,))
+        linked = cur.fetchone() is not None
+        cur.close()
+    finally:
+        conn.close()
+    if not linked:
+        raise HTTPException(status_code=404, detail="No linked photo has this Immich asset id")
+    return RedirectResponse(f"{config.IMMICH_PUBLIC_URL}/photos/{asset_id}", status_code=302)
 
 
 @router.get("/assets/{asset_id}/{size}")

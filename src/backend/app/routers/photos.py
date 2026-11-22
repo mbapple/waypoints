@@ -306,7 +306,7 @@ def calendar_photos(start: date = Query(...), end: date = Query(...)):
 async def list_photos_by_trip(trip_id: int):
     conn = get_db()
     cur = conn.cursor()
-    cur.execute("SELECT id, url, description, leg_id, node_id, stop_id, adventure_id FROM photos WHERE trip_id = %s ORDER BY id DESC", (trip_id,))
+    cur.execute("SELECT id, url, description, leg_id, node_id, stop_id, adventure_id, immich_asset_id FROM photos WHERE trip_id = %s ORDER BY id DESC", (trip_id,))
     rows = cur.fetchall()
     cur.close()
     conn.close()
@@ -317,7 +317,7 @@ async def list_photos_by_trip(trip_id: int):
 async def list_photos_by_leg(leg_id: int):
     conn = get_db()
     cur = conn.cursor()
-    cur.execute("SELECT id, url, description, trip_id, node_id, stop_id, adventure_id FROM photos WHERE leg_id = %s ORDER BY id DESC", (leg_id,))
+    cur.execute("SELECT id, url, description, trip_id, node_id, stop_id, adventure_id, immich_asset_id FROM photos WHERE leg_id = %s ORDER BY id DESC", (leg_id,))
     rows = cur.fetchall()
     cur.close()
     conn.close()
@@ -328,7 +328,7 @@ async def list_photos_by_leg(leg_id: int):
 async def list_photos_by_node(node_id: int):
     conn = get_db()
     cur = conn.cursor()
-    cur.execute("SELECT id, url, description, trip_id, leg_id, stop_id, adventure_id FROM photos WHERE node_id = %s ORDER BY id DESC", (node_id,))
+    cur.execute("SELECT id, url, description, trip_id, leg_id, stop_id, adventure_id, immich_asset_id FROM photos WHERE node_id = %s ORDER BY id DESC", (node_id,))
     rows = cur.fetchall()
     cur.close()
     conn.close()
@@ -339,7 +339,7 @@ async def list_photos_by_node(node_id: int):
 async def list_photos_by_stop(stop_id: int):
     conn = get_db()
     cur = conn.cursor()
-    cur.execute("SELECT id, url, description, trip_id, leg_id, node_id, adventure_id FROM photos WHERE stop_id = %s ORDER BY id DESC", (stop_id,))
+    cur.execute("SELECT id, url, description, trip_id, leg_id, node_id, adventure_id, immich_asset_id FROM photos WHERE stop_id = %s ORDER BY id DESC", (stop_id,))
     rows = cur.fetchall()
     cur.close()
     conn.close()
@@ -349,7 +349,7 @@ async def list_photos_by_stop(stop_id: int):
 async def list_photos_by_adventure(adventure_id: int):
     conn = get_db()
     cur = conn.cursor()
-    cur.execute("SELECT id, url, description, trip_id, leg_id, node_id, stop_id FROM photos WHERE adventure_id = %s ORDER BY id DESC", (adventure_id,))
+    cur.execute("SELECT id, url, description, trip_id, leg_id, node_id, stop_id, immich_asset_id FROM photos WHERE adventure_id = %s ORDER BY id DESC", (adventure_id,))
     rows = cur.fetchall()
     cur.close()
     conn.close()

@@ -41,6 +41,7 @@ services:
       OPENSKY_CLIENT_SECRET: ${OPENSKY_CLIENT_SECRET:-}
       IMMICH_URL: ${IMMICH_URL:-}
       IMMICH_API_KEY: ${IMMICH_API_KEY:-}
+      IMMICH_PUBLIC_URL: ${IMMICH_PUBLIC_URL:-}
       NOMINATIM_URL: ${NOMINATIM_URL:-https://nominatim.openstreetmap.org}
       NOMINATIM_LANGUAGE: ${NOMINATIM_LANGUAGE:-en}
     #ports:

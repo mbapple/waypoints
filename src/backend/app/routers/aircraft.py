@@ -1,12 +1,16 @@
 """Aircraft details and photos for flight legs (all keyless).
 
-- adsbdb.com (then hexdb.io) turns a transponder address (icao24) or a
-  registration (tail number) into registration, type and ICAO type code.
+- adsbdb.com turns a transponder address (icao24) or a registration (tail
+  number) into registration, type and ICAO type code. For an icao24 it falls
+  back to hexdb.io, then to the open tar1090-db aircraft database (the one
+  ADS-B maps use, from Mictronics/readsb) on GitHub, which knows many newer
+  airframes the other two don't.
 - airport-data.com gives a photo of that airframe with its photographer and
   photo page. The full-size JPEG is downloaded once per registration into
   UPLOAD_DIR/aircraft/<REG>.jpg, with the credit in <REG>.json beside it.
   Photos remain the photographers' copyright: always show the credit and link.
 """
+import gzip
 import json
 import logging
 import os
@@ -25,6 +29,8 @@ log = logging.getLogger(__name__)
 
 ADSBDB_API = "https://api.adsbdb.com/v0"
 HEXDB_API = "https://hexdb.io/api/v1"
+AIRCRAFT_DB = "https://raw.githubusercontent.com/wiedehopf/tar1090-db/master/db/{bucket}.js"
+AIRCRAFT_DB_MAX_BYTES = 8 * 1024 * 1024
 AIRPORT_DATA_API = "https://airport-data.com/api/ac_thumb.json"
 AIRPORT_DATA_IMAGE = "https://image.airport-data.com/aircraft/{id}.jpg"
 PHOTO_DIR = os.path.join(config.UPLOAD_DIR, "aircraft")
@@ -44,6 +50,47 @@ def normalize_icao24(value: Optional[str]) -> Optional[str]:
 def normalize_registration(value: Optional[str]) -> Optional[str]:
     reg = re.sub(r"\s+", "", value or "").upper()
     return reg if REGISTRATION_RE.match(reg) else None
+
+
+_db_buckets: dict = {}  # a few recently used tar1090-db buckets (only successful loads)
+
+
+def _db_bucket(name: str) -> Optional[dict]:
+    if name not in _db_buckets:
+        raw = download(AIRCRAFT_DB.format(bucket=name), AIRCRAFT_DB_MAX_BYTES, "")
+        try:
+            data = json.loads(gzip.decompress(raw)) if raw else None
+        except (OSError, ValueError):
+            data = None
+        if not isinstance(data, dict):
+            return None
+        if len(_db_buckets) >= 4:
+            _db_buckets.clear()
+        _db_buckets[name] = data
+    return _db_buckets[name]
+
+
+def _lookup_open_db(icao24: str) -> Optional[dict]:
+    """tar1090-db: files named by a hex prefix hold the rest of each address as
+    keys, and list longer prefixes that have files of their own as `children`."""
+    code = icao24.upper()
+    for level in range(1, len(code)):
+        bucket = _db_bucket(code[:level])
+        if not bucket:
+            return None
+        entry = bucket.get(code[level:])
+        if entry:
+            registration, icao_type, _flags, description = (list(entry) + [None] * 4)[:4]
+            return {
+                "icao24": icao24.lower(),
+                "registration": normalize_registration(registration),
+                "type": description or None,
+                "icao_type": (icao_type or "").upper() or None,
+                "operator": None,
+            }
+        if code[:level + 1] not in (bucket.get("children") or []):
+            return None
+    return None
 
 
 def lookup_aircraft(icao24: Optional[str] = None, registration: Optional[str] = None) -> Optional[dict]:
@@ -71,6 +118,7 @@ def lookup_aircraft(icao24: Optional[str] = None, registration: Optional[str] = 
                 "icao_type": (h.get("ICAOTypeCode") or "").upper() or None,
                 "operator": h.get("RegisteredOwners"),
             }
+        return _lookup_open_db(icao24)
     return None
 
 

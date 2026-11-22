@@ -314,6 +314,6 @@ def _aircraft(icao24: str):
         log.exception("Aircraft lookup failed for icao24 %s", icao24)
         aircraft = None
     if not aircraft:
-        log.warning("Aircraft %s not found in adsbdb or hexdb", icao24)
+        log.warning("Aircraft %s not found in any aircraft database", icao24)
         return {"icao24": icao24, "registration": None, "type": None, "icao_type": None, "operator": None, "photo": None}
     return aircraft

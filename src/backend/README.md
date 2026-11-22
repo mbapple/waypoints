@@ -743,14 +743,14 @@ Response:
   "coordinates": [[-0.46, 51.47], ...]
 }
 
-`aircraft` is the airframe that flew it, looked up from `icao24`. If adsbdb and hexdb don't know it, only `icao24` is filled in (the other fields are null) so it can still be saved; lookup failures are logged and never lose the track. If the photo can't be saved (for example, `uploads/` isn't writable), `photo` is null and the reason is logged.
+`aircraft` is the airframe that flew it, looked up from `icao24`. If no aircraft database knows it, only `icao24` is filled in (the other fields are null) so it can still be saved; lookup failures are logged and never lose the track. If the photo can't be saved (for example, `uploads/` isn't writable), `photo` is null and the reason is logged.
 
 Errors: 503 if OpenSky is not configured; 400 for an unrecognisable flight number; 409 if the date is today or later (OpenSky publishes flights in a nightly batch); 410 if the date is more than ~30 days ago (OpenSky no longer has the track); 422 if no airport can be determined; 404 if no matching flight or track is found; 429 if the OpenSky daily credit limit is used up; 502 if OpenSky fails or rejects the credentials.
 
 ## Aircraft API (`/api/integrations/aircraft`)
 
 ### GET `/api/integrations/aircraft?registration=G-YMMN` (or `?icao24=4007f9`)
-An aircraft's registration, type and photo. Details come from adsbdb (then hexdb.io for an `icao24`); no key is needed. A photo from airport-data.com is downloaded the first time a registration is looked up and saved as `uploads/aircraft/<REG>.jpg` with its credit in `<REG>.json`; later lookups reuse it. Photos remain their photographers' copyright: always show `credit` and `link`.
+An aircraft's registration, type and photo. Details come from adsbdb; for an `icao24` it falls back to hexdb.io, then to the open tar1090-db aircraft database on GitHub (a few of its files are cached in memory). No key is needed. A photo from airport-data.com is downloaded the first time a registration is looked up and saved as `uploads/aircraft/<REG>.jpg` with its credit in `<REG>.json`; later lookups reuse it. Photos remain their photographers' copyright: always show `credit` and `link`.
 
 Response:
 {

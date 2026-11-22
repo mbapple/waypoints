@@ -127,7 +127,7 @@ export default function AdventureDetails() {
 
       {photos && photos.length > 0 && (
         <Section>
-          <PhotoSlideshowLarge photos={photos} image_height={imageHeight} />
+          <PhotoSlideshowLarge photos={photos} image_height={imageHeight} expandable />
         </Section>
       )}
 

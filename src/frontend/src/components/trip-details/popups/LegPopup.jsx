@@ -10,7 +10,7 @@ import { getCarDetails, getFlightDetails } from '../../../api/legs';
 import { aircraftLabel } from '../../../utils/aircraftTypes';
 import AircraftPhoto from '../../flights/AircraftPhoto';
 
-const LegPopup = ({ leg, onClose, startName, endName, startNode, endNode }) => {
+const LegPopup = ({ leg, onClose, startName, endName, startNode, endNode, onPhotosChanged }) => {
   const [photos, setPhotos] = useState([]);
   const [car, setCar] = useState(null);
   const [flight, setFlight] = useState(null);
@@ -92,7 +92,7 @@ const LegPopup = ({ leg, onClose, startName, endName, startNode, endNode }) => {
       )}
       {photos && photos.length > 0 && (
         <div style={{ marginTop: '0.25rem' }}>
-          <PhotoSlideshowLarge photos={photos} />
+          <PhotoSlideshowLarge photos={photos} expandable onPhotoRemoved={onPhotosChanged && ((p) => { setPhotos(ps => ps.filter(x => x.id !== p.id)); onPhotosChanged(); })} />
         </div>
       )}
     </Popup>

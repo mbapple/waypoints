@@ -8,7 +8,7 @@ import { listPhotosByNode } from '../../../api/photos';
 import { getTripsByOsm } from '../../../api/trips';
 
 // Shows node info, photos, and other trips sharing this OSM feature
-const NodePopup = ({ node, onClose, currentTripId }) => {
+const NodePopup = ({ node, onClose, currentTripId, onPhotosChanged }) => {
   const [photos, setPhotos] = useState([]);
   const [otherTrips, setOtherTrips] = useState([]); // all trips from API
   const [selectedTripId, setSelectedTripId] = useState(String(currentTripId));
@@ -50,7 +50,7 @@ const NodePopup = ({ node, onClose, currentTripId }) => {
       )}
       {photos && photos.length > 0 && (
         <div style={{ marginTop: '0.25rem' }}>
-            <PhotoSlideshowLarge photos={photos} />
+            <PhotoSlideshowLarge photos={photos} expandable onPhotoRemoved={onPhotosChanged && ((p) => { setPhotos(ps => ps.filter(x => x.id !== p.id)); onPhotosChanged(); })} />
         </div>
       )}
       {visibleTrips.length > 0 && (

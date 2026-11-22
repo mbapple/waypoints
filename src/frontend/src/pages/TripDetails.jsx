@@ -115,7 +115,7 @@ function TripDetails() {
     );
   }
 
-  // After adding a photo: reload the trip's photos (the itinerary groups them by stop/node/leg)
+  // After adding or removing a photo: reload the trip's photos (the itinerary groups them by stop/node/leg)
   const refreshPhotos = async () => {
     try { setTripPhotos(await listPhotosByTrip(tripID)); } catch {}
   };
@@ -145,7 +145,7 @@ function TripDetails() {
       </Header>
 
       <Hero $photos={tripPhotos.length > 0}>
-        {tripPhotos.length > 0 && <PhotoSlideshowLarge photos={tripPhotos} image_height={HERO_HEIGHT} />}
+        {tripPhotos.length > 0 && <PhotoSlideshowLarge photos={tripPhotos} image_height={HERO_HEIGHT} expandable onPhotoRemoved={refreshPhotos} />}
         <div className="hero-map">
           <MapView
             markers={markers}
@@ -208,7 +208,7 @@ function TripDetails() {
 
       {/* Centralized popup renderer */}
       {popupEntity && popupEntity.type === 'node' && (
-        <NodePopup node={popupEntity.data} currentTripId={tripID} onClose={() => setPopupEntity(null)} />
+        <NodePopup node={popupEntity.data} currentTripId={tripID} onClose={() => setPopupEntity(null)} onPhotosChanged={refreshPhotos} />
       )}
       {popupEntity && popupEntity.type === 'leg' && (() => { const startNode = nodes.find(n=>n.id===popupEntity.data.start_node_id); const endNode = nodes.find(n=>n.id===popupEntity.data.end_node_id); return (
         <LegPopup
@@ -218,9 +218,10 @@ function TripDetails() {
           startNode={startNode}
           endNode={endNode}
           onClose={() => setPopupEntity(null)}
+          onPhotosChanged={refreshPhotos}
         />); })()}
       {popupEntity && popupEntity.type === 'stop' && (
-        <StopPopup stop={popupEntity.data} onClose={() => setPopupEntity(null)} />
+        <StopPopup stop={popupEntity.data} onClose={() => setPopupEntity(null)} onPhotosChanged={refreshPhotos} />
       )}
     </div>
   );

@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { API_ORIGIN } from '../../api/client';
+import { ExpandIcon } from '../common/Icons';
+import PhotoViewer from './PhotoViewer';
 
 const SliderContainer = styled.div`
   width: 100%;
@@ -9,6 +11,7 @@ const SliderContainer = styled.div`
   overflow: hidden;
   background: #0f172a;
   position: relative;
+  cursor: ${p => (p.$expandable ? 'zoom-in' : 'auto')};
 
   /* Controls fade in on hover where hover exists; always visible on touch screens */
   @media (hover: hover) {
@@ -55,6 +58,12 @@ const NavBtn = styled.button`
   &:focus-visible { outline: 2px solid white; outline-offset: 2px; }
 `;
 
+const ExpandBtn = styled(NavBtn)`
+  top: 8px;
+  right: 8px;
+  transform: none;
+`;
+
 const Dots = styled.div`
   position: absolute;
   bottom: 8px;
@@ -89,9 +98,14 @@ const Chevron = ({ dir }) => (
  * - rounded: round all corners (default true). Pass false when the slideshow is a
  *   full-bleed card header and the card clips the corners itself.
  * - fit: CSS object-fit for the photos (default 'cover'; 'contain' letterboxes)
+ * - expandable: clicking the slideshow (or its expand button) opens the fullscreen
+ *   PhotoViewer (default false, so cards and map popups keep their behaviour)
+ * - onPhotoRemoved(photo): with expandable, lets the viewer unlink/delete photos;
+ *   the parent should drop the photo from `photos`
  */
-export default function PhotoSlideshowLarge({ photos = [], image_height, rounded = true, fit = 'cover' }) {
+export default function PhotoSlideshowLarge({ photos = [], image_height, rounded = true, fit = 'cover', expandable = false, onPhotoRemoved }) {
   const [index, setIndex] = useState(0);
+  const [viewing, setViewing] = useState(false);
 
   useEffect(() => {
     if (!photos.length) return;
@@ -103,9 +117,10 @@ export default function PhotoSlideshowLarge({ photos = [], image_height, rounded
   const prev = (e) => { e.stopPropagation(); setIndex(i => (i - 1 + photos.length) % photos.length); };
   const next = (e) => { e.stopPropagation(); setIndex(i => (i + 1) % photos.length); };
   const show = (e, i) => { e.stopPropagation(); setIndex(i); };
+  const openViewer = (e) => { e.stopPropagation(); setViewing(true); };
 
   return (
-    <SliderContainer $height={image_height} $rounded={rounded}>
+    <SliderContainer $height={image_height} $rounded={rounded} $expandable={expandable} onClick={expandable ? openViewer : undefined}>
       {photos.map((p, i) => (
         <Slide key={p.id || p.url || i} $active={i === index} aria-hidden={i !== index}>
           <Img
@@ -126,6 +141,17 @@ export default function PhotoSlideshowLarge({ photos = [], image_height, rounded
             ))}
           </Dots>
         </>
+      )}
+      {expandable && photos.length > 0 && (
+        <ExpandBtn className="slideshow-nav" type="button" onClick={openViewer} aria-label="View photos full screen"><ExpandIcon size={15} /></ExpandBtn>
+      )}
+      {viewing && (
+        <PhotoViewer
+          photos={photos}
+          startIndex={Math.min(index, photos.length - 1)}
+          onClose={(i) => { setViewing(false); setIndex(i); }}
+          onRemoved={onPhotoRemoved}
+        />
       )}
     </SliderContainer>
   );

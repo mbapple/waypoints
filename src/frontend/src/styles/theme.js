@@ -63,6 +63,12 @@ export const darkTheme = {
     semibold: 600,
     bold: 700,
   },
+
+  lineHeights: {
+    tight: 1.2,
+    snug: 1.35,
+    normal: 1.5,
+  },
   
   // Spacing
   space: {
@@ -182,6 +188,12 @@ export const lightTheme = {
     medium: 500,
     semibold: 600,
     bold: 700,
+  },
+
+  lineHeights: {
+    tight: 1.2,
+    snug: 1.35,
+    normal: 1.5,
   },
 
   space: {

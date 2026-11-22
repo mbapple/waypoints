@@ -6,7 +6,7 @@ import { Container, Flex } from '../styles/components';
 const NavContainer = styled.nav`
   background: ${props => props.theme.colors.surface};
   border-bottom: 1px solid ${props => props.theme.colors.border};
-  padding: ${props => props.theme.space[4]} 0;
+  padding: 0;
   position: sticky;
   top: 0;
   /* Elevated above Leaflet map panes (tile:200, overlay:400, marker:600, popup:700) */
@@ -14,9 +14,15 @@ const NavContainer = styled.nav`
   backdrop-filter: blur(10px);
 `;
 
+const NavBar = styled(Flex)`
+  position: relative;
+  min-height: 54px;
+`;
+
 const NavBrand = styled(Link)`
-  font-size: ${props => props.theme.fontSizes.xl};
+  font-size: ${props => props.theme.fontSizes.lg};
   font-weight: ${props => props.theme.fontWeights.bold};
+  letter-spacing: -0.01em;
   color: ${props => props.theme.colors.text};
   text-decoration: none;
   
@@ -35,9 +41,10 @@ const NavLinks = styled(Flex)`
     right: 0;
     flex-direction: column;
     background: ${props => props.theme.colors.surface};
-    padding: ${props => props.theme.space[4]} ${props => props.theme.space[4]};
+    padding: ${props => props.theme.space[2]} ${props => props.theme.space[4]} ${props => props.theme.space[3]};
     border-bottom: 1px solid ${props => props.theme.colors.border};
-    gap: ${props => props.theme.space[2]};
+    box-shadow: ${props => props.theme.shadows.md};
+    gap: 2px;
     display: ${props => (props.$open ? 'flex' : 'none')};
     animation: fadeSlide 0.2s ease;
     z-index: 99; /* under nav bar container which is 100 */
@@ -53,7 +60,8 @@ const HamburgerButton = styled.button`
   display: none;
   background: transparent;
   border: 1px solid transparent;
-  padding: ${props => props.theme.space[2]};
+  padding: 6px;
+  margin-right: -6px;
   border-radius: ${props => props.theme.radii.md};
   color: ${props => props.theme.colors.text};
   line-height: 0;
@@ -70,7 +78,7 @@ const HamburgerButton = styled.button`
 `;
 
 const HamburgerIcon = ({ open }) => (
-  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
     {open ? (
       <>
         <line x1="18" y1="6" x2="6" y2="18" />
@@ -98,7 +106,8 @@ const MobileOverlay = styled.div`
 `;
 
 const NavLink = styled(Link)`
-  padding: ${props => props.theme.space[2]} ${props => props.theme.space[4]};
+  padding: 6px ${props => props.theme.space[3]};
+  font-size: ${props => props.theme.fontSizes.sm};
   color: ${props => props.theme.colors.textSecondary};
   font-weight: ${props => props.theme.fontWeights.medium};
   border-radius: ${props => props.theme.radii.md};
@@ -114,6 +123,11 @@ const NavLink = styled(Link)`
     color: ${props => props.theme.colors.primary};
     background: rgba(99, 102, 241, 0.1);
   }
+
+  @media (max-width: ${props => props.theme.breakpoints.md}) {
+    padding: ${props => props.theme.space[2]} ${props => props.theme.space[3]};
+    font-size: ${props => props.theme.fontSizes.base};
+  }
 `;
 
 const Navigation = () => {
@@ -127,7 +141,7 @@ const Navigation = () => {
     <NavContainer>
       <MobileOverlay $open={open} onClick={() => setOpen(false)} />
       <Container>
-        <Flex justify="space-between" align="center" style={{ position: 'relative' }}>
+        <NavBar justify="space-between" align="center">
           <NavBrand to="/">Waypoints</NavBrand>
           <HamburgerButton
             aria-label={open ? 'Close navigation menu' : 'Open navigation menu'}
@@ -180,7 +194,7 @@ const Navigation = () => {
               Settings
             </NavLink>
           </NavLinks>
-        </Flex>
+        </NavBar>
       </Container>
     </NavContainer>
   );

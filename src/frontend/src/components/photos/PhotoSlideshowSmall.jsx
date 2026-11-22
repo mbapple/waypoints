@@ -5,11 +5,11 @@ import { API_ORIGIN } from '../../api/client';
 const SmallSlider = styled.div`
   width: 100%;
   height: 140px;
-  border-radius: 10px;
+  border-radius: ${p => p.theme.radii.lg};
   overflow: hidden;
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: 4px;
+  gap: 2px;
   background: #0f172a;
 `;
 
@@ -26,7 +26,7 @@ export default function PhotoSlideshowSmall({ photos = [] }) {
   return (
     <SmallSlider>
       {thumbs.map((p, i) => (
-  <Thumb key={p.id || p.url || i} src={p.url.startsWith('http') ? p.url : `${API_ORIGIN}${p.url}`} alt={p.description || `Photo ${i+1}`} />
+        <Thumb key={p.id || p.url || i} src={p.url.startsWith('http') ? p.url : `${API_ORIGIN}${p.url}`} alt={p.description || `Photo ${i+1}`} />
       ))}
     </SmallSlider>
   );

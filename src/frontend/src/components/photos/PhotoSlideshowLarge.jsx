@@ -112,7 +112,8 @@ export default function PhotoSlideshowLarge({ photos = [], image_height, rounded
             $fit={fit}
             src={p.url.startsWith('http') ? p.url : `${API_ORIGIN}${p.url}`}
             alt={p.description || `Photo ${i + 1}`}
-            loading={i === 0 ? undefined : 'lazy'}
+            loading="lazy"
+            decoding="async"
           />
         </Slide>
       ))}

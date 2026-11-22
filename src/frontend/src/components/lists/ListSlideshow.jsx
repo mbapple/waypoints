@@ -6,7 +6,7 @@ import { listLists, getList, addOverride, removeOverride } from '../../api/lists
 import { useNavigate } from 'react-router-dom';
 
 const Wrapper = styled(Card)`
-  margin-top: 2rem;
+  margin-top: 0;
   position: relative;
   padding-top: 2.25rem; /* space for top arrows */
 `;

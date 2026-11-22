@@ -17,6 +17,16 @@ const StatCard = styled(Card)`
 	justify-content: center;
 	text-align: center;
 	height: 100%;
+	padding: ${p => p.theme.space[4]} ${p => p.theme.space[3]};
+	/* Same look whether rendered as a div or as a clickable Button */
+	gap: 0;
+	line-height: ${p => p.theme.lineHeights.normal};
+	white-space: normal;
+	font-size: inherit;
+
+	@media (max-width: ${p => p.theme.breakpoints.sm}) {
+		padding: ${p => p.theme.space[3]} ${p => p.theme.space[2]};
+	}
 
 	&.align-left {
 		align-items: flex-start;
@@ -26,20 +36,25 @@ const StatCard = styled(Card)`
 `;
 
 const StatValue = styled.div`
-	font-size: ${p => p.theme.fontSizes['3xl']};
+	font-size: ${p => p.theme.fontSizes['2xl']};
 	font-weight: ${p => p.theme.fontWeights.bold};
 	color: ${p => p.theme.colors.text};
 	line-height: 1.1;
+
+	@media (max-width: ${p => p.theme.breakpoints.sm}) {
+		font-size: ${p => p.theme.fontSizes.xl};
+	}
 `;
 
 const StatLabel = styled(Text)`
 	display: block;
-	margin-top: ${p => p.theme.space[2]};
+	margin-top: ${p => p.theme.space[1]};
+	font-size: ${p => p.theme.fontSizes.sm};
 `;
 
 const SectionTitle = styled.h2`
-	/* Reduced margins to tighten vertical spacing throughout page */
-	margin-top: ${p => p.theme.space[4]};
+	font-size: ${p => p.theme.fontSizes.lg};
+	margin-top: 0;
 	margin-bottom: ${p => p.theme.space[3]};
 `;
 
@@ -48,14 +63,33 @@ const ChartCard = styled(Card)`
 `;
 const StopsContent = styled.div`
 	overflow-y: auto;
+	scrollbar-width: thin;
+	scrollbar-color: ${p => p.theme.colors.border} transparent;
 	padding-right: 2px; /* room for scrollbar */
+`;
+
+// Summary tiles stay three across, even on phones, so the headline numbers fit on one screen
+const StatGrid = styled.div`
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: ${p => p.theme.space[4]};
+	margin-bottom: ${p => p.theme.space[4]};
+
+	@media (max-width: ${p => p.theme.breakpoints.sm}) {
+		gap: ${p => p.theme.space[2]};
+		margin-bottom: ${p => p.theme.space[2]};
+	}
 `;
 
 // Removed stacked column helpers (ColumnStack, GrowChartCard) per new simplified layout
 
 // Add vertical spacing between stacked grid sections and stretch children for equal height
 const SectionGrid = styled(Grid)`
-	margin-bottom: ${p => p.theme.space[8]};
+	margin-bottom: ${p => p.theme.space[4]};
+
+	@media (max-width: ${p => p.theme.breakpoints.sm}) {
+		margin-bottom: ${p => p.theme.space[3]};
+	}
 	align-items: stretch;
 `;
 
@@ -113,7 +147,7 @@ const CountryList = styled(Card)`
 
 const CountryRow = styled.div`
 	border-bottom: 1px solid ${p => p.theme.colors.border};
-	padding: ${p => p.theme.space[3]} 0;
+	padding: ${p => p.theme.space[2]} 0;
 
 	&:last-child {
 		border-bottom: 0;
@@ -143,7 +177,7 @@ const Chip = styled(Badge)`
 const Empty = styled(Text)`
 	display: block;
 	text-align: center;
-	padding: ${p => p.theme.space[12]} 0;
+	padding: ${p => p.theme.space[8]} 0;
 `;
 
 /* const EmptyDash = styled.div`
@@ -466,7 +500,7 @@ useEffect(() => {
 			{!loading && !error && data && (
 				<>
 					{/* Summary stats now arranged in two rows (3 columns each) including trips & nights */}
-					<SectionGrid columns={3}>
+					<StatGrid>
 						<StatCard as={Button} onClick={openTripsByMiles}>
 							<StatValue>{formatNumber(data.all_trip_miles)}</StatValue>
 							<StatLabel variant="muted">Total miles</StatLabel>
@@ -479,8 +513,8 @@ useEffect(() => {
 							<StatValue>{formatNumber(data.total_nights)}</StatValue>
 							<StatLabel variant="muted">Total nights</StatLabel>
 						</StatCard>
-					</SectionGrid>
-					<SectionGrid columns={3}>
+					</StatGrid>
+					<StatGrid>
 						<StatCard as={Button} onClick={openDestinations}>
 							<StatValue>{formatNumber(data.unique_destination_count)}</StatValue>
 							<StatLabel variant="muted">Unique destinations</StatLabel>
@@ -493,7 +527,7 @@ useEffect(() => {
 							<StatValue>{formatNumber(data.state_count)}</StatValue>
 							<StatLabel variant="muted">States visited</StatLabel>
 						</StatCard>
-					</SectionGrid>
+					</StatGrid>
 
 					{/* Miles by type & Stops by category side-by-side (equal height) */}
 					<SectionGrid columns={2} style={{ alignItems: 'flex-start' }}>
@@ -571,9 +605,9 @@ useEffect(() => {
 						))}
 					</CountryList>
 					{/* Lists slideshow */}
-					<div style={{ marginTop: '1.5rem' }}>
+					<div style={{ marginTop: '1rem' }}>
 						<ListSlideshow />
-						<div style={{ marginTop: '0.75rem', textAlign: 'right' }}>
+						<div style={{ marginTop: '0.5rem', textAlign: 'right' }}>
 							<Button size="sm" variant="secondary" onClick={() => window.location.href='/lists/create'}>Add List</Button>
 						</div>
 					</div>

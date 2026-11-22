@@ -230,14 +230,15 @@ function layoutWeek(days, trips, adventures, tripDetails) {
 // ---------------------------------------------------------------------------
 
 const Page = styled.div`
-    margin-top: 1.5rem;
+    margin: 1.25rem 0 1.5rem;
+    @media (max-width: ${p => p.theme.breakpoints.sm}) { margin-top: 1rem; }
 `;
 
 const Controls = styled.div`
     display: flex;
-    gap: .9rem;
+    gap: .75rem;
     align-items: center;
-    margin-bottom: 1.4rem;
+    margin-bottom: 1rem;
     flex-wrap: wrap;
 `;
 
@@ -257,7 +258,7 @@ const Muted = styled.p`
 const YearGrid = styled.div`
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 1.25rem;
+    gap: 1rem;
     align-items: start;
     @media (max-width: ${p => p.theme.breakpoints.lg}) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     @media (max-width: ${p => p.theme.breakpoints.sm}) { grid-template-columns: minmax(0, 1fr); }
@@ -266,8 +267,8 @@ const YearGrid = styled.div`
 const MonthCard = styled.div`
     background: ${p => p.theme.colors.card};
     border: 1px solid ${p => p.theme.colors.border};
-    border-radius: ${p => p.theme.radii.md};
-    padding: 0.65rem 0.75rem 0.9rem;
+    border-radius: ${p => p.theme.radii.lg};
+    padding: 0.65rem 0.75rem 0.75rem;
     cursor: pointer;
     transition: ${p => p.theme.transitions.base};
     overflow: hidden;
@@ -330,9 +331,9 @@ const Dot = styled.span`
 const MonthShell = styled.div`
     background: ${p => p.theme.colors.card};
     border: 1px solid ${p => p.theme.colors.border};
-    border-radius: ${p => p.theme.radii.lg};
-    padding: 1.1rem 1.2rem 1.4rem;
-    box-shadow: ${p => p.theme.shadows.md};
+    border-radius: ${p => p.theme.radii.xl};
+    padding: .9rem 1rem 1rem;
+    box-shadow: ${p => p.theme.shadows.sm};
     @media (max-width: ${p => p.theme.breakpoints.sm}) { padding: .6rem .4rem .8rem; }
 `;
 
@@ -340,9 +341,9 @@ const MonthHeader = styled.div`
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 1rem;
+    margin-bottom: .75rem;
     flex-wrap: wrap;
-    gap: .85rem;
+    gap: .75rem;
 `;
 
 const WeekdayHeader = styled.div`

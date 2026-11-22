@@ -2,40 +2,53 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import styled from 'styled-components';
 import { globalSearch } from '../api/search';
+import { PageHeader } from '../components/page-components';
 
 const Input = styled.input`
   width: 100%;
-  padding: ${p => p.theme.space[3]};
+  padding: ${p => p.theme.space[2]} ${p => p.theme.space[3]};
+  min-height: 40px;
   background: ${p => p.theme.colors.surface};
   border: 1px solid ${p => p.theme.colors.border};
   border-radius: ${p => p.theme.radii.md};
   color: ${p => p.theme.colors.text};
-  font-size: ${p => p.theme.fontSizes.md};
-  &:focus { outline: 2px solid ${p => p.theme.colors.primary}; outline-offset: 2px; }
+  font-size: ${p => p.theme.fontSizes.base};
+  &::placeholder { color: ${p => p.theme.colors.textMuted}; }
+  &:focus { outline: none; border-color: ${p => p.theme.colors.primary}; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15); }
 `;
 
 const SectionHeader = styled.h3`
-  margin: ${p => p.theme.space[5]} 0 ${p => p.theme.space[2]};
-  font-size: ${p => p.theme.fontSizes.lg};
-  color: ${p => p.theme.colors.text};
+  margin: ${p => p.theme.space[4]} 0 ${p => p.theme.space[2]};
+  font-size: ${p => p.theme.fontSizes.xs};
+  font-weight: ${p => p.theme.fontWeights.semibold};
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: ${p => p.theme.colors.textMuted};
 `;
 
 const ResultCard = styled(Link)`
   display: block;
-  padding: ${p => p.theme.space[3]} ${p => p.theme.space[4]};
+  padding: ${p => p.theme.space[2]} ${p => p.theme.space[3]};
   background: ${p => p.theme.colors.surface};
   border: 1px solid ${p => p.theme.colors.border};
-  border-radius: ${p => p.theme.radii.md};
+  border-radius: ${p => p.theme.radii.lg};
   text-decoration: none;
   color: ${p => p.theme.colors.text};
   transition: ${p => p.theme.transitions.fast};
   &:hover { background: ${p => p.theme.colors.surfaceHover}; border-color: ${p => p.theme.colors.primary}; }
-  + & { margin-top: ${p => p.theme.space[2]}; }
+  & + & { margin-top: ${p => p.theme.space[2]}; }
+`;
+
+const Subtitle = styled.div`
+  margin-top: 2px;
+  font-size: ${p => p.theme.fontSizes.sm};
+  color: ${p => p.theme.colors.textSecondary};
 `;
 
 const Meta = styled.div`
   font-size: ${p => p.theme.fontSizes.xs};
-  color: ${p => p.theme.colors.textSecondary};
+  color: ${p => p.theme.colors.textMuted};
+  align-items: center;
   margin-top: ${p => p.theme.space[1]};
   display: flex; flex-wrap: wrap; gap: ${p => p.theme.space[2]};
 `;
@@ -43,16 +56,27 @@ const Meta = styled.div`
 const Badge = styled.span`
   background: ${p => p.theme.colors.surfaceHover};
   border: 1px solid ${p => p.theme.colors.border};
-  padding: 2px 6px;
-  border-radius: ${p => p.theme.radii.sm};
-  font-size: ${p => p.theme.fontSizes.xs};
+  padding: 1px 6px;
+  border-radius: ${p => p.theme.radii.full};
+  font-size: 0.6875rem;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.04em;
 `;
 
 const Empty = styled.div`
-  margin-top: ${p => p.theme.space[6]};
+  margin-top: ${p => p.theme.space[4]};
   color: ${p => p.theme.colors.textSecondary};
+`;
+
+const Status = styled.div`
+  margin-top: ${p => p.theme.space[3]};
+  color: ${p => (p.$error ? p.theme.colors.danger : p.theme.colors.textSecondary)};
+`;
+
+const Footnote = styled.div`
+  margin-top: ${p => p.theme.space[6]};
+  font-size: ${p => p.theme.fontSizes.xs};
+  color: ${p => p.theme.colors.textMuted};
 `;
 
 export default function SearchPage() {
@@ -118,15 +142,17 @@ export default function SearchPage() {
 
   return (
     <div>
-      <h1 style={{ marginTop: 0 }}>Search</h1>
+      <PageHeader>
+        <h1>Search</h1>
+      </PageHeader>
       <Input
         placeholder="Search trips, nodes, legs, stops..."
         value={input}
         onChange={e => setInput(e.target.value)}
         autoFocus
       />
-      {loading && <div style={{ marginTop: 12 }}>Searching...</div>}
-      {!loading && error && <div style={{ marginTop: 12, color: '#f87171' }}>{error}</div>}
+      {loading && <Status>Searching...</Status>}
+      {!loading && error && <Status $error>{error}</Status>}
       {!loading && !error && term && results.length === 0 && <Empty>No results</Empty>}
       {order.map(key => (
         grouped[key] && grouped[key].length > 0 ? (
@@ -141,7 +167,7 @@ export default function SearchPage() {
               return (
                 <ResultCard key={`${r.type}-${r.id}`} to={link}>
                   <strong>{r.title || '(Untitled)'}</strong>
-                  {r.subtitle && <div style={{ marginTop: 4, fontSize: '0.875rem', opacity: 0.85 }}>{r.subtitle}</div>}
+                  {r.subtitle && <Subtitle>{r.subtitle}</Subtitle>}
                   <Meta>
                     <Badge>{r.type}</Badge>
                     {(r.start_date || r.end_date) && (
@@ -159,9 +185,9 @@ export default function SearchPage() {
           </div>
         ) : null
       ))}
-      <div style={{ marginTop: 40, fontSize: '0.75rem', opacity: 0.6 }}>
+      <Footnote>
         Showing up to 50 results. Refine your query for more specific matches.
-      </div>
+      </Footnote>
     </div>
   );
 }

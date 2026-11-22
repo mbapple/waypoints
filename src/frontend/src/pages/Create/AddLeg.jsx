@@ -69,6 +69,8 @@ function AddLeg() {
                     airline: data.airline || null,
                     start_airport: data.start_airport || null,
                     end_airport: data.end_airport || null,
+                    polyline: data.flight_polyline || null,
+                    track_source: data.flight_polyline ? (data.flight_track_source || null) : null,
                 });
             }
             navigate(`/trip/${tripID}`);

@@ -33,6 +33,7 @@ def integration_status():
     return {
         "ors_configured": bool(config.ORS_API_KEY),
         "immich_configured": bool(config.IMMICH_URL and config.IMMICH_API_KEY),
+        "opensky_configured": bool(config.OPENSKY_CLIENT_ID and config.OPENSKY_CLIENT_SECRET),
     }
 
 

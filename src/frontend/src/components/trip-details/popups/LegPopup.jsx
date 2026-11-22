@@ -83,6 +83,7 @@ const LegPopup = ({ leg, onClose, startName, endName, startNode, endNode }) => {
           {flight.arrival_airport && <Text variant="muted" size="sm" style={{ display: 'block' }}>To: {flight.arrival_airport}</Text>}
           {flight.duration_minutes != null && <Text variant="muted" size="sm" style={{ display: 'block' }}>Duration: {flight.duration_minutes} min</Text>}
           {flight.distance_miles != null && <Text variant="muted" size="sm" style={{ display: 'block' }}>Distance: {flight.distance_miles} mi</Text>}
+          <Text variant="muted" size="sm" style={{ display: 'block' }}>Path: {flight.polyline ? `recorded track${flight.track_source === 'opensky' ? ' (OpenSky)' : ''}` : 'great-circle route'}</Text>
         </div>
       )}
       {photos && photos.length > 0 && (

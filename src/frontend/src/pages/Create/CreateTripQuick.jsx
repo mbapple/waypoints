@@ -65,6 +65,8 @@ function CreateTripQuick() {
             airline: "",
             start_airport: "",
             end_airport: "",
+            flight_polyline: "",
+            flight_track_source: "",
           });
         }
       } else if (next.length > targetLen) {
@@ -217,6 +219,8 @@ function CreateTripQuick() {
             airline: l.airline || null,
             start_airport: l.start_airport || null,
             end_airport: l.end_airport || null,
+            polyline: l.flight_polyline || null,
+            track_source: l.flight_polyline ? (l.flight_track_source || null) : null,
           });
         }
       }
@@ -388,6 +392,7 @@ function CreateTripQuick() {
                         <FlightDetails
                           start={start}
                           end={end}
+                          date={leg.date}
                           onAutoFill={(data) => updateLegField(idx, { ...data, ...(typeof data?.miles === 'number' ? { miles: data.miles.toFixed(1) } : {}) })}
                         />
                       </FormGroup>

@@ -34,6 +34,11 @@ BACKUP_DIR = os.getenv("BACKUP_DIR", "/workspaces/src/backups")
 # Integrations (secrets stay server-side; never expose them to the frontend)
 ORS_API_KEY = os.getenv("ORS_API_KEY", "").strip()
 
+# OpenSky Network API client (free account) for recorded flight tracks.
+# Create one at https://opensky-network.org > Account > API Client.
+OPENSKY_CLIENT_ID = os.getenv("OPENSKY_CLIENT_ID", "").strip()
+OPENSKY_CLIENT_SECRET = os.getenv("OPENSKY_CLIENT_SECRET", "").strip()
+
 # Immich (self-hosted photo library). All Immich calls are made by the backend;
 # the browser only sees WayPoints' own proxy URLs. Accept the base URL with or
 # without a trailing "/api".

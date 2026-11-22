@@ -91,6 +91,43 @@ export function curvedFlightPath(start, end, segmentsOrCurvature = 0.25) {
 	return segments.length === 1 ? segments[0] : segments;
 }
 
+// Break a [lat, lon] path wherever it crosses the date line (a > 180° jump in longitude).
+function splitAtDateLine(points) {
+	const segments = [];
+	let current = [];
+	points.forEach((p, i) => {
+		if (i > 0 && Math.abs(p[1] - points[i - 1][1]) > 180) {
+			if (current.length >= 2) segments.push(current);
+			current = [];
+		}
+		current.push(p);
+	});
+	if (current.length >= 2) segments.push(current);
+	return segments;
+}
+
+// Recorded flight track -> drawable segments (always an array of [lat, lon] arrays).
+// Gaps in coverage (common over oceans) are filled with great-circle arcs rather than
+// straight map lines, and the track is joined to the leg's start/end points.
+const TRACK_GAP_DEGREES = 1.5;
+export function flightTrackSegments(start, end, track) {
+	const points = [start, ...track, end].filter(Boolean);
+	const dense = [];
+	points.forEach((p, i) => {
+		if (i === 0) { dense.push(p); return; }
+		const prev = points[i - 1];
+		const gap = Math.hypot(p[0] - prev[0], Math.abs(p[1] - prev[1]) > 180 ? 360 - Math.abs(p[1] - prev[1]) : p[1] - prev[1]);
+		if (gap > TRACK_GAP_DEGREES) {
+			const arc = curvedFlightPath(prev, p, 16);
+			const flat = Array.isArray(arc[0]?.[0]) ? arc.flat() : arc;
+			dense.push(...flat.slice(1));
+		} else {
+			dense.push(p);
+		}
+	});
+	return splitAtDateLine(dense);
+}
+
 export function FitToBounds({ bounds }) {
 	const map = useMap();
 	useEffect(() => {

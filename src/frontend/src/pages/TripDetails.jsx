@@ -8,7 +8,7 @@ import { buildMapLayersForTrip } from "../utils/mapData";
 // import TripMiniMap from "../components/TripMiniMap";
 import { getTrip, getTripMiles } from "../api/trips";
 import { listNodesByTrip } from "../api/nodes";
-import { listLegsByTrip, getCarDetails } from "../api/legs";
+import { listLegsByTrip, loadLegPolylines } from "../api/legs";
 import { listStopsByTrip } from "../api/stops";
 import { listPhotosByTrip, listPhotosByLeg, listPhotosByNode, listPhotosByStop } from "../api/photos";
 import PhotoSlideshowLarge from "../components/photos/PhotoSlideshowLarge";
@@ -34,6 +34,7 @@ function TripDetails() {
   const [expanded, setExpanded] = useState({}); // key: type:id -> bool
   const [uploadTarget, setUploadTarget] = useState(""); // e.g. node:3 / leg:5 / stop:7
   const [carPolylineByLeg, setCarPolylineByLeg] = useState({});
+  const [flightPolylineByLeg, setFlightPolylineByLeg] = useState({});
   const [viewMode, setViewMode] = useState('list'); // 'list' | 'daily'
   const [popupEntity, setPopupEntity] = useState(null); // { type: 'node'|'leg'|'stop', data: obj }
   const [immichConfigured, setImmichConfigured] = useState(false);
@@ -58,22 +59,10 @@ function TripDetails() {
         setTripPhotos(photosData);
 
 
-  // Use freshly fetched legsData (not state) to build road (car/bus) polylines
-  const roadLegs = (legsData || []).filter((leg) => {
-            const t = (leg.type || "").toLowerCase();
-            return t === "car" || t === "bus";
-          });
-        const pairs = await Promise.all(
-          roadLegs.map(async (leg) => {
-            try {
-              const details = await getCarDetails(leg.id);
-              return [leg.id, details?.polyline || null];
-            } catch {
-              return [leg.id, null];
-            }
-          })
-        );
-        setCarPolylineByLeg(Object.fromEntries(pairs));
+        // Use freshly fetched legsData (not state) for road routes and flight tracks
+        const polylines = await loadLegPolylines(legsData);
+        setCarPolylineByLeg(polylines.carPolylineByLeg);
+        setFlightPolylineByLeg(polylines.flightPolylineByLeg);
 
         // Fetch miles separately
         try {
@@ -101,8 +90,8 @@ function TripDetails() {
   }, []);
 
   const { markers, stopMarkers, polylines, bounds, nodeById, visitedCountries, visitedStates } = useMemo(() =>
-      buildMapLayersForTrip({ nodes, legs, stops, carPolylineByLeg, tripID })
-    , [nodes, legs, stops, carPolylineByLeg, tripID]);
+      buildMapLayersForTrip({ nodes, legs, stops, carPolylineByLeg, flightPolylineByLeg, tripID })
+    , [nodes, legs, stops, carPolylineByLeg, flightPolylineByLeg, tripID]);
 
   // Identify the first and last nodes by arrival_date (must be before early returns to satisfy Hooks rules)
 

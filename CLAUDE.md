@@ -57,7 +57,7 @@ docker compose up --build
 - **Imports**: uvicorn runs from `app/`. `main.py` uses `from routers import x`. Routers use `from .connect import get_db` and `import config`.
 - **Config**: read settings only via `app/config.py`. Never hardcode credentials, hosts or paths. To add a setting, add it to `config.py`, `.env.example` and the backend `environment:` in `docker-compose.yml.example`.
 - **Migrations**: add `alembic/versions/YYYYMMDD_NNNN_description.py` with `revision`/`down_revision` chained to the previous file. Use `op.execute("...")` raw SQL (`target_metadata = None`, no autogenerate). Migrations run automatically on backend start. Geography columns (`geog`) are maintained by triggers (see migration 0002).
-- **External APIs needing keys** go through a backend proxy so the key stays server-side. See `routers/integrations.py` (OpenRouteService) and `routers/immich.py`. Both use stdlib `urllib`, so no extra dependency.
+- **External APIs needing keys** go through a backend proxy so the key stays server-side. See `routers/integrations.py` (OpenRouteService), `routers/immich.py` and `routers/opensky.py` (flight tracks; OAuth2 client-credentials token cached in-process). All use stdlib `urllib`, so no extra dependency.
 - **Immich**: all communication with Immich stays in the backend (`routers/immich.py`). The frontend must never call Immich or receive its URL or key. Linked photos are rows in `photos` with `immich_asset_id` set and `url` = `/api/integrations/immich/assets/<id>/preview` (the backend image proxy), so photo display code needs no special case.
 
 ## Frontend conventions

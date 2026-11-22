@@ -38,6 +38,8 @@ function UpdateLeg() {
   airline: "",
   start_airport: "",
   end_airport: "",
+  flight_polyline: "",
+  flight_track_source: "",
   });
 
   const [nodes, setNodes] = useState([]);
@@ -93,6 +95,8 @@ function UpdateLeg() {
           airline: flightData?.airline || "",
           start_airport: flightData?.start_airport || "",
           end_airport: flightData?.end_airport || "",
+          flight_polyline: flightData?.polyline || "",
+          flight_track_source: flightData?.track_source || "",
         });
       } catch (e) {
         console.error(e);
@@ -146,6 +150,8 @@ function UpdateLeg() {
           airline: data.airline || null,
           start_airport: data.start_airport || null,
           end_airport: data.end_airport || null,
+          polyline: data.flight_polyline || null,
+          track_source: data.flight_polyline ? (data.flight_track_source || null) : null,
         });
       }
       navigate(`/trip/${tripID}`);

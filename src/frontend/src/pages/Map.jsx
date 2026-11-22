@@ -5,7 +5,7 @@ import { Text, Flex, Badge } from "../styles/components";
 import { listTrips, getTripStatistics } from "../api/trips";
 import { listNodesByTrip } from "../api/nodes";
 import { listStopsByTrip } from "../api/stops";
-import { listLegsByTrip, getCarDetails } from "../api/legs";
+import { listLegsByTrip, loadLegPolylines } from "../api/legs";
 import { Button } from "../styles/components";
 import { listAdventures } from "../api/adventures";
 import { getTripColor } from "../styles/mapTheme";
@@ -22,6 +22,7 @@ function MapPage() {
 	const [stopsByTrip, setStopsByTrip] = useState({});
 	const [adventures, setAdventures] = useState([]); // global adventures (no trip_id)
 	const [carPolylineByLeg, setCarPolylineByLeg] = useState({});
+	const [flightPolylineByLeg, setFlightPolylineByLeg] = useState({});
 	const [totalMiles, setTotalMiles] = useState(0);
 	const [totalDestinations, setTotalDestinations] = useState(0);
 	const [totalCountries, setTotalCountries] = useState(0);
@@ -64,25 +65,11 @@ function MapPage() {
 				setLegsByTrip(legsMap);
 				setStopsByTrip(stopsMap);
 
-				// Build road (car/bus) polylines across all trips
-				const allLegs = Object.values(legsMap).flat();
-				const roadLegs = allLegs.filter((leg) => {
-					const t = (leg?.type || "").toLowerCase();
-					return t === "car" || t === "bus";
-				});
-				const uniqueRoadLegs = roadLegs.filter((l) => l && l.id);
-				const roadDetailsPairs = await Promise.all(
-					uniqueRoadLegs.map(async (leg) => {
-						try {
-							const details = await getCarDetails(leg.id);
-							return [leg.id, details?.polyline || null];
-						} catch {
-							return [leg.id, null];
-						}
-					})
-				);
+				// Road routes (car/bus) and recorded flight tracks across all trips
+				const polylines = await loadLegPolylines(Object.values(legsMap).flat());
 				if (cancelled) return;
-				setCarPolylineByLeg(Object.fromEntries(roadDetailsPairs));
+				setCarPolylineByLeg(polylines.carPolylineByLeg);
+				setFlightPolylineByLeg(polylines.flightPolylineByLeg);
 			} catch (e) {
 				// eslint-disable-next-line no-console
 				console.error("Failed to load map data", e);
@@ -97,8 +84,8 @@ function MapPage() {
 	}, []);
 
 	const { markers, stopMarkers, adventureMarkers, polylines, bounds, nodeById, stopsByNodeId, visitedCountries, visitedStates } = useMemo(() =>
-		buildMapLayersForAllTrips({ nodesByTrip, legsByTrip, stopsByTrip, carPolylineByLeg, adventures })
-	, [nodesByTrip, legsByTrip, stopsByTrip, carPolylineByLeg, adventures]);
+		buildMapLayersForAllTrips({ nodesByTrip, legsByTrip, stopsByTrip, carPolylineByLeg, flightPolylineByLeg, adventures })
+	, [nodesByTrip, legsByTrip, stopsByTrip, carPolylineByLeg, flightPolylineByLeg, adventures]);
 
 	// Recompute focus positions when focusTripId changes or underlying data updates
 	// (FocusTrip logic now handled inside MapView)

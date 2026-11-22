@@ -5,7 +5,7 @@ import { Text, Flex, Badge, Button } from "../styles/components";
 import { getTrip } from "../api/trips";
 import { listNodesByTrip } from "../api/nodes";
 import { listStopsByTrip } from "../api/stops";
-import { listLegsByTrip, getCarDetails } from "../api/legs";
+import { listLegsByTrip, loadLegPolylines } from "../api/legs";
 import { getTripColor } from "../styles/mapTheme";
 import MapView from "../components/MapView";
 import { buildMapLayersForTrip } from "../utils/mapData";
@@ -19,6 +19,7 @@ function TripMap() {
   const [legs, setLegs] = useState([]);
   const [stops, setStops] = useState([]);
   const [carPolylineByLeg, setCarPolylineByLeg] = useState({});
+  const [flightPolylineByLeg, setFlightPolylineByLeg] = useState({});
   const [highlightMode, setHighlightMode] = useState("off"); // off | countries | states
 
   useEffect(() => {
@@ -38,22 +39,10 @@ function TripMap() {
         setLegs(l);
         setStops(s);
 
-        const roadLegs = (l || []).filter((leg) => {
-          const t = (leg.type || "").toLowerCase();
-          return t === "car" || t === "bus";
-        });
-        const pairs = await Promise.all(
-          roadLegs.map(async (leg) => {
-            try {
-              const details = await getCarDetails(leg.id);
-              return [leg.id, details?.polyline || null];
-            } catch {
-              return [leg.id, null];
-            }
-          })
-        );
+        const polylines = await loadLegPolylines(l);
         if (cancelled) return;
-        setCarPolylineByLeg(Object.fromEntries(pairs));
+        setCarPolylineByLeg(polylines.carPolylineByLeg);
+        setFlightPolylineByLeg(polylines.flightPolylineByLeg);
       } catch (e) {
         // eslint-disable-next-line no-console
         console.error("Failed to load trip map", e);
@@ -68,8 +57,8 @@ function TripMap() {
   }, [tripID]);
 
   const { markers, stopMarkers, polylines, bounds, nodeById, visitedCountries, visitedStates } = useMemo(() =>
-    buildMapLayersForTrip({ nodes, legs, stops, carPolylineByLeg, tripID })
-  , [nodes, legs, stops, carPolylineByLeg, tripID]);
+    buildMapLayersForTrip({ nodes, legs, stops, carPolylineByLeg, flightPolylineByLeg, tripID })
+  , [nodes, legs, stops, carPolylineByLeg, flightPolylineByLeg, tripID]);
 
   return (
     <div>

@@ -512,6 +512,11 @@ Delete a photo and remove the file if present. For a photo linked from Immich th
 ### GET `/api/flight_details/{leg_id}`
 Get flight details for a leg.
 
+Response:
+{ "leg_id": 7, "flight_number": "BA117", "airline": "British Airways", "start_airport": "LHR", "end_airport": "JFK", "polyline": "<encoded polyline>" | null, "track_source": "opensky" | null }
+
+`polyline` is the recorded flight track in Google encoded-polyline format (1e5 precision), as for car legs. When it is null the map draws the great-circle route.
+
 ### POST `/api/flight_details/`
 Create or upsert flight details for a leg.
 
@@ -552,7 +557,7 @@ Server-side proxies for third-party APIs, so API keys stay in `.env` and never r
 Which integrations are configured (keys are never returned).
 
 Response:
-{ "ors_configured": true, "immich_configured": false }
+{ "ors_configured": true, "immich_configured": false, "opensky_configured": false }
 
 ### POST `/api/integrations/ors/route`
 Driving route between two points via OpenRouteService (requires `ORS_API_KEY`).
@@ -571,6 +576,31 @@ Response:
 }
 
 Errors: 503 if `ORS_API_KEY` is not set; 502 if OpenRouteService fails or is unreachable.
+
+## OpenSky API (`/api/integrations/opensky`)
+
+### POST `/api/integrations/opensky/flight-track`
+The path a flight actually flew, from the OpenSky Network (requires `OPENSKY_CLIENT_ID` and `OPENSKY_CLIENT_SECRET`). The flight number is turned into its ICAO radio callsign (`BA117` → `BAW117`) with adsbdb. The airports come from the request (IATA or ICAO codes; IATA is converted with hexdb.io) or else from adsbdb's current route for that flight number. OpenSky's departures (then arrivals) for that airport around the date give the aircraft, and `/tracks/all` gives its track. Nothing is saved: store `coordinates` on the leg's flight details.
+
+Request Body:
+{ "flight_number": "BA117", "date": "2026-11-20", "start_airport": "LHR", "end_airport": "JFK" }
+
+`date` is the local departure date. `start_airport` and `end_airport` are optional.
+
+Response:
+{
+  "source": "opensky",
+  "callsign": "BAW117",
+  "icao24": "4007f9",
+  "departure_airport": "EGLL",
+  "arrival_airport": "KJFK",
+  "first_seen": 1763640000,
+  "last_seen": 1763668800,
+  "route": { "origin": { "iata": "LHR", "icao": "EGLL", "name": "...", "latitude": 51.47, "longitude": -0.46 }, "destination": { ... } } | null,
+  "coordinates": [[-0.46, 51.47], ...]
+}
+
+Errors: 503 if OpenSky is not configured; 400 for an unrecognisable flight number; 409 if the date is today or later (OpenSky publishes flights in a nightly batch); 410 if the date is more than ~30 days ago (OpenSky no longer has the track); 422 if no airport can be determined; 404 if no matching flight or track is found; 429 if the OpenSky daily credit limit is used up; 502 if OpenSky fails or rejects the credentials.
 
 ## Immich API (`/api/integrations/immich`)
 

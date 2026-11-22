@@ -13,6 +13,8 @@ class FlightDetails(BaseModel):
     airline: str | None = None
     start_airport: str | None = None
     end_airport: str | None = None
+    polyline: str | None = None  # recorded track (encoded polyline); None = great-circle
+    track_source: str | None = None
 
 
 class FlightDetailsUpdate(BaseModel):
@@ -20,6 +22,8 @@ class FlightDetailsUpdate(BaseModel):
     airline: str | None = None
     start_airport: str | None = None
     end_airport: str | None = None
+    polyline: str | None = None  # recorded track (encoded polyline); None = great-circle
+    track_source: str | None = None
 
 
 @router.get("/{leg_id}")
@@ -28,7 +32,7 @@ def get_flight_details(leg_id: int):
     cur = conn.cursor()
     cur.execute(
         """
-        SELECT leg_id, flight_number, airline, start_airport, end_airport
+        SELECT leg_id, flight_number, airline, start_airport, end_airport, polyline, track_source
         FROM flight_details
         WHERE leg_id = %s
         """,
@@ -47,6 +51,8 @@ def get_flight_details(leg_id: int):
         "airline": row["airline"],
         "start_airport": row["start_airport"],
         "end_airport": row["end_airport"],
+        "polyline": row["polyline"],
+        "track_source": row["track_source"],
     }
 
 
@@ -57,16 +63,21 @@ def create_flight_details(details: FlightDetails):
     cur = conn.cursor()
     cur.execute(
         """
-        INSERT INTO flight_details (leg_id, flight_number, airline, start_airport, end_airport)
-        VALUES (%s, %s, %s, %s, %s)
+        INSERT INTO flight_details (leg_id, flight_number, airline, start_airport, end_airport, polyline, track_source)
+        VALUES (%s, %s, %s, %s, %s, %s, %s)
         ON CONFLICT (leg_id) DO UPDATE SET
             flight_number = EXCLUDED.flight_number,
             airline = EXCLUDED.airline,
             start_airport = EXCLUDED.start_airport,
-            end_airport = EXCLUDED.end_airport
+            end_airport = EXCLUDED.end_airport,
+            polyline = EXCLUDED.polyline,
+            track_source = EXCLUDED.track_source
         RETURNING leg_id
         """,
-        (details.leg_id, details.flight_number, details.airline, details.start_airport, details.end_airport),
+        (
+            details.leg_id, details.flight_number, details.airline, details.start_airport,
+            details.end_airport, details.polyline, details.track_source,
+        ),
     )
     row = cur.fetchone()
     conn.commit()
@@ -79,7 +90,7 @@ def create_flight_details(details: FlightDetails):
 @router.put("/{leg_id}")
 def update_flight_details(leg_id: int, update: FlightDetailsUpdate):
     data = update.model_dump(exclude_unset=True) if hasattr(update, "model_dump") else update.dict(exclude_unset=True)
-    allowed = {"flight_number", "airline", "start_airport", "end_airport"}
+    allowed = {"flight_number", "airline", "start_airport", "end_airport", "polyline", "track_source"}
     data = {k: v for k, v in data.items() if k in allowed}
     if not data:
         raise HTTPException(status_code=400, detail="No fields provided for update")

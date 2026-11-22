@@ -2,7 +2,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { Input, Label, FormGroup, Text, Button, Flex } from '../styles/components';
-import { getIntegrationStatus, fetchDrivingRoute } from '../api/integrations';
+import { getIntegrationStatus, fetchDrivingRoute, fetchFlightTrack } from '../api/integrations';
 
 const Inline = styled.div`
   display: grid;
@@ -175,19 +175,51 @@ export function haversineMiles(lat1, lon1, lat2, lon2) {
   return R * c;
 }
 
+// Recorded flight path via OpenSky (proxied through the backend, which holds the
+// OpenSky credentials). OpenSky publishes flights the day after they fly and keeps
+// tracks ~30 days; without a stored track the map draws the great-circle route.
+const TRACK_RETENTION_DAYS = 30;
+
+function trackAvailability(date) {
+  if (!date) return 'Set the leg date first.';
+  const day = new Date(`${date}T00:00:00Z`);
+  if (Number.isNaN(day.getTime())) return 'Set the leg date first.';
+  const today = new Date();
+  const todayUtc = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate());
+  const ageDays = Math.round((todayUtc - day.getTime()) / 86400000);
+  if (ageDays < 1) return 'Available from the day after the flight.';
+  if (ageDays > TRACK_RETENTION_DAYS) return `OpenSky only keeps tracks for about ${TRACK_RETENTION_DAYS} days.`;
+  return null;
+}
+
 export const FlightDetails = ({
   start,
   end,
+  date,
   onAutoFill,
   initialFlightNumber,
   initialAirline,
   initialStartAirport,
   initialEndAirport,
+  initialPolyline,
+  initialTrackSource,
 }) => {
   const [flightNumber, setFlightNumber] = useState(initialFlightNumber || '');
   const [airline, setAirline] = useState(initialAirline || '');
   const [startAirport, setStartAirport] = useState(initialStartAirport || '');
   const [endAirport, setEndAirport] = useState(initialEndAirport || '');
+  const [track, setTrack] = useState({ polyline: initialPolyline || '', source: initialTrackSource || '' });
+  const [openskyConfigured, setOpenskyConfigured] = useState(null);
+  const [fetching, setFetching] = useState(false);
+  const [trackMessage, setTrackMessage] = useState(null); // { text, error }
+
+  useEffect(() => {
+    let active = true;
+    getIntegrationStatus()
+      .then(s => { if (active) setOpenskyConfigured(Boolean(s?.opensky_configured)); })
+      .catch(() => { if (active) setOpenskyConfigured(false); });
+    return () => { active = false; };
+  }, []);
 
   // Auto-calc miles when coords available
   useEffect(() => {
@@ -200,8 +232,51 @@ export const FlightDetails = ({
 
   // Push field edits upwards so they can be saved
   useEffect(() => {
-    onAutoFill?.({ flight_number: flightNumber, airline, start_airport: startAirport, end_airport: endAirport });
-  }, [flightNumber, airline, startAirport, endAirport, onAutoFill]);
+    onAutoFill?.({
+      flight_number: flightNumber,
+      airline,
+      start_airport: startAirport,
+      end_airport: endAirport,
+      flight_polyline: track.polyline,
+      flight_track_source: track.source,
+    });
+  }, [flightNumber, airline, startAirport, endAirport, track, onAutoFill]);
+
+  const unavailableReason = trackAvailability(date);
+  const canFetchTrack = openskyConfigured && flightNumber.trim() && !unavailableReason && !fetching;
+
+  const fetchTrack = async () => {
+    if (!canFetchTrack) return;
+    setFetching(true);
+    setTrackMessage(null);
+    try {
+      const data = await fetchFlightTrack({
+        flight_number: flightNumber.trim(),
+        date,
+        start_airport: startAirport.trim(),
+        end_airport: endAirport.trim(),
+      });
+      const points = (data?.coordinates || []).map(([lon, lat]) => ({ lat, lon }));
+      setTrack({ polyline: encodePolyline(points), source: data?.source || 'opensky' });
+      // Fill in airport codes the user left blank
+      const origin = data?.route?.origin;
+      const destination = data?.route?.destination;
+      if (!startAirport.trim()) setStartAirport(origin?.iata || data?.departure_airport || '');
+      if (!endAirport.trim()) setEndAirport(destination?.iata || data?.arrival_airport || '');
+      const route = [data?.departure_airport, data?.arrival_airport].filter(Boolean).join(' → ');
+      setTrackMessage({ text: `Found ${data?.callsign}${route ? ` (${route})` : ''}: ${points.length} track points. Save the leg to keep it.` });
+    } catch (e) {
+      const detail = e?.response?.data?.detail;
+      setTrackMessage({ text: typeof detail === 'string' ? detail : 'Could not fetch the flight path.', error: true });
+    } finally {
+      setFetching(false);
+    }
+  };
+
+  const clearTrack = () => {
+    setTrack({ polyline: '', source: '' });
+    setTrackMessage({ text: 'Recorded path removed. Save the leg to use the great-circle route.' });
+  };
 
   return (
     <div>
@@ -219,13 +294,45 @@ export const FlightDetails = ({
       <Inline>
         <FormGroup>
           <Label htmlFor="startAirport">Start Airport</Label>
-          <Input id="startAirport" value={startAirport} onChange={(e) => setStartAirport(e.target.value)} />
+          <Input id="startAirport" placeholder="e.g. LHR" value={startAirport} onChange={(e) => setStartAirport(e.target.value)} />
         </FormGroup>
         <FormGroup>
           <Label htmlFor="endAirport">End Airport</Label>
-          <Input id="endAirport" value={endAirport} onChange={(e) => setEndAirport(e.target.value)} />
+          <Input id="endAirport" placeholder="e.g. JFK" value={endAirport} onChange={(e) => setEndAirport(e.target.value)} />
         </FormGroup>
       </Inline>
+
+      <FormGroup>
+        <Label>Flight path</Label>
+        <Text variant="muted" size="sm" style={{ display: 'block' }}>
+          {track.polyline
+            ? `Recorded track${track.source ? ` from ${track.source === 'opensky' ? 'OpenSky' : track.source}` : ''}.`
+            : 'No recorded track: the map shows the great-circle route.'}
+        </Text>
+        <Flex gap={3} style={{ flexWrap: 'wrap', marginTop: 6 }}>
+          <Button type="button" size="sm" variant="outline" disabled={!canFetchTrack} onClick={fetchTrack}>
+            {fetching ? 'Fetching…' : track.polyline ? 'Re-fetch from OpenSky' : 'Fetch flown path (OpenSky)'}
+          </Button>
+          {track.polyline && (
+            <Button type="button" size="sm" variant="outline" disabled={fetching} onClick={clearTrack}>
+              Use great-circle route
+            </Button>
+          )}
+        </Flex>
+        {openskyConfigured === false && (
+          <Text variant="muted" size="sm" style={{ display: 'block', marginTop: 6 }}>
+            Set OPENSKY_CLIENT_ID and OPENSKY_CLIENT_SECRET in .env to enable.
+          </Text>
+        )}
+        {openskyConfigured && unavailableReason && (
+          <Text variant="muted" size="sm" style={{ display: 'block', marginTop: 6 }}>{unavailableReason}</Text>
+        )}
+        {trackMessage && (
+          <Text variant={trackMessage.error ? 'danger' : 'muted'} size="sm" style={{ display: 'block', marginTop: 6 }}>
+            {trackMessage.text}
+          </Text>
+        )}
+      </FormGroup>
     </div>
   );
 };

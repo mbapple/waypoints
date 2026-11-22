@@ -38,6 +38,8 @@ export default function LegForm({
     airline: "",
     start_airport: "",
     end_airport: "",
+    flight_polyline: "",
+    flight_track_source: "",
     driving_time_seconds: "",
     polyline: "",
     ...(initialValues || {}),
@@ -109,7 +111,7 @@ export default function LegForm({
   }, []);
 
   const handleFlightAutoFill = useCallback((data) => {
-    const { miles, flight_number, airline, start_airport, end_airport } = data || {};
+    const { miles, flight_number, airline, start_airport, end_airport, flight_polyline, flight_track_source } = data || {};
     setFormData(prev => ({
       ...prev,
       ...(typeof miles === 'number' ? { miles: miles.toFixed(1) } : {}),
@@ -117,6 +119,8 @@ export default function LegForm({
       ...(airline !== undefined ? { airline } : {}),
       ...(start_airport !== undefined ? { start_airport } : {}),
       ...(end_airport !== undefined ? { end_airport } : {}),
+      ...(flight_polyline !== undefined ? { flight_polyline } : {}),
+      ...(flight_track_source !== undefined ? { flight_track_source } : {}),
     }));
   }, []);
 
@@ -217,10 +221,13 @@ export default function LegForm({
           <FlightDetails
             start={{ lat: Number(formData.start_latitude), lon: Number(formData.start_longitude) }}
             end={{ lat: Number(formData.end_latitude), lon: Number(formData.end_longitude) }}
+            date={formData.date}
             initialFlightNumber={formData.flight_number}
             initialAirline={formData.airline}
             initialStartAirport={formData.start_airport}
             initialEndAirport={formData.end_airport}
+            initialPolyline={formData.flight_polyline}
+            initialTrackSource={formData.flight_track_source}
             onAutoFill={handleFlightAutoFill}
           />
         </FormGroup>

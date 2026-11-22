@@ -1,10 +1,23 @@
 import L from "leaflet";
 import polylineCodec from "@mapbox/polyline";
 import { getTripColor } from "../styles/mapTheme";
-import { curvedFlightPath } from "./map_helper_functions";
+import { curvedFlightPath, flightTrackSegments } from "./map_helper_functions";
+
+// Flight leg -> [lat, lon] segments: the recorded track if one is stored
+// (flight_details.polyline), otherwise the great-circle arc between the endpoints.
+function flightSegments(start, end, encodedTrack) {
+  if (encodedTrack) {
+    try {
+      const track = polylineCodec.decode(encodedTrack);
+      if (track.length >= 2) return flightTrackSegments(start, end, track);
+    } catch {}
+  }
+  const curve = curvedFlightPath(start, end, 128);
+  return Array.isArray(curve[0]?.[0]) ? curve : [curve];
+}
 
 // Build map layers for the all-trips view
-export function buildMapLayersForAllTrips({ nodesByTrip, legsByTrip, stopsByTrip, carPolylineByLeg, adventures = [] }) {
+export function buildMapLayersForAllTrips({ nodesByTrip, legsByTrip, stopsByTrip, carPolylineByLeg, flightPolylineByLeg, adventures = [] }) {
   const markers = [];
   const stopMarkers = [];
   const polylines = [];
@@ -83,9 +96,7 @@ export function buildMapLayersForAllTrips({ nodesByTrip, legsByTrip, stopsByTrip
         polylines.push({ positions: [start, end], color, tripId, type });
         latlngsForBounds.push(start, end);
       } else if (type === "flight") {
-        const curve = curvedFlightPath(start, end, 128);
-        const segments = Array.isArray(curve[0]?.[0]) ? curve : [curve];
-        segments.forEach((seg) => {
+        flightSegments(start, end, flightPolylineByLeg?.[leg.id]).forEach((seg) => {
           if (seg && seg.length >= 2) {
             polylines.push({ positions: seg, color, tripId, type });
             latlngsForBounds.push(...seg);
@@ -113,7 +124,7 @@ export function buildMapLayersForAllTrips({ nodesByTrip, legsByTrip, stopsByTrip
 }
 
 // Build map layers for a single trip view
-export function buildMapLayersForTrip({ nodes, legs, stops, carPolylineByLeg, tripID }) {
+export function buildMapLayersForTrip({ nodes, legs, stops, carPolylineByLeg, flightPolylineByLeg, tripID }) {
   const markers = [];
   const stopMarkers = [];
   const polylines = [];
@@ -179,9 +190,7 @@ export function buildMapLayersForTrip({ nodes, legs, stops, carPolylineByLeg, tr
       polylines.push({ positions: [start, end], color, type });
       latlngsForBounds.push(start, end);
     } else if (type === "flight") {
-      const curve = curvedFlightPath(start, end, 128);
-      const segments = Array.isArray(curve[0]?.[0]) ? curve : [curve];
-      segments.forEach((seg) => {
+      flightSegments(start, end, flightPolylineByLeg?.[leg.id]).forEach((seg) => {
         if (seg && seg.length >= 2) {
           polylines.push({ positions: seg, color, type });
           latlngsForBounds.push(...seg);

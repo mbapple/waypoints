@@ -9,6 +9,7 @@ import { listNodesByTrip } from "../../api/nodes";
 import { getLeg, updateLeg as apiUpdateLeg, deleteLeg as apiDeleteLeg, getCarDetails, createCarDetails, getFlightDetails, createFlightDetails } from "../../api/legs";
 import LegForm from "../../components/forms/LegForm";
 import { emptyFlightForm, flightDetailsToForm, flightFormToPayload } from "../../utils/flightFields";
+import TripContext from "../../components/forms/TripContext";
 
 function UpdateLeg() {
   const { tripID } = useParams();
@@ -172,6 +173,7 @@ function UpdateLeg() {
       </PageHeader>
 
       <FormCard>
+        <TripContext tripID={tripID} what="leg" editing />
         <LegForm
           nodes={nodes}
           initialValues={formData}

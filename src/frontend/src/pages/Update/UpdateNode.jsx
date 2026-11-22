@@ -7,6 +7,7 @@ import { useParams, Link, useNavigate, useSearchParams } from "react-router-dom"
 import ConfirmDeleteButton from "../../components/common/ConfirmDeleteButton";
 import { deleteNode as apiDeleteNode, getNode as apiGetNode, updateNode as apiUpdateNode } from "../../api/nodes";
 import NodeForm from "../../components/forms/NodeForm";
+import TripContext from "../../components/forms/TripContext";
 
 function UpdateNode() {
   const { tripID } = useParams();
@@ -125,6 +126,7 @@ function UpdateNode() {
       </PageHeader>
 
       <FormCard>
+        <TripContext tripID={tripID} what="destination" editing />
         <NodeForm
           initialValues={formData}
           onSubmit={handleSubmit}

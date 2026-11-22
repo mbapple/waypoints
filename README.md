@@ -24,12 +24,14 @@ The database also stores additonal information about your legs. For car legs, yo
 # Features:
 ## Map View:
 View all of your trips on a single map. Here you can visualize your waypoints around the world. You can also view any single trip on a map.
+Switch the map to **Airports visited** (both ends of every flight, including hidden layover nodes) or **Cities visited** (every unique destination) to see just those places. Selecting a trip under the map focuses it and fades every other trip.
 
 ## Calendar View:
 View an overview of your trips on the yearly calendar where you can easily see the days you have travelled. A montly view allows for more detailed display destinations and stops.
 
 ## Statistics:
 With the statistics view, you can see how many miles you have travelled on each transportation type, how many nights you have spent away from home, and track custom lists of travel goals.
+Click **Unique destinations** to list every destination. Use **Merge mode** to combine duplicates: select destinations, press Merge, then keep one of them or search for a different OpenStreetMap place. Every node of the merged destinations takes that place's name, OSM details and coordinates, and leg endpoints and `osm_id` lists follow. Stored leg miles are not recalculated. Back up first, as a merge can't be undone.
 
 ## Backups:
 Backups of the database can be created in the settings menu. These backups can be downloaded and restored.

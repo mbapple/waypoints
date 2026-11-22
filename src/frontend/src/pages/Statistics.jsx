@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, useRef } from "react";
+import React, { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import styled, { useTheme } from "styled-components";
 import { Card, Grid, Text, Flex, Badge, Button } from "../styles/components";
 import ListSlideshow from "../components/lists/ListSlideshow";
@@ -6,6 +6,7 @@ import { PageHeader } from "../components/page-components";
 import { getTripStatistics, getTripsByMiles, getTripsByNights, getLegsByType, getNodesByCountry, getNodesByState, getTripsByOsm, getTrip, getStopsByCategory } from "../api/trips";
 import { Link } from "react-router-dom";
 import Popup from "../components/common/Popup";
+import DestinationsPanel from "../components/destinations/DestinationsPanel";
 import { getTransportTypeLabel, formatNumber } from "../utils/format";
 
 const StatCard = styled(Card)`
@@ -182,21 +183,28 @@ export default function Statistics() {
 	// popup state
 	const [popup, setPopup] = useState({ open: false, title: "", content: null });
 
-	useEffect(() => {
-		let mounted = true;
-		(async () => {
-			try {
-				const res = await getTripStatistics();
-				if (mounted) setData(res);
-			} catch (e) {
-				console.error(e);
-				setError("Failed to load statistics");
-			} finally {
-				if (mounted) setLoading(false);
-			}
-		})();
-		return () => { mounted = false; };
+	const mountedRef = useRef(true);
+	const reloadStats = useCallback(async () => {
+		try {
+			const res = await getTripStatistics();
+			if (mountedRef.current) { setData(res); setError(""); }
+		} catch (e) {
+			console.error(e);
+			if (mountedRef.current) setError("Failed to load statistics");
+		} finally {
+			if (mountedRef.current) setLoading(false);
+		}
 	}, []);
+
+	useEffect(() => {
+		mountedRef.current = true;
+		reloadStats();
+		return () => { mountedRef.current = false; };
+	}, [reloadStats]);
+
+	const openDestinations = () => {
+		setPopup({ open: true, title: "Unique destinations", content: <DestinationsPanel onMerged={reloadStats} /> });
+	};
 
 	const milesByTypeArr = useMemo(() => {
 		const m = data?.miles_by_type || {};
@@ -473,7 +481,7 @@ useEffect(() => {
 						</StatCard>
 					</SectionGrid>
 					<SectionGrid columns={3}>
-						<StatCard>
+						<StatCard as={Button} onClick={openDestinations}>
 							<StatValue>{formatNumber(data.unique_destination_count)}</StatValue>
 							<StatLabel variant="muted">Unique destinations</StatLabel>
 						</StatCard>

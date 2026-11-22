@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from "react";
 import L from 'leaflet';
 import { Link } from "react-router-dom";
-import { MapContainer, TileLayer, Marker, Polyline, Popup, Tooltip, useMap, useMapEvent } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, CircleMarker, Polyline, Popup, Tooltip, useMap, useMapEvent } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import { applyLeafletDefaultIconFix, getTileLayerConfig, MapGlobalStyles, createStopDivIcon, createAdventureDivIcon, getTripColor } from "../styles/mapTheme";
 import HighlightLayer from "./HighlightLayer";
@@ -39,6 +39,7 @@ export default function MapView({
   markers = [],
   stopMarkers = [],
   adventureMarkers = [],
+  placeMarkers = [], // [{ key, name, code?, pos, countLabel?, trips: [{id, name}] }]
   polylines = [],
   bounds,
   highlightMode = "off",
@@ -94,6 +95,16 @@ export default function MapView({
     }
   }, [adventurePhotos]);
 
+  // When a trip is focused, everything belonging to other trips (and adventures) fades
+  const FADED = 0.15;
+  const tripOpacity = (tripId) => (focusTripId && tripId !== focusTripId ? FADED : 1);
+  const orderedPolylines = React.useMemo(() => {
+    if (!focusTripId) return polylines;
+    // Draw the focused trip last so it sits on top of the faded lines
+    return [...polylines].sort((a, b) => (a.tripId === focusTripId) - (b.tripId === focusTripId));
+  }, [polylines, focusTripId]);
+  const linkStyle = { display: "inline-block", padding: "6px 10px", borderRadius: 6, border: `1px solid ${theme.colors.border}`, background: theme.colors.surface, color: theme.colors.text, fontSize: theme.fontSizes.xs, textDecoration: "none" };
+
   const [legendItems, setLegendItems] = useState([]); // {name, color}
   const [focusName, setFocusName] = useState(null);
 
@@ -130,6 +141,7 @@ export default function MapView({
           <Marker
             key={`node-${m.id}`}
             position={m.pos}
+            opacity={tripOpacity(m.tripId)}
             eventHandlers={{ popupopen: () => loadNodePhotos(m.id) }}
           >
             <Tooltip direction="top" offset={[0, -24]} opacity={1} permanent={false} sticky>
@@ -177,6 +189,7 @@ export default function MapView({
           <Marker
             key={`stop-${s.id}`}
             position={s.pos}
+            opacity={tripOpacity(s.tripId)}
             icon={createStopDivIcon(s.category, getTripColor(s.tripId))}
             eventHandlers={{ popupopen: () => loadStopPhotos(s.id) }}
           >
@@ -221,6 +234,7 @@ export default function MapView({
           <Marker
             key={`adv-${a.id}`}
             position={a.pos}
+            opacity={focusTripId ? FADED : 1}
             icon={createAdventureDivIcon(a.category)}
             eventHandlers={{ popupopen: () => loadAdventurePhotos(a.id) }}
           >
@@ -263,12 +277,43 @@ export default function MapView({
           </Marker>
         ))}
 
-        {polylines.map((line, idx) => (
+        {orderedPolylines.map((line, idx) => (
           <Polyline
             key={`leg-${idx}`}
             positions={line.positions}
-            pathOptions={{ color: line.color, weight: 3, opacity: 0.9, smoothFactor: 0 }}
+            pathOptions={{ color: line.color, weight: 3, opacity: focusTripId && line.tripId !== focusTripId ? 0.1 : 0.9, smoothFactor: 0 }}
           />
+        ))}
+
+        {placeMarkers.map((p) => (
+          <CircleMarker
+            key={`place-${p.key}`}
+            center={p.pos}
+            radius={6}
+            pathOptions={{ color: theme.colors.background || '#000', weight: 1.5, fillColor: theme.colors.accent || '#f59e0b', fillOpacity: 0.95 }}
+          >
+            <Tooltip direction="top" offset={[0, -6]} opacity={1} sticky>
+              <span><strong>{p.code ? `${p.code}` : p.name}</strong>{p.code && p.name && p.name !== p.code ? ` · ${p.name}` : ""}</span>
+            </Tooltip>
+            <Popup>
+              <div style={{ minWidth: 200 }}>
+                <div style={{ fontWeight: 700, marginBottom: 4 }}>
+                  {p.code && <span style={{ marginRight: 6 }}>{p.code}</span>}
+                  {p.name && p.name !== p.code ? p.name : ""}
+                </div>
+                {p.countLabel && (
+                  <div style={{ fontSize: theme.fontSizes.xs, color: theme.colors.textSecondary, marginBottom: 6 }}>{p.countLabel}</div>
+                )}
+                {(p.trips || []).length > 0 && (
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 6 }}>
+                    {p.trips.map((t) => (
+                      <Link key={t.id} to={pathForTripId(t.id)} style={linkStyle}>{t.name}</Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </Popup>
+          </CircleMarker>
         ))}
 
   {bounds && !focusTripId && <FitToBounds bounds={bounds} />}

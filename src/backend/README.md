@@ -131,6 +131,39 @@ Response:
   "states_by_country": { "United States": ["Illinois", "New York"], "Italy": ["Lazio"] }
 }
 
+## Destinations API (`/api/destinations`)
+
+### GET `/api/destinations/`
+Unique destinations: visible nodes grouped by `osm_id` (nodes without one are their own destination, keyed `node:<id>`). Same rule as `unique_destination_count`.
+
+Response:
+[
+  { "key": "R7444", "osm_id": "R7444", "node_id": null, "name": "Paris", "osm_name": "Paris, Île-de-France, France",
+    "osm_country": "France", "osm_state": "Île-de-France", "latitude": 48.85, "longitude": 2.35,
+    "node_count": 2, "trips": [{ "id": 1, "name": "Europe 2024" }] }
+]
+
+### GET `/api/destinations/airports`
+Both ends of every flight leg, **including invisible nodes**, deduplicated by airport code (`flight_details.start_airport` / `end_airport`), then osm_id, then node id, then coordinates.
+
+Response:
+[ { "key": "code:CDG", "code": "CDG", "name": "Paris CDG", "latitude": 49.0, "longitude": 2.55, "visit_count": 3, "trips": [{ "id": 1, "name": "Europe 2024" }] } ]
+
+### POST `/api/destinations/merge`
+Merge destinations into one place, in a single transaction. Every node whose `osm_id` is in `sources.osm_ids` (visible or not), and every node in `sources.node_ids`, gets the target's `name`, OSM fields and coordinates. Legs starting or ending at those nodes, or at those osm_ids, get the target's coordinates and OSM fields. Lists with `match_type = 'osm_id'` have the source ids replaced by the target id. Leg `miles` are not recalculated.
+
+Request body:
+{
+  "sources": { "osm_ids": ["R7444", "N123"], "node_ids": [42] },
+  "target": { "name": "Paris", "osm_id": "R7444", "osm_name": "Paris, Île-de-France, France",
+              "osm_country": "France", "osm_state": "Île-de-France", "latitude": 48.85, "longitude": 2.35 }
+}
+
+Response:
+{ "nodes_updated": 4, "legs_updated": 6, "lists_updated": 1 }
+
+Returns 400 if nothing is selected or the only source is the target itself.
+
 ## Nodes API (`/api/nodes`)
 
 ### GET `/api/nodes/by_trip/{trip_id}`

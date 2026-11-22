@@ -1,59 +1,65 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-#from src.backend.app.routers.connect import get_db
 from .connect import get_db
 
 router = APIRouter(prefix="/api/flight_details", tags=["flight_details"])
 
+# Every flight_details column besides leg_id. SQL below is built only from this
+# fixed list, never from request data.
+FLIGHT_COLUMNS = (
+    "flight_number", "airline", "start_airport", "end_airport",
+    "polyline",  # recorded track (encoded polyline); NULL = great-circle route
+    "track_source",
+    "aircraft_icao24", "aircraft_registration", "aircraft_type", "aircraft_icao_type",
+    "aircraft_photo", "aircraft_photo_credit", "aircraft_photo_link",
+)
 
-class FlightDetails(BaseModel):
+
+class FlightDetailsFields(BaseModel):
+    flight_number: str | None = None
+    airline: str | None = None
+    start_airport: str | None = None
+    end_airport: str | None = None
+    polyline: str | None = None
+    track_source: str | None = None
+    aircraft_icao24: str | None = None
+    aircraft_registration: str | None = None
+    aircraft_type: str | None = None
+    aircraft_icao_type: str | None = None
+    aircraft_photo: str | None = None  # /uploads/aircraft/<REG>.jpg
+    aircraft_photo_credit: str | None = None
+    aircraft_photo_link: str | None = None
+
+
+class FlightDetails(FlightDetailsFields):
     leg_id: int
-    flight_number: str | None = None
-    airline: str | None = None
-    start_airport: str | None = None
-    end_airport: str | None = None
-    polyline: str | None = None  # recorded track (encoded polyline); None = great-circle
-    track_source: str | None = None
 
 
-class FlightDetailsUpdate(BaseModel):
-    flight_number: str | None = None
-    airline: str | None = None
-    start_airport: str | None = None
-    end_airport: str | None = None
-    polyline: str | None = None  # recorded track (encoded polyline); None = great-circle
-    track_source: str | None = None
+def upsert_flight_details(cur, leg_id: int, fields: dict):
+    """Insert or replace a leg's flight details (all columns; missing ones become NULL)."""
+    columns = ", ".join(FLIGHT_COLUMNS)
+    placeholders = ", ".join(["%s"] * len(FLIGHT_COLUMNS))
+    updates = ", ".join(f"{c} = EXCLUDED.{c}" for c in FLIGHT_COLUMNS)
+    cur.execute(
+        f"INSERT INTO flight_details (leg_id, {columns}) VALUES (%s, {placeholders}) "
+        f"ON CONFLICT (leg_id) DO UPDATE SET {updates}",
+        [leg_id] + [fields.get(c) for c in FLIGHT_COLUMNS],
+    )
 
 
 @router.get("/{leg_id}")
 def get_flight_details(leg_id: int):
     conn = get_db()
     cur = conn.cursor()
-    cur.execute(
-        """
-        SELECT leg_id, flight_number, airline, start_airport, end_airport, polyline, track_source
-        FROM flight_details
-        WHERE leg_id = %s
-        """,
-        (leg_id,),
-    )
+    cur.execute(f"SELECT leg_id, {', '.join(FLIGHT_COLUMNS)} FROM flight_details WHERE leg_id = %s", (leg_id,))
     row = cur.fetchone()
     cur.close()
     conn.close()
 
     if not row:
         raise HTTPException(status_code=404, detail="Flight details not found")
-
-    return {
-        "leg_id": row["leg_id"],
-        "flight_number": row["flight_number"],
-        "airline": row["airline"],
-        "start_airport": row["start_airport"],
-        "end_airport": row["end_airport"],
-        "polyline": row["polyline"],
-        "track_source": row["track_source"],
-    }
+    return dict(row)
 
 
 @router.post("/")
@@ -61,37 +67,17 @@ def get_flight_details(leg_id: int):
 def create_flight_details(details: FlightDetails):
     conn = get_db()
     cur = conn.cursor()
-    cur.execute(
-        """
-        INSERT INTO flight_details (leg_id, flight_number, airline, start_airport, end_airport, polyline, track_source)
-        VALUES (%s, %s, %s, %s, %s, %s, %s)
-        ON CONFLICT (leg_id) DO UPDATE SET
-            flight_number = EXCLUDED.flight_number,
-            airline = EXCLUDED.airline,
-            start_airport = EXCLUDED.start_airport,
-            end_airport = EXCLUDED.end_airport,
-            polyline = EXCLUDED.polyline,
-            track_source = EXCLUDED.track_source
-        RETURNING leg_id
-        """,
-        (
-            details.leg_id, details.flight_number, details.airline, details.start_airport,
-            details.end_airport, details.polyline, details.track_source,
-        ),
-    )
-    row = cur.fetchone()
+    upsert_flight_details(cur, details.leg_id, details.model_dump())
     conn.commit()
     cur.close()
     conn.close()
 
-    return {"message": f"Flight details saved for leg {row['leg_id']}"}
+    return {"message": f"Flight details saved for leg {details.leg_id}"}
 
 
 @router.put("/{leg_id}")
-def update_flight_details(leg_id: int, update: FlightDetailsUpdate):
-    data = update.model_dump(exclude_unset=True) if hasattr(update, "model_dump") else update.dict(exclude_unset=True)
-    allowed = {"flight_number", "airline", "start_airport", "end_airport", "polyline", "track_source"}
-    data = {k: v for k, v in data.items() if k in allowed}
+def update_flight_details(leg_id: int, update: FlightDetailsFields):
+    data = {k: v for k, v in update.model_dump(exclude_unset=True).items() if k in FLIGHT_COLUMNS}
     if not data:
         raise HTTPException(status_code=400, detail="No fields provided for update")
 

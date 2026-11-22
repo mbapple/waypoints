@@ -3,6 +3,8 @@ import React, { useCallback, useEffect, useId, useRef, useState } from 'react';
 import styled from 'styled-components';
 import { Input, Label, FormGroup, Text, Button, Flex } from '../styles/components';
 import { getIntegrationStatus, fetchDrivingRoute, fetchFlightTrack, lookupFlightRoute } from '../api/integrations';
+import { AIRCRAFT_KEYS, aircraftFromLookup } from '../utils/flightFields';
+import AircraftDetails from './flights/AircraftDetails';
 import { haversineMiles } from '../utils/geo';
 
 const Inline = styled.div`
@@ -210,6 +212,7 @@ export const FlightDetails = ({
   initialEndAirport,
   initialPolyline,
   initialTrackSource,
+  initialAircraft, // aircraft_* form fields
   defaultStartAirport, // suggestions adopted into fields the user hasn't typed in
   defaultEndAirport,
 }) => {
@@ -219,6 +222,8 @@ export const FlightDetails = ({
   const [startAirport, setStartAirport] = useState(initialStartAirport || '');
   const [endAirport, setEndAirport] = useState(initialEndAirport || '');
   const [track, setTrack] = useState({ polyline: initialPolyline || '', source: initialTrackSource || '' });
+  const [aircraft, setAircraft] = useState(() => Object.fromEntries(AIRCRAFT_KEYS.map(k => [k, initialAircraft?.[k] || ''])));
+  const updateAircraft = useCallback((patch) => setAircraft(prev => ({ ...prev, ...patch })), []);
   const [openskyConfigured, setOpenskyConfigured] = useState(null);
   const [fetching, setFetching] = useState(false);
   const [trackMessage, setTrackMessage] = useState(null); // { text, error }
@@ -262,8 +267,9 @@ export const FlightDetails = ({
       end_airport: endAirport,
       flight_polyline: track.polyline,
       flight_track_source: track.source,
+      ...aircraft,
     });
-  }, [flightNumber, airline, startAirport, endAirport, track, onAutoFill]);
+  }, [flightNumber, airline, startAirport, endAirport, track, aircraft, onAutoFill]);
 
   const lookupRoute = async () => {
     const number = flightNumber.trim();
@@ -322,6 +328,7 @@ export const FlightDetails = ({
       });
       const points = (data?.coordinates || []).map(([lon, lat]) => ({ lat, lon }));
       setTrack({ polyline: encodePolyline(points), source: data?.source || 'opensky' });
+      if (data?.aircraft) setAircraft(aircraftFromLookup(data.aircraft));
       // Fill in airport codes the user left blank
       const origin = data?.route?.origin;
       const destination = data?.route?.destination;
@@ -395,6 +402,8 @@ export const FlightDetails = ({
           />
         </FormGroup>
       </Inline>
+
+      <AircraftDetails value={aircraft} onChange={updateAircraft} />
 
       <FormGroup>
         <Label>Flight path</Label>

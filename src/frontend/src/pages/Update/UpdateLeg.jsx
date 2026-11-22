@@ -8,6 +8,7 @@ import ConfirmDeleteButton from "../../components/common/ConfirmDeleteButton";
 import { listNodesByTrip } from "../../api/nodes";
 import { getLeg, updateLeg as apiUpdateLeg, deleteLeg as apiDeleteLeg, getCarDetails, createCarDetails, getFlightDetails, createFlightDetails } from "../../api/legs";
 import LegForm from "../../components/forms/LegForm";
+import { emptyFlightForm, flightDetailsToForm, flightFormToPayload } from "../../utils/flightFields";
 
 function UpdateLeg() {
   const { tripID } = useParams();
@@ -34,13 +35,7 @@ function UpdateLeg() {
   end_osm_country: "",
   end_osm_state: "",
   miles: "",
-  // flight fields
-  flight_number: "",
-  airline: "",
-  start_airport: "",
-  end_airport: "",
-  flight_polyline: "",
-  flight_track_source: "",
+  ...emptyFlightForm(),
   });
 
   const [nodes, setNodes] = useState([]);
@@ -93,12 +88,7 @@ function UpdateLeg() {
           miles: l.miles || "",
           driving_time_seconds: carData?.driving_time_seconds || "",
           polyline: carData?.polyline || "",
-          flight_number: flightData?.flight_number || "",
-          airline: flightData?.airline || "",
-          start_airport: flightData?.start_airport || "",
-          end_airport: flightData?.end_airport || "",
-          flight_polyline: flightData?.polyline || "",
-          flight_track_source: flightData?.track_source || "",
+          ...flightDetailsToForm(flightData),
         });
       } catch (e) {
         console.error(e);
@@ -146,15 +136,7 @@ function UpdateLeg() {
       }
       // Upsert flight_details if flight
       if (data.type === 'flight') {
-        await createFlightDetails({
-          leg_id: Number(legID),
-          flight_number: data.flight_number || null,
-          airline: data.airline || null,
-          start_airport: data.start_airport || null,
-          end_airport: data.end_airport || null,
-          polyline: data.flight_polyline || null,
-          track_source: data.flight_polyline ? (data.flight_track_source || null) : null,
-        });
+        await createFlightDetails({ leg_id: Number(legID), ...flightFormToPayload(data) });
       }
       navigate(`/trip/${tripID}`);
     } catch (err) {

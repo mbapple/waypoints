@@ -3,6 +3,7 @@
 // endpoints, miles, airport codes) from it, so the page has no cascading effects.
 import { haversineMiles } from "./geo";
 import { placeToOsmFields, placeToLegStart, placeToLegEnd } from "./places";
+import { flightFormToPayload } from "./flightFields";
 
 export const TRANSPORT_TYPES = ["flight", "car", "train", "bus", "boat", "other"];
 export const ROAD_TYPES = new Set(["car", "bus"]); // routed with OpenRouteService
@@ -34,7 +35,7 @@ export function emptyLeg() {
     startAirport: null, // { latitude, longitude, name, iata, icao, country } from a flight lookup
     endAirport: null,
     car: null, // { key, miles, driving_time_seconds, polyline } from CarDetails, valid for endpoints `key`
-    flight: null, // { flight_number, airline, start_airport, end_airport, flight_polyline, flight_track_source }
+    flight: null, // flight form fields (see utils/flightFields.js), from FlightDetails
   };
 }
 
@@ -346,16 +347,7 @@ export function buildQuickTripPayload(resolved) {
           polyline: orNull(l.car?.polyline),
         }
         : null,
-      flight: l.type === "flight"
-        ? {
-          flight_number: orNull(l.flight?.flight_number?.trim()),
-          airline: orNull(l.flight?.airline?.trim()),
-          start_airport: orNull(l.flight?.start_airport?.trim()?.toUpperCase()),
-          end_airport: orNull(l.flight?.end_airport?.trim()?.toUpperCase()),
-          polyline: orNull(l.flight?.flight_polyline),
-          track_source: l.flight?.flight_polyline ? orNull(l.flight?.flight_track_source) : null,
-        }
-        : null,
+      flight: l.type === "flight" ? flightFormToPayload(l.flight) : null,
     })),
   };
 }

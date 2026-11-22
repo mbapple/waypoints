@@ -7,6 +7,8 @@ import PhotoSlideshowLarge from '../../photos/PhotoSlideshowLarge';
 import { listPhotosByLeg } from '../../../api/photos';
 import { getTransportTypeLabel } from '../../../utils/format';
 import { getCarDetails, getFlightDetails } from '../../../api/legs';
+import { aircraftLabel } from '../../../utils/aircraftTypes';
+import AircraftPhoto from '../../flights/AircraftPhoto';
 
 const LegPopup = ({ leg, onClose, startName, endName, startNode, endNode }) => {
   const [photos, setPhotos] = useState([]);
@@ -81,9 +83,11 @@ const LegPopup = ({ leg, onClose, startName, endName, startNode, endNode }) => {
           {flight.airline && <Text variant="muted" size="sm" style={{ display: 'block' }}>Airline: {flight.airline}</Text>}
           {flight.start_airport && <Text variant="muted" size="sm" style={{ display: 'block' }}>From: {flight.start_airport}</Text>}
           {flight.end_airport && <Text variant="muted" size="sm" style={{ display: 'block' }}>To: {flight.end_airport}</Text>}
+          {aircraftLabel(flight) && <Text variant="muted" size="sm" style={{ display: 'block' }}>Aircraft: {aircraftLabel(flight)}</Text>}
           {flight.duration_minutes != null && <Text variant="muted" size="sm" style={{ display: 'block' }}>Duration: {flight.duration_minutes} min</Text>}
           {flight.distance_miles != null && <Text variant="muted" size="sm" style={{ display: 'block' }}>Distance: {flight.distance_miles} mi</Text>}
           <Text variant="muted" size="sm" style={{ display: 'block' }}>Path: {flight.polyline ? `recorded track${flight.track_source === 'opensky' ? ' (OpenSky)' : ''}` : 'great-circle route'}</Text>
+          {flight.aircraft_photo && <div style={{ marginTop: '0.5rem' }}><AircraftPhoto flight={flight} width="240px" /></div>}
         </div>
       )}
       {photos && photos.length > 0 && (

@@ -176,6 +176,12 @@ const Navigation = () => {
               Statistics
             </NavLink>
             <NavLink
+              to="/flights"
+              className={location.pathname === '/flights' ? 'active' : ''}
+            >
+              Flight Data
+            </NavLink>
+            <NavLink
               to="/adventures"
               className={location.pathname.startsWith('/adventures') ? 'active' : ''}
             >

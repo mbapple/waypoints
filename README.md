@@ -19,13 +19,16 @@ Photos can also be uploaded and are attached to Trips themselves or any of the o
 Lists are like travel goals. They can be a list of specific locations, a list of states, or a list of months of travel, whatever you want to see as you track your travel. You can create a custom list by inputting a comma separated list. They can be matched to the countries, state, or location name from OSM. Regex matching allows for automatic matching. You can also manually check off something if it is not automatically matched to a travel component.
 
 **Travel Information:**
-The database also stores additonal information about your legs. For car legs, you can automatically track the route outline and driving time using Open Route Service. For flights you can keep track of the airline and flight information, and fetch the path the plane actually flew from the OpenSky Network. Flights without a recorded path are drawn as great-circle arcs. More integrations coming.
+The database also stores additonal information about your legs. For car legs, you can automatically track the route outline and driving time using Open Route Service. For flights you can keep track of the airline and flight information, and fetch the path the plane actually flew from the OpenSky Network. Flights without a recorded path are drawn as great-circle arcs. Each flight can also store its aircraft: enter the tail number (registration) and **Look up** fills in the type and downloads a photo of that airframe (fetching the flown path does this automatically). More integrations coming.
 
 # Features:
 ## Map View:
 View all of your trips on a single map. Here you can visualize your waypoints around the world. You can also view any single trip on a map.
 Switch the map to **Airports visited** (both ends of every flight, including hidden layover nodes) or **Cities visited** (every city you've had a node or stop in, grouped by the city itself even when the places have different OpenStreetMap ids) to see just those places. Selecting a trip under the map focuses it and fades every other trip.
 Lists with linked locations appear in the **Lists…** menu next to these views: every item is pinned at the list's own coordinates, and items you haven't visited yet are faded.
+
+## Flight Data:
+Every flight you've logged, with totals (flights, miles, airlines, aircraft types, individual aircraft, airports). Browse by **Aircraft types**, **Airlines**, **Aircraft** (tail numbers) or a chronological **Flights** log. Selecting one highlights its flights on the map and lists them with their photos.
 
 ## Calendar View:
 View an overview of your trips on the yearly calendar where you can easily see the days you have travelled. A montly view allows for more detailed display destinations and stops.
@@ -83,6 +86,7 @@ frontend
 - [Nominatim](https://nominatim.org/): API used to search for places in Open Street Map.
 - [Open Route Service](https://openrouteservice.org): Automatically fetch driving path and distance between locations in a leg. Set `ORS_API_KEY` in `.env`. Requests are proxied through the backend, so the key never reaches the browser.
 - [OpenSky Network](https://opensky-network.org): Fetch the actual flown path of a flight from its flight number and date. Create a free OpenSky account, add an API client under Account, and set `OPENSKY_CLIENT_ID` and `OPENSKY_CLIENT_SECRET` in `.env`. OpenSky publishes flights the day after they fly and keeps tracks for about 30 days, so fetch the path within that window. The path is then stored in WayPoints. Flight numbers are matched to radio callsigns with [adsbdb](https://adsbdb.com) and airport codes with [hexdb.io](https://hexdb.io), which need no key. All requests go through the backend.
+- Aircraft details: tail numbers are looked up with [adsbdb](https://adsbdb.com) (falling back to [hexdb.io](https://hexdb.io)), and a photo of the airframe is downloaded once from [airport-data.com](https://airport-data.com) into `uploads/aircraft/`. No key is needed. Photos remain their photographers' copyright; WayPoints always shows the credit and a link to the original.
 - [Immich](https://immich.app): Link photos from your Immich library to a trip and its nodes, legs and stops, or to an adventure. Set `IMMICH_URL` (as reachable from the backend container) and `IMMICH_API_KEY` (with `asset.read` and `asset.view` permissions) in `.env`. All Immich requests, including the images themselves, go through the backend. The browser never contacts Immich or sees the key. Linked photos are not copied, so they need Immich to be running to display.
 
 

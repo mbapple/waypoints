@@ -10,6 +10,7 @@ return its recorded ADS-B track:
 3. OpenSky /flights/departure (or /flights/arrival) for that airport and day ->
    the matching flight's icao24 (transponder address) and times.
 4. OpenSky /tracks/all for that aircraft and time -> the path.
+5. The aircraft's registration, type and photo (routers/aircraft.py), best-effort.
 
 OpenSky requires a free account (OAuth2 client credentials in .env) and only
 keeps tracks for about 30 days, and it publishes flights in a nightly batch, so
@@ -30,6 +31,8 @@ from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
 import config
+from .aircraft import describe_aircraft
+from .http_util import TIMEOUT_SECONDS, USER_AGENT, get_json as _get_json, lookup as _lookup
 
 router = APIRouter(prefix="/api/integrations/opensky", tags=["opensky"])
 
@@ -37,9 +40,7 @@ OPENSKY_API = "https://opensky-network.org/api"
 OPENSKY_TOKEN_URL = "https://auth.opensky-network.org/auth/realms/opensky-network/protocol/openid-connect/token"
 ADSBDB_API = "https://api.adsbdb.com/v0"
 HEXDB_API = "https://hexdb.io/api/v1"
-TIMEOUT_SECONDS = 30
 TRACK_RETENTION_DAYS = 30
-USER_AGENT = "WayPoints (self-hosted travel tracker)"
 
 FLIGHT_NUMBER_RE = re.compile(r"^[A-Z0-9]{2,3}\d{1,4}[A-Z]{0,2}$")
 ICAO_CALLSIGN_RE = re.compile(r"^([A-Z]{3})(\d{1,4}[A-Z]{0,2})$")
@@ -63,30 +64,6 @@ class FlightTrackRequest(BaseModel):
 
 
 # --- HTTP helpers ------------------------------------------------------------
-
-def _get_json(url: str, headers: Optional[dict] = None, service: str = "service"):
-    """GET a JSON document. Returns None on 404; raises HTTPError for other errors."""
-    request = urllib.request.Request(url, headers={"Accept": "application/json", "User-Agent": USER_AGENT, **(headers or {})})
-    try:
-        with urllib.request.urlopen(request, timeout=TIMEOUT_SECONDS) as resp:
-            return json.loads(resp.read().decode("utf-8"))
-    except urllib.error.HTTPError as e:
-        if e.code == 404:
-            return None
-        raise
-    except (urllib.error.URLError, TimeoutError):
-        raise HTTPException(status_code=502, detail=f"Could not reach {service}")
-    except ValueError:
-        raise HTTPException(status_code=502, detail=f"Invalid response from {service}")
-
-
-def _lookup(url: str, service: str):
-    """Best-effort lookup against a keyless helper API: any failure means 'unknown'."""
-    try:
-        return _get_json(url, service=service)
-    except (urllib.error.HTTPError, HTTPException):
-        return None
-
 
 def _opensky_token(force_refresh: bool = False) -> str:
     with _token_lock:
@@ -319,5 +296,14 @@ def flight_track(req: FlightTrackRequest):
         "first_seen": first_seen,
         "last_seen": last_seen,
         "route": {"origin": _airport_summary(origin or None), "destination": _airport_summary(destination or None)} if route else None,
+        "aircraft": _aircraft_or_none(icao24),
         "coordinates": coordinates,
     }
+
+
+def _aircraft_or_none(icao24: str):
+    """The airframe that flew it (type, registration, photo), best-effort."""
+    try:
+        return describe_aircraft(icao24=icao24) if icao24 else None
+    except Exception:  # a failed lookup or photo download must not lose the track
+        return None

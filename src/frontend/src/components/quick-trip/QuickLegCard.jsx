@@ -6,14 +6,13 @@ import { placeToLegStart, placeToLegEnd } from '../../utils/places';
 import { TRANSPORT_TYPES, ROAD_TYPES } from '../../utils/quickTrip';
 import { LegConnector, LegTitle, FieldGrid, QInput, QSelect, More, Hint, LinkButton } from './quick-trip-styles';
 import QuickField from './QuickField';
+import { FLIGHT_FORM_KEYS, pickFlightFields } from '../../utils/flightFields';
 
 const MILES_LABELS = {
   road: 'auto · road route',
   'great-circle': 'auto · great circle',
   'straight-line': 'auto · straight line',
 };
-
-const FLIGHT_KEYS = ['flight_number', 'airline', 'start_airport', 'end_airport', 'flight_polyline', 'flight_track_source'];
 
 const SOURCE_LABELS = { node: 'the stop', airport: 'the airport', override: 'your override' };
 
@@ -62,11 +61,10 @@ export default function QuickLegCard({ leg, resolved, errors, showErrors, onChan
   const handleFlightAutoFill = useCallback((data) => {
     onChange(legUid, (prev) => {
       // Miles come from the resolver; only keep the flight fields
-      const fields = FLIGHT_KEYS.filter(k => data?.[k] !== undefined);
-      if (!fields.length) return null;
-      const next = { ...(prev.flight || {}) };
-      fields.forEach(k => { next[k] = data[k]; });
-      const same = prev.flight && FLIGHT_KEYS.every(k => prev.flight[k] === next[k]);
+      const fields = pickFlightFields(data);
+      if (!Object.keys(fields).length) return null;
+      const next = { ...(prev.flight || {}), ...fields };
+      const same = prev.flight && FLIGHT_FORM_KEYS.every(k => prev.flight[k] === next[k]);
       return same ? null : { flight: next };
     });
   }, [onChange, legUid]);
@@ -192,6 +190,7 @@ export default function QuickLegCard({ leg, resolved, errors, showErrors, onChan
           initialEndAirport={raw.flight?.end_airport}
           initialPolyline={raw.flight?.flight_polyline}
           initialTrackSource={raw.flight?.flight_track_source}
+          initialAircraft={raw.flight}
           defaultStartAirport={resolved.defaultStartAirport}
           defaultEndAirport={resolved.defaultEndAirport}
           onAutoFill={handleFlightAutoFill}

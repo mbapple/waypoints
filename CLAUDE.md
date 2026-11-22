@@ -25,7 +25,7 @@ src/
       App.jsx              # all routes
       api/                 # one module per backend resource
       pages/               # route-level pages (Create/, Update/, Lists/ subfolders)
-      components/          # reusable components (common/, forms/, trip-details/, photos/, map/, lists/, quick-trip/)
+      components/          # reusable components (common/, forms/, trip-details/, photos/, map/, lists/, quick-trip/, flights/)
       context/SettingsContext.js   # per-browser UI prefs (theme, font scale) in localStorage
       styles/              # theme.js tokens, components.js styled primitives, mapTheme.js
       utils/               # geo, formatting, map data helpers; quickTrip.js = Quick Create resolver
@@ -57,13 +57,14 @@ docker compose up --build
 - **Imports**: uvicorn runs from `app/`. `main.py` uses `from routers import x`. Routers use `from .connect import get_db` and `import config`.
 - **Config**: read settings only via `app/config.py`. Never hardcode credentials, hosts or paths. To add a setting, add it to `config.py`, `.env.example` and the backend `environment:` in `docker-compose.yml.example`.
 - **Migrations**: add `alembic/versions/YYYYMMDD_NNNN_description.py` with `revision`/`down_revision` chained to the previous file. Use `op.execute("...")` raw SQL (`target_metadata = None`, no autogenerate). Migrations run automatically on backend start. Geography columns (`geog`) are maintained by triggers (see migration 0002).
-- **External APIs needing keys** go through a backend proxy so the key stays server-side. See `routers/integrations.py` (OpenRouteService), `routers/immich.py` and `routers/opensky.py` (flight tracks; OAuth2 client-credentials token cached in-process). All use stdlib `urllib`, so no extra dependency.
+- **External APIs needing keys** go through a backend proxy so the key stays server-side. See `routers/integrations.py` (OpenRouteService), `routers/immich.py` and `routers/opensky.py` (flight tracks; OAuth2 client-credentials token cached in-process). Keyless lookups (adsbdb, hexdb, airport-data) use the shared helpers in `routers/http_util.py`; `routers/aircraft.py` downloads aircraft photos into `UPLOAD_DIR/aircraft/`. All use stdlib `urllib`, so no extra dependency.
 - **Cities**: `routers/cities.py` is the only backend code that calls Nominatim (reverse lookup at city level, about 1 request/second, cached). Code that writes node or stop coordinates must schedule `refresh_city` / `refresh_cities` as a `BackgroundTasks` task so `osm_city*` stays in sync.
 - **Immich**: all communication with Immich stays in the backend (`routers/immich.py`). The frontend must never call Immich or receive its URL or key. Linked photos are rows in `photos` with `immich_asset_id` set and `url` = `/api/integrations/immich/assets/<id>/preview` (the backend image proxy), so photo display code needs no special case.
 
 ## Frontend conventions
 
 - **File extensions**: any file containing JSX must be `.jsx` (Vite won't parse JSX in `.js`). Plain modules (`api/`, `utils/`, `styles/theme.js`, `styles/components.js`) stay `.js`. Imports are extensionless.
+- **Flight fields**: `utils/flightFields.js` is the only place that maps flight form state to `/api/flight_details` (and the quick-create `flight` object). Add new flight columns there and to `FLIGHT_COLUMNS` in `routers/flight_details.py`, not to each form.
 - **API calls**: add or extend `src/api/<resource>.js` using the shared axios instance from `api/client.js` (`baseURL: "/api"`). It has a response interceptor that rounds any `miles` / `*_miles` fields to 0.1. Don't call `fetch` against the backend directly.
 - **Pages are composed from reusable components**. Check `components/common/` (Popup, ContextMenu, ConfirmDeleteButton, NodeSelect, LegSelect), `components/forms/` (shared create/update forms), `components/trip-details/`, `components/photos/` and the `*-components.js` modules before writing new UI. Create and Update pages share the same form component.
 - **Styling**: styled-components. Use the primitives in `styles/components.js` (Card, Button, Input, Text, Flex…) and theme tokens (`props.theme.colors/space/fontSizes/breakpoints`) from `styles/theme.js`. Support both dark and light themes and mobile widths.

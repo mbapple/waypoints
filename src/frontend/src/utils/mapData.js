@@ -210,3 +210,39 @@ export function buildMapLayersForTrip({ nodes, legs, stops, carPolylineByLeg, fl
   const bounds = latlngsForBounds.length ? L.latLngBounds(latlngsForBounds) : L.latLngBounds([[20, 0], [50, 30]]);
   return { markers, stopMarkers, polylines, bounds, nodeById, visitedCountries, visitedStates };
 }
+
+// Flight Data page: every flight leg, with the legs in `highlightIds` (a Set of
+// leg ids) drawn bold on top and the rest faded. colors: { base, highlight }.
+// -> { polylines, airports (placeMarkers for highlighted legs), bounds }
+export function flightMapLayers(flights, highlightIds, colors) {
+  const selecting = highlightIds?.size > 0;
+  const lines = [];
+  const airports = new Map();
+  const latlngs = [];
+  (flights || []).forEach((f) => {
+    const start = [f.start_latitude, f.start_longitude];
+    const end = [f.end_latitude, f.end_longitude];
+    if (![...start, ...end].every((v) => typeof v === "number" && isFinite(v))) return;
+    const on = selecting && highlightIds.has(f.leg_id);
+    flightSegments(start, end, f.polyline).forEach((seg) => {
+      if (seg.length < 2) return;
+      lines.push({
+        positions: seg,
+        color: on ? colors.highlight : colors.base,
+        weight: on ? 4 : 2.5,
+        opacity: !selecting ? 0.85 : on ? 1 : 0.15,
+        on,
+      });
+    });
+    if (!selecting || on) latlngs.push(start, end);
+    if (on) {
+      [[start, f.start_airport, f.start_name], [end, f.end_airport, f.end_name]].forEach(([pos, code, name]) => {
+        const key = code || pos.join(",");
+        if (!airports.has(key)) airports.set(key, { key, code: code || null, name, pos, trips: [] });
+      });
+    }
+  });
+  lines.sort((a, b) => a.on - b.on); // highlighted legs draw last, on top
+  const bounds = latlngs.length ? L.latLngBounds(latlngs) : L.latLngBounds([[20, 0], [50, 30]]);
+  return { polylines: lines, airports: [...airports.values()], bounds };
+}

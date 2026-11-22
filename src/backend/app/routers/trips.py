@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field
 #from src.backend.app.connect import get_db
 from .connect import get_db
 from .cities import refresh_cities
+from .flight_details import FlightDetailsFields, upsert_flight_details
 
 router = APIRouter(prefix="/api/trips", tags=["trips"])
 
@@ -79,15 +80,6 @@ class QuickCarDetails(BaseModel):
     polyline: str | None = None
 
 
-class QuickFlightDetails(BaseModel):
-    flight_number: str | None = None
-    airline: str | None = None
-    start_airport: str | None = None
-    end_airport: str | None = None
-    polyline: str | None = None
-    track_source: str | None = None
-
-
 class QuickLeg(BaseModel):
     start_index: int  # positions in QuickTripCreate.nodes
     end_index: int
@@ -108,7 +100,7 @@ class QuickLeg(BaseModel):
     end_osm_state: str | None = None
     miles: float | None = None
     car: QuickCarDetails | None = None
-    flight: QuickFlightDetails | None = None
+    flight: FlightDetailsFields | None = None
 
 
 class QuickTripCreate(BaseModel):
@@ -172,14 +164,7 @@ def create_trip_quick(payload: QuickTripCreate, background_tasks: BackgroundTask
                     (leg_id, leg.car.driving_time_seconds, leg.car.polyline),
                 )
             if leg.flight:
-                f = leg.flight
-                cur.execute(
-                    """
-                    INSERT INTO flight_details (leg_id, flight_number, airline, start_airport, end_airport, polyline, track_source)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s)
-                    """,
-                    (leg_id, f.flight_number, f.airline, f.start_airport, f.end_airport, f.polyline, f.track_source),
-                )
+                upsert_flight_details(cur, leg_id, leg.flight.model_dump())
         conn.commit()
     except psycopg2.DataError as e:  # e.g. a malformed date
         conn.rollback()

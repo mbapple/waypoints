@@ -4,6 +4,7 @@ import { PlaceSearchInput } from "../map-integration-components";
 import { CarDetails, FlightDetails, haversineMiles } from "../leg-details-components";
 import NodeSelect from "../common/NodeSelect";
 import { placeToLegStart, placeToLegEnd } from "../../utils/places";
+import { emptyFlightForm, pickFlightFields } from "../../utils/flightFields";
 
 const TRANSPORT_TYPES = ["flight", "car", "train", "bus", "boat", "other"]; // consider centralizing
 
@@ -34,12 +35,7 @@ export default function LegForm({
     end_osm_country: "",
     end_osm_state: "",
     miles: "",
-    flight_number: "",
-    airline: "",
-    start_airport: "",
-    end_airport: "",
-    flight_polyline: "",
-    flight_track_source: "",
+    ...emptyFlightForm(),
     driving_time_seconds: "",
     polyline: "",
     ...(initialValues || {}),
@@ -111,16 +107,10 @@ export default function LegForm({
   }, []);
 
   const handleFlightAutoFill = useCallback((data) => {
-    const { miles, flight_number, airline, start_airport, end_airport, flight_polyline, flight_track_source } = data || {};
     setFormData(prev => ({
       ...prev,
-      ...(typeof miles === 'number' ? { miles: miles.toFixed(1) } : {}),
-      ...(flight_number !== undefined ? { flight_number } : {}),
-      ...(airline !== undefined ? { airline } : {}),
-      ...(start_airport !== undefined ? { start_airport } : {}),
-      ...(end_airport !== undefined ? { end_airport } : {}),
-      ...(flight_polyline !== undefined ? { flight_polyline } : {}),
-      ...(flight_track_source !== undefined ? { flight_track_source } : {}),
+      ...(typeof data?.miles === 'number' ? { miles: data.miles.toFixed(1) } : {}),
+      ...pickFlightFields(data),
     }));
   }, []);
 
@@ -249,6 +239,7 @@ export default function LegForm({
             initialEndAirport={formData.end_airport}
             initialPolyline={formData.flight_polyline}
             initialTrackSource={formData.flight_track_source}
+            initialAircraft={formData}
             onAutoFill={handleFlightAutoFill}
             onRouteLookup={handleRouteLookup}
           />

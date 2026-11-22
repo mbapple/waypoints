@@ -15,7 +15,8 @@ export const fetchDrivingRoute = (start, end) =>
 // Recorded flight path from the OpenSky Network (backend needs OPENSKY_CLIENT_ID/SECRET).
 // { flight_number, date: 'YYYY-MM-DD', start_airport?, end_airport? }
 // -> { source, callsign, icao24, departure_airport, arrival_airport, first_seen, last_seen,
-//      route: { origin, destination } | null, coordinates: [[lon, lat], ...] }
+//      route: { origin, destination } | null, aircraft: (see lookupAircraft) | null,
+//      coordinates: [[lon, lat], ...] }
 export const fetchFlightTrack = ({ flight_number, date, start_airport, end_airport }) =>
   api.post('/integrations/opensky/flight-track', {
     flight_number,
@@ -29,3 +30,9 @@ export const fetchFlightTrack = ({ flight_number, date, start_airport, end_airpo
 //    origin/destination: { iata, icao, name, latitude, longitude, municipality, country } | null
 export const lookupFlightRoute = (flightNumber) =>
   api.get('/integrations/opensky/route', { params: { flight_number: flightNumber } }).then(r => r.data);
+
+// Aircraft by registration (tail number) or transponder address, with a photo the
+// backend downloads once. -> { icao24, registration, type, icao_type, operator,
+//    photo: { url: '/uploads/aircraft/<REG>.jpg', credit, link } | null }
+export const lookupAircraft = ({ registration, icao24 }) =>
+  api.get('/integrations/aircraft', { params: { registration: registration || undefined, icao24: icao24 || undefined } }).then(r => r.data);

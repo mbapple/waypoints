@@ -9,6 +9,7 @@ import { Button, Text, Flex } from "../../styles/components";
 import { listNodesByTrip } from "../../api/nodes";
 import { createLeg, createCarDetails, createFlightDetails } from "../../api/legs";
 import LegForm from "../../components/forms/LegForm";
+import { flightFormToPayload } from "../../utils/flightFields";
 
 function AddLeg() {
   useDocumentTitle("Add leg");
@@ -65,15 +66,7 @@ function AddLeg() {
                 });
             }
             if (data.type === "flight" && newLegId) {
-                await createFlightDetails({
-                    leg_id: newLegId,
-                    flight_number: data.flight_number || null,
-                    airline: data.airline || null,
-                    start_airport: data.start_airport || null,
-                    end_airport: data.end_airport || null,
-                    polyline: data.flight_polyline || null,
-                    track_source: data.flight_polyline ? (data.flight_track_source || null) : null,
-                });
+                await createFlightDetails({ leg_id: newLegId, ...flightFormToPayload(data) });
             }
             navigate(`/trip/${tripID}`);
         } catch (err) {

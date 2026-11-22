@@ -40,7 +40,7 @@ export default function MapView({
   stopMarkers = [],
   adventureMarkers = [],
   placeMarkers = [], // [{ key, name, code?, pos, countLabel?, faded?, trips: [{id, name}] }]
-  polylines = [],
+  polylines = [], // [{ positions, color, tripId?, type?, opacity?, weight? }] (opacity/weight override the defaults)
   bounds,
   highlightMode = "off",
   nodeById = {},
@@ -284,7 +284,12 @@ export default function MapView({
           <Polyline
             key={`leg-${idx}`}
             positions={line.positions}
-            pathOptions={{ color: line.color, weight: 3, opacity: focusTripId && line.tripId !== focusTripId ? 0.1 : 0.9, smoothFactor: 0 }}
+            pathOptions={{
+              color: line.color,
+              weight: line.weight ?? 3,
+              opacity: line.opacity ?? (focusTripId && line.tripId !== focusTripId ? 0.1 : 0.9),
+              smoothFactor: 0,
+            }}
           />
         ))}
 

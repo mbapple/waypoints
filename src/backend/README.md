@@ -637,12 +637,17 @@ Delete a photo and remove the file if present. For a photo linked from Immich th
 Get flight details for a leg.
 
 Response:
-{ "leg_id": 7, "flight_number": "BA117", "airline": "British Airways", "start_airport": "LHR", "end_airport": "JFK", "polyline": "<encoded polyline>" | null, "track_source": "opensky" | null }
+{
+  "leg_id": 7, "flight_number": "BA117", "airline": "British Airways", "start_airport": "LHR", "end_airport": "JFK",
+  "polyline": "<encoded polyline>" | null, "track_source": "opensky" | null,
+  "aircraft_icao24": "4007f9", "aircraft_registration": "G-YMMN", "aircraft_type": "Boeing 777 236ER", "aircraft_icao_type": "B772",
+  "aircraft_photo": "/uploads/aircraft/G-YMMN.jpg", "aircraft_photo_credit": "Chris Hall", "aircraft_photo_link": "https://airport-data.com/aircraft/photo/..."
+}
 
-`polyline` is the recorded flight track in Google encoded-polyline format (1e5 precision), as for car legs. When it is null the map draws the great-circle route.
+`polyline` is the recorded flight track in Google encoded-polyline format (1e5 precision), as for car legs. When it is null the map draws the great-circle route. The `aircraft_*` fields come from the aircraft lookup below; any of them may be null.
 
 ### POST `/api/flight_details/`
-Create or upsert flight details for a leg.
+Create or replace flight details for a leg: every field above, with `leg_id`. Fields left out are set to null.
 
 ### PUT `/api/flight_details/{leg_id}`
 Update flight details for a leg.
@@ -734,10 +739,31 @@ Response:
   "first_seen": 1763640000,
   "last_seen": 1763668800,
   "route": { "origin": { "iata": "LHR", "icao": "EGLL", "name": "...", "latitude": 51.47, "longitude": -0.46 }, "destination": { ... } } | null,
+  "aircraft": { same as GET /api/integrations/aircraft } | null,
   "coordinates": [[-0.46, 51.47], ...]
 }
 
+`aircraft` is the airframe that flew it, looked up best-effort from `icao24` (null if the lookup fails; the track is still returned).
+
 Errors: 503 if OpenSky is not configured; 400 for an unrecognisable flight number; 409 if the date is today or later (OpenSky publishes flights in a nightly batch); 410 if the date is more than ~30 days ago (OpenSky no longer has the track); 422 if no airport can be determined; 404 if no matching flight or track is found; 429 if the OpenSky daily credit limit is used up; 502 if OpenSky fails or rejects the credentials.
+
+## Aircraft API (`/api/integrations/aircraft`)
+
+### GET `/api/integrations/aircraft?registration=G-YMMN` (or `?icao24=4007f9`)
+An aircraft's registration, type and photo. Details come from adsbdb (then hexdb.io for an `icao24`); no key is needed. A photo from airport-data.com is downloaded the first time a registration is looked up and saved as `uploads/aircraft/<REG>.jpg` with its credit in `<REG>.json`; later lookups reuse it. Photos remain their photographers' copyright: always show `credit` and `link`.
+
+Response:
+{
+  "icao24": "4007f9", "registration": "G-YMMN", "type": "Boeing 777 236ER", "icao_type": "B772", "operator": "British Airways",
+  "photo": { "url": "/uploads/aircraft/G-YMMN.jpg", "credit": "Chris Hall", "link": "https://airport-data.com/aircraft/photo/001861621" } | null
+}
+
+Errors: 400 if neither a valid registration nor a 6-character hex code is given; 404 if the aircraft is unknown.
+
+## Flights API (`/api/flights`)
+
+### GET `/api/flights`
+Every flight leg, oldest first, for the Flight Data page: `leg_id`, `trip_id`, `trip_name`, `date`, `miles`, start/end coordinates (the leg's own, else its nodes'), `start_name`/`end_name` (node names), and every flight details field above.
 
 ## Immich API (`/api/integrations/immich`)
 

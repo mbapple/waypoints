@@ -19,6 +19,8 @@ from routers import lists
 from routers import integrations
 from routers import immich
 from routers import opensky
+from routers import aircraft
+from routers import flights
 from routers import destinations
 from routers import cities
 
@@ -50,6 +52,8 @@ app.include_router(lists.router)
 app.include_router(integrations.router)
 app.include_router(immich.router)
 app.include_router(opensky.router)
+app.include_router(aircraft.router)
+app.include_router(flights.router)
 app.include_router(destinations.router)
 app.include_router(cities.router)
 

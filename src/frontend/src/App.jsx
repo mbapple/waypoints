@@ -20,6 +20,7 @@ import UpdateNode from "./pages/Update/UpdateNode";
 import UpdateLeg from "./pages/Update/UpdateLeg";
 import UpdateStop from "./pages/Update/UpdateStop";
 import Statistics from "./pages/Statistics";
+import FlightData from "./pages/FlightData";
 import Calendar from "./pages/Calendar";
 import SearchPage from "./pages/Search";
 import AdventureList from "./pages/AdventureList";
@@ -68,6 +69,7 @@ const ThemedApp = () => {
             <Route path="/trip/:tripID/update-leg" element={<UpdateLeg />} />
             <Route path="/trip/:tripID/update-stop" element={<UpdateStop />} />
             <Route path="/statistics" element={<Statistics />} />
+            <Route path="/flights" element={<FlightData />} />
             <Route path="/calendar" element={<Calendar />} />
             <Route path="/search" element={<SearchPage />} />
             <Route path="/adventures" element={<AdventureList />} />

@@ -3,6 +3,8 @@ import { Form, FormGroup, Label, Input, Select, Button } from "../../styles/comp
 import { PlaceSearchInput } from "../map-integration-components";
 import { placeToOsmFields } from "../../utils/places";
 import { getTransportTypeLabel } from "../../utils/format";
+import { fmtShort } from "../../utils/itinerary";
+import { nodeLabel } from "../common/NodeSelect";
 
 export default function StopForm({
   nodes = [],
@@ -98,12 +100,12 @@ export default function StopForm({
           <option value="">Select Leg or Node</option>
           {legs.map(leg => (
             <option key={`leg-${leg.id}`} value={`leg-${leg.id}`}>
-              Leg: {leg.name || `${getTransportTypeLabel(leg.type)} ${getNodeName(leg.start_node_id)} to ${getNodeName(leg.end_node_id)}`}
+              Leg: {leg.name || `${getTransportTypeLabel(leg.type)} ${getNodeName(leg.start_node_id)} to ${getNodeName(leg.end_node_id)}`}{leg.date ? ` (${fmtShort(leg.date)})` : ''}
             </option>
           ))}
           {nodes.map(node => (
             <option key={`node-${node.id}`} value={`node-${node.id}`}>
-              Node: {node.name}
+              Node: {nodeLabel(node)}
             </option>
           ))}
         </Select>

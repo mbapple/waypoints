@@ -19,7 +19,7 @@ import { getIntegrationStatus } from "../api/integrations";
 import TripItinerary from "../components/trip-details/TripItinerary";
 import { HERO_HEIGHT, Header, Crumb, TripMeta, Description, Actions, Hero, SectionHeader, PhotoBar } from "../components/trip-details/trip-page-styles";
 import { CameraIcon, EditIcon, MapIcon, PlusIcon } from "../components/common/Icons";
-import { dateRange, fmtTripRange } from "../utils/itinerary";
+import { dateRange, fmtTripRange, photosByEntity } from "../utils/itinerary";
 import NodePopup from "../components/trip-details/popups/NodePopup";
 import LegPopup from "../components/trip-details/popups/LegPopup";
 import StopPopup from "../components/trip-details/popups/StopPopup";
@@ -90,6 +90,9 @@ function TripDetails() {
     // Category emojis come from the API; re-render once they're cached
     refreshStopCategoryEmojis().then(() => setEmojiVersion(v => v + 1));
   }, []);
+
+  // Trip photos grouped by stop / node / leg, for the popups
+  const photosOf = useMemo(() => photosByEntity(tripPhotos), [tripPhotos]);
 
   const { markers, stopMarkers, polylines, bounds, nodeById, visitedCountries, visitedStates } = useMemo(() =>
       buildMapLayersForTrip({ nodes, legs, stops, carPolylineByLeg, flightPolylineByLeg, tripID })
@@ -208,11 +211,12 @@ function TripDetails() {
 
       {/* Centralized popup renderer */}
       {popupEntity && popupEntity.type === 'node' && (
-        <NodePopup node={popupEntity.data} currentTripId={tripID} onClose={() => setPopupEntity(null)} onPhotosChanged={refreshPhotos} />
+        <NodePopup node={popupEntity.data} photos={photosOf.node.get(popupEntity.data.id)} onClose={() => setPopupEntity(null)} onPhotosChanged={refreshPhotos} />
       )}
       {popupEntity && popupEntity.type === 'leg' && (() => { const startNode = nodes.find(n=>n.id===popupEntity.data.start_node_id); const endNode = nodes.find(n=>n.id===popupEntity.data.end_node_id); return (
         <LegPopup
           leg={popupEntity.data}
+          photos={photosOf.leg.get(popupEntity.data.id)}
           startName={startNode?.name || 'Start'}
           endName={endNode?.name || 'End'}
           startNode={startNode}
@@ -221,7 +225,7 @@ function TripDetails() {
           onPhotosChanged={refreshPhotos}
         />); })()}
       {popupEntity && popupEntity.type === 'stop' && (
-        <StopPopup stop={popupEntity.data} onClose={() => setPopupEntity(null)} onPhotosChanged={refreshPhotos} />
+        <StopPopup stop={popupEntity.data} photos={photosOf.stop.get(popupEntity.data.id)} onClose={() => setPopupEntity(null)} onPhotosChanged={refreshPhotos} />
       )}
     </div>
   );

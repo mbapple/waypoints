@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import L from "leaflet";
 // no Link usage in this page after refactor
 import { PageHeader } from "../components/page-components";
+import useDocumentTitle from "../utils/useDocumentTitle";
 import { Text, Flex, Badge } from "../styles/components";
 import { listTrips, getTripStatistics } from "../api/trips";
 import { listNodesByTrip } from "../api/nodes";
@@ -25,6 +26,7 @@ const plural = (n, word, many = `${word}s`) => `${n} ${n === 1 ? word : many}`;
 
 
 function MapPage() {
+	useDocumentTitle("Map");
 	const [loading, setLoading] = useState(true);
 	const [trips, setTrips] = useState([]);
 	const [nodesByTrip, setNodesByTrip] = useState({});

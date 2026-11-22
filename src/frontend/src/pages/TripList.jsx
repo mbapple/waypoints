@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import useDocumentTitle from "../utils/useDocumentTitle";
 import { Link, useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import { Card, Button, Text, Grid, Flex, Badge } from "../styles/components";
@@ -44,6 +45,7 @@ const EmptyState = styled.div`
 `;
 
 function TripList() {
+  useDocumentTitle("My Trips");
   const [trips, setTrips] = useState([]);
   const [loading, setLoading] = useState(true);
   const [tripPhotos, setTripPhotos] = useState({});

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FormCard, DangerZone } from '../../components/input-components';
 import { PageHeader } from '../../components/page-components';
+import useDocumentTitle from "../../utils/useDocumentTitle";
 import { Button, Text, Flex } from '../../styles/components';
 import AdventureForm from '../../components/forms/AdventureForm';
 import ConfirmDeleteButton from '../../components/common/ConfirmDeleteButton';
@@ -15,6 +16,7 @@ export default function UpdateAdventure() {
   const params = new URLSearchParams(window.location.search);
   const adventureID = params.get('adventureID');
   const [formData, setFormData] = useState(null);
+  useDocumentTitle(formData?.name ? `Edit ${formData.name}` : "Edit adventure");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { FormCard, DangerZone } from "../../components/input-components";
 import { PageHeader } from "../../components/page-components";
+import useDocumentTitle from "../../utils/useDocumentTitle";
 import { Button, Text, Flex } from "../../styles/components";
 import ConfirmDeleteButton from "../../components/common/ConfirmDeleteButton";
 import { listNodesByTrip } from "../../api/nodes";
@@ -35,6 +36,7 @@ function UpdateStop() {
   const [legs, setLegs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  useDocumentTitle(formData.name ? `Edit ${formData.name}` : "Edit stop");
 
   const handleDeleteStop = async () => {
     try {

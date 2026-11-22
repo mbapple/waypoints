@@ -3,6 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { Text, Button } from "../../styles/components";
 import { createTrip } from "../../api/trips";
 import TripForm from "../../components/forms/TripForm";
+import useDocumentTitle from "../../utils/useDocumentTitle";
 import { PageHeader } from "../../components/page-components";
 import { FormCard } from "../../components/input-components";
 
@@ -11,6 +12,7 @@ import { FormCard } from "../../components/input-components";
 // Buttons are handled inside TripForm
 
 function CreateTrip() {
+  useDocumentTitle("New trip");
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
 

@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
+import useDocumentTitle from "../utils/useDocumentTitle";
 import { useSearchParams, Link } from 'react-router-dom';
 import styled from 'styled-components';
 import { globalSearch } from '../api/search';
@@ -57,6 +58,7 @@ const Empty = styled.div`
 
 export default function SearchPage() {
   const [params, setParams] = useSearchParams();
+  useDocumentTitle("Search");
   const qp = params.get('q') || '';
   const [input, setInput] = useState(qp);
   const [loading, setLoading] = useState(false);

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Card, Form, FormGroup, Label, Input, Select, Button, Text } from '../styles/components';
 import { useSettings } from '../context/SettingsContext';
 import { getIntegrationStatus } from '../api/integrations';
+import useDocumentTitle from "../utils/useDocumentTitle";
 import styled from 'styled-components';
 
 const Spacer = styled.div`
@@ -9,6 +10,7 @@ const Spacer = styled.div`
 `;
 
 const Settings = () => {
+  useDocumentTitle("Settings");
     const { settings, setTheme, setFontScale } = useSettings();
     // Stop categories state
     const [categories, setCategories] = useState([]);

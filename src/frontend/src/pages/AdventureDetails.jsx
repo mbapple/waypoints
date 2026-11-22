@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { getAdventure } from '../api/adventures';
+import useDocumentTitle from "../utils/useDocumentTitle";
 import { listPhotosByAdventure } from '../api/photos';
 import { PageHeader } from '../components/page-components';
 import { Text, Button, Flex, Badge } from '../styles/components';
@@ -21,6 +22,7 @@ export default function AdventureDetails() {
   const adventureID = params.get('adventureID');
   const navigate = useNavigate();
   const [adventure, setAdventure] = useState(null);
+  useDocumentTitle(adventure?.name);
   const [photos, setPhotos] = useState([]);
   const [loading, setLoading] = useState(true);
 

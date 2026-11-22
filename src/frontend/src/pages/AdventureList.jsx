@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import useDocumentTitle from "../utils/useDocumentTitle";
 import { Link, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { Card, Button, Text, Grid, Flex, Badge } from '../styles/components';
@@ -20,6 +21,7 @@ const AdventureCard = styled(Card)`
 
 export default function AdventureList() {
   const [adventures, setAdventures] = useState([]);
+  useDocumentTitle("Adventures");
   const [loading, setLoading] = useState(true);
   const [adventurePhotos, setAdventurePhotos] = useState({}); // id -> photos array (slice)
   const [imageHeight, setImageHeight] = useState(200);

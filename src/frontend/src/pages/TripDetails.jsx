@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo } from "react";
+import useDocumentTitle from "../utils/useDocumentTitle";
 import { useParams, Link } from "react-router-dom";
 import { PageHeader } from "../components/page-components";
 import { AddButtons, TripInfoCard } from "../components/trip-details/trip-detail-components";
@@ -25,6 +26,7 @@ import StopPopup from "../components/trip-details/popups/StopPopup";
 function TripDetails() {
   const { tripID } = useParams();
   const [trip, setTrip] = useState(null);
+  useDocumentTitle(trip?.name);
   const [loading, setLoading] = useState(true);
   const [nodes, setNodes] = useState([]);
   const [legs, setLegs] = useState([]);

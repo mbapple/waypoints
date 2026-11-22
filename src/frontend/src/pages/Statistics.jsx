@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState, useRef } from "react";
+import useDocumentTitle from "../utils/useDocumentTitle";
 import styled, { useTheme } from "styled-components";
 import { Card, Grid, Text, Flex, Badge, Button } from "../styles/components";
 import ListSlideshow from "../components/lists/ListSlideshow";
@@ -171,6 +172,7 @@ const typeColor = (theme, type) => {
 };
 
 export default function Statistics() {
+	useDocumentTitle("Statistics");
 	const theme = useTheme();
 	// Reintroduce measurement to enforce equal outer card heights (stops card not taller than miles card)
 	const milesCardRef = useRef(null);

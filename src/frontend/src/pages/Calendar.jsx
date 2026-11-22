@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
+import useDocumentTitle from "../utils/useDocumentTitle";
 import styled, { css } from 'styled-components';
 import { Link } from 'react-router-dom';
 import { listTrips } from '../api/trips';
@@ -540,6 +541,7 @@ function renderBar(item, days) {
 }
 
 function Calendar() {
+    useDocumentTitle("Calendar");
     const today = useMemo(localToday, []);
     const [year, setYear] = useState(today.getUTCFullYear());
     const [selectedMonth, setSelectedMonth] = useState(today.getUTCMonth());

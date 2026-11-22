@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import useDocumentTitle from "../../utils/useDocumentTitle";
 import { Button, Text, Flex } from "../../styles/components";
 import { PageHeader } from "../../components/page-components";
 import { FormCard, DangerZone } from "../../components/input-components";
@@ -29,6 +30,7 @@ function UpdateNode() {
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  useDocumentTitle(formData.name ? `Edit ${formData.name}` : "Edit node");
 
   const handleDeleteNode = async () => {
       try {

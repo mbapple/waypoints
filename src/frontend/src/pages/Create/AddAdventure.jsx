@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import useDocumentTitle from "../../utils/useDocumentTitle";
 import { useNavigate } from 'react-router-dom';
 import { FormCard } from '../../components/input-components';
 import { PageHeader } from '../../components/page-components';
@@ -7,6 +8,7 @@ import AdventureForm from '../../components/forms/AdventureForm';
 import { createAdventure } from '../../api/adventures';
 
 export default function AddAdventure() {
+  useDocumentTitle("Add adventure");
   const navigate = useNavigate();
   const [saving, setSaving] = useState(false);
 

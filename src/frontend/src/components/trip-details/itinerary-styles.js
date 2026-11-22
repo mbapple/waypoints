@@ -212,6 +212,14 @@ export const PhotoNav = styled.button`
   @media (hover: none) { opacity: 1; }
 `;
 
+// Opens the fullscreen photo viewer (bottom-right, clear of the category badge)
+export const PhotoExpand = styled(PhotoNav)`
+  top: auto;
+  bottom: 8px;
+  right: 8px;
+  transform: none;
+`;
+
 export const StopBody = styled.div`
   display: flex;
   flex-direction: column;

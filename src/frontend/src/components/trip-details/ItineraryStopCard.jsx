@@ -3,9 +3,10 @@ import { API_ORIGIN } from "../../api/client";
 import { getStopEmoji } from "../../styles/mapTheme";
 import { getPlaceLink } from "../map-integration-components";
 import EntityMenu from "./EntityMenu";
-import { PinIcon, ChevronLeftIcon, ChevronRightIcon, CameraIcon } from "../common/Icons";
+import { PinIcon, ChevronLeftIcon, ChevronRightIcon, CameraIcon, ExpandIcon } from "../common/Icons";
+import PhotoViewer from "../photos/PhotoViewer";
 import {
-  StopCardShell, PhotoArea, PhotoPlaceholder, PhotoBadge, PhotoNav, StopBody, StopTitleRow, SmallMeta,
+  StopCardShell, PhotoArea, PhotoPlaceholder, PhotoBadge, PhotoNav, PhotoExpand, StopBody, StopTitleRow, SmallMeta,
 } from "./itinerary-styles";
 import { fmtShort } from "../../utils/itinerary";
 
@@ -16,7 +17,9 @@ export const titleCase = (s) => String(s || "").replace(/\b\w/g, (c) => c.toUppe
 export default function ItineraryStopCard({ stop, photos = [], tripID, enRoute, onOpen }) {
   const [idx, setIdx] = useState(0);
   const [failed, setFailed] = useState({}); // photo id -> true when the image failed to load
-  const photo = photos[idx % Math.max(photos.length, 1)];
+  const [viewing, setViewing] = useState(false);
+  const shown = idx % Math.max(photos.length, 1);
+  const photo = photos[shown];
   const step = (d) => (e) => { e.stopPropagation(); setIdx((i) => (i + d + photos.length) % photos.length); };
   const multiDay = stop.start_date && stop.end_date && stop.end_date !== stop.start_date;
   const emoji = getStopEmoji(stop.category);
@@ -40,7 +43,15 @@ export default function ItineraryStopCard({ stop, photos = [], tripID, enRoute, 
             <PhotoNav type="button" aria-label="Next photo" onClick={step(1)}><ChevronRightIcon size={14} /></PhotoNav>
           </>
         )}
+        {photo && (
+          <PhotoExpand type="button" aria-label="View photos full screen" onClick={(e) => { e.stopPropagation(); setViewing(true); }} onKeyDown={(e) => e.stopPropagation()}>
+            <ExpandIcon size={13} />
+          </PhotoExpand>
+        )}
       </PhotoArea>
+      {viewing && (
+        <PhotoViewer photos={photos} startIndex={shown} onClose={(i) => { setViewing(false); setIdx(i); }} />
+      )}
       <StopBody>
         <StopTitleRow>
           <h4>{stop.name}</h4>

@@ -7,7 +7,7 @@ import PhotoSlideshowLarge from '../../photos/PhotoSlideshowLarge';
 import { listPhotosByStop } from '../../../api/photos';
 import OtherVisits from '../OtherVisits';
 
-const StopPopup = ({ stop, onClose }) => {
+const StopPopup = ({ stop, onClose, onPhotosChanged }) => {
   const [photos, setPhotos] = useState([]);
   useEffect(() => { if (!stop) return; let active = true; (async () => { try { const ph = await listPhotosByStop(stop.id); if (active) setPhotos(ph || []); } catch {} })(); return () => { active = false; }; }, [stop]);
   return (
@@ -30,7 +30,7 @@ const StopPopup = ({ stop, onClose }) => {
       {stop.notes && <Text variant="muted" size="sm" style={{ display: 'block', whiteSpace: 'pre-wrap', marginTop: '0.5rem', marginBottom: photos && photos.length ? '0.75rem' : 0 }}><strong>Notes:</strong> {stop.notes}</Text>}
       {photos && photos.length > 0 && (
         <div style={{ marginTop: '0.25rem' }}>
-          <PhotoSlideshowLarge photos={photos} />
+          <PhotoSlideshowLarge photos={photos} expandable onPhotoRemoved={onPhotosChanged && ((p) => { setPhotos(ps => ps.filter(x => x.id !== p.id)); onPhotosChanged(); })} />
         </div>
       )}
       <OtherVisits osmId={stop.osm_id} currentTripId={stop.trip_id} />

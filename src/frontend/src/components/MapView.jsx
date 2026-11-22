@@ -282,7 +282,7 @@ export default function MapView({
 
         {orderedPolylines.map((line, idx) => (
           <Polyline
-            key={`leg-${idx}`}
+            key={line.key ?? `leg-${idx}`}
             positions={line.positions}
             pathOptions={{
               color: line.color,
@@ -364,11 +364,15 @@ export default function MapView({
 }
 
 // Focus map on all markers belonging to a tripId
+// Re-fits only when the focused trip changes, not whenever the marker list does
+// (the Map timeline changes it on every playback step).
 function FocusTrip({ tripId, markers }) {
   const map = useMap();
+  const markersRef = React.useRef(markers);
+  markersRef.current = markers;
   React.useEffect(() => {
     if (!tripId) return;
-    const pts = markers.filter(m => m.tripId === tripId).map(m => m.pos).filter(Boolean);
+    const pts = markersRef.current.filter(m => m.tripId === tripId).map(m => m.pos).filter(Boolean);
     if (!pts.length) return;
     try {
       if (pts.length === 1) {
@@ -378,6 +382,6 @@ function FocusTrip({ tripId, markers }) {
         map.fitBounds(b.pad(0.1), { animate: true });
       }
     } catch {}
-  }, [tripId, markers, map]);
+  }, [tripId, map]);
   return null;
 }

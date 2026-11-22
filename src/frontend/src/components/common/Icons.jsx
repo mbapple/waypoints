@@ -26,6 +26,8 @@ export const TrainIcon = (p) => <Svg {...p}><rect x="6" y="3" width="12" height=
 export const BusIcon = (p) => <Svg {...p}><rect x="5" y="3" width="14" height="14" rx="2" /><path d="M5 11h14" /><path d="M8 17v3M16 17v3" /></Svg>;
 export const BoatIcon = (p) => <Svg {...p}><path d="M3 17l2 3h14l2-3H3z" /><path d="M6 17V9h12v8" /><path d="M12 9V4" /></Svg>;
 export const RouteIcon = (p) => <Svg {...p}><circle cx="6" cy="18" r="2" /><circle cx="18" cy="6" r="2" /><path d="M8 18h7a3 3 0 0 0 0-6H9a3 3 0 0 1 0-6h7" /></Svg>;
+export const PlayIcon = (p) => <Svg {...p}><path d="M7 4.5v15l12-7.5z" fill="currentColor" /></Svg>;
+export const PauseIcon = (p) => <Svg {...p}><path d="M8 5v14M16 5v14" strokeWidth="3" /></Svg>;
 
 export function TransportIcon({ type, ...p }) {
   switch ((type || "").toLowerCase()) {

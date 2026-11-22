@@ -17,11 +17,15 @@ import { buildMapLayersForAllTrips } from "../utils/mapData";
 import { listAirports } from "../api/destinations";
 import { listCities } from "../api/cities";
 import { listLists, getList } from "../api/lists";
+import { buildTimelineFeatures } from "../utils/timeline";
+import useTimelinePlayback from "../utils/useTimelinePlayback";
+import TravelTimeline from "../components/map/TravelTimeline";
 
 const MAP_VIEWS = [
 	{ id: "trips", label: "Trips" },
 	{ id: "airports", label: "Airports visited" },
 	{ id: "cities", label: "Cities visited" },
+	{ id: "timeline", label: "Timeline" },
 ];
 
 const plural = (n, word, many = `${word}s`) => `${n} ${n === 1 ? word : many}`;
@@ -180,13 +184,25 @@ function MapPage() {
 		};
 	}, []);
 
-	const { markers, stopMarkers, adventureMarkers, polylines, bounds, nodeById, stopsByNodeId, visitedCountries, visitedStates } = useMemo(() =>
+	const layers = useMemo(() =>
 		buildMapLayersForAllTrips({ nodesByTrip, legsByTrip, stopsByTrip, carPolylineByLeg, flightPolylineByLeg, adventures })
 	, [nodesByTrip, legsByTrip, stopsByTrip, carPolylineByLeg, flightPolylineByLeg, adventures]);
+	const { markers, stopMarkers, adventureMarkers, polylines, bounds, nodeById, stopsByNodeId, visitedCountries, visitedStates } = layers;
+
+	// Timeline view: every dated feature in travel order, replayed by the playback hook
+	const timeline = useMemo(
+		() => buildTimelineFeatures({ trips, nodesByTrip, legsByTrip, stopsByTrip, layers }),
+		[trips, nodesByTrip, legsByTrip, stopsByTrip, layers],
+	);
+	const tl = useTimelinePlayback(timeline.features);
+	const isTimeline = mapView === "timeline";
+	const pauseTimeline = tl.pause;
+	useEffect(() => { if (!isTimeline) pauseTimeline(); }, [isTimeline, pauseTimeline]);
+	const tripLayers = isTimeline ? tl.visible : { markers, stopMarkers, adventureMarkers, polylines };
 
 	// Place markers + bounds for the airports / cities / list views
 	const placeView = useMemo(() => {
-		if (mapView === "trips") return null;
+		if (mapView === "trips" || mapView === "timeline") return null;
 		if (activeListId) {
 			const detail = listDetails[activeListId];
 			const placeMarkers = listPlaceMarkers(detail);
@@ -260,11 +276,11 @@ function MapPage() {
 
 			<div style = {{height: "70vh"}}>
 				<MapView
-					markers={placeView ? [] : markers}
-					stopMarkers={placeView ? [] : stopMarkers}
-					adventureMarkers={placeView ? [] : adventureMarkers}
+					markers={placeView ? [] : tripLayers.markers}
+					stopMarkers={placeView ? [] : tripLayers.stopMarkers}
+					adventureMarkers={placeView ? [] : tripLayers.adventureMarkers}
 					placeMarkers={placeView ? placeView.placeMarkers : []}
-					polylines={placeView ? [] : polylines}
+					polylines={placeView ? [] : tripLayers.polylines}
 					bounds={placeView ? placeView.placeBounds : bounds}
 					highlightMode={highlightMode}
 					nodeById={nodeById}
@@ -277,7 +293,11 @@ function MapPage() {
 				/>
 			</div>
 
-			{mapView === "trips" && <Flex gap={2} style={{ marginTop: 12, flexWrap: "wrap" }}>
+			{isTimeline && !loading && (
+				<TravelTimeline {...tl} trips={trips} undatedCount={timeline.undatedCount} />
+			)}
+
+			{(mapView === "trips" || isTimeline) && <Flex gap={2} style={{ marginTop: 12, flexWrap: "wrap" }}>
 				{trips.map((t) => (
 					<Button
 						key={t.id}

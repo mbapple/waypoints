@@ -92,23 +92,23 @@ export function buildMapLayersForAllTrips({ nodesByTrip, legsByTrip, stopsByTrip
           try {
             const decoded = polylineCodec.decode(encoded).map(([lat, lng]) => [lat, lng]);
             if (decoded.length >= 2) {
-              polylines.push({ positions: decoded, color, tripId, type });
+              polylines.push({ positions: decoded, color, tripId, type, legId: leg.id });
               decoded.forEach((p) => latlngsForBounds.push(p));
               return;
             }
           } catch {}
         }
-        polylines.push({ positions: [start, end], color, tripId, type });
+        polylines.push({ positions: [start, end], color, tripId, type, legId: leg.id });
         latlngsForBounds.push(start, end);
       } else if (type === "flight") {
         flightSegments(start, end, flightPolylineByLeg?.[leg.id]).forEach((seg) => {
           if (seg && seg.length >= 2) {
-            polylines.push({ positions: seg, color, tripId, type });
+            polylines.push({ positions: seg, color, tripId, type, legId: leg.id });
             latlngsForBounds.push(...seg);
           }
         });
       } else {
-        polylines.push({ positions: [start, end], color, tripId, type });
+        polylines.push({ positions: [start, end], color, tripId, type, legId: leg.id });
         latlngsForBounds.push(start, end);
       }
     });

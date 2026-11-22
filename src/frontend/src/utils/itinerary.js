@@ -38,14 +38,14 @@ export function dateRange(start, end) {
 const addDays = (date, n) => new Date(new Date(`${date}T00:00:00Z`).getTime() + n * DAY_MS).toISOString().slice(0, 10);
 
 // Inclusive date span a node covers; a missing end means a single day.
-function nodeSpan(n) {
+export function nodeSpan(n) {
   const a = n.arrival_date || n.departure_date;
   const d = n.departure_date || n.arrival_date;
   return a ? [a, d < a ? a : d] : null;
 }
 
 // Days a non-lodging stop shows up on.
-function stopDays(stop, nodeById, legById) {
+export function stopDays(stop, nodeById, legById) {
   if (stop.start_date || stop.end_date) {
     const s = stop.start_date || stop.end_date;
     const e = stop.end_date || stop.start_date;

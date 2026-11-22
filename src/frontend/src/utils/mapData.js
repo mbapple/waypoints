@@ -3,6 +3,11 @@ import polylineCodec from "@mapbox/polyline";
 import { getTripColor } from "../styles/mapTheme";
 import { curvedFlightPath, flightTrackSegments } from "./map_helper_functions";
 
+// A real coordinate pair. Global isFinite(null) is true (null coerces to 0), which let
+// places without coordinates through as [null, null] markers and crashed Leaflet.
+const hasCoords = (o) => typeof o?.latitude === "number" && typeof o?.longitude === "number"
+  && Number.isFinite(o.latitude) && Number.isFinite(o.longitude);
+
 // Flight leg -> [lat, lon] segments: the recorded track if one is stored
 // (flight_details.polyline), otherwise the great-circle arc between the endpoints.
 function flightSegments(start, end, encodedTrack) {
@@ -30,7 +35,7 @@ export function buildMapLayersForAllTrips({ nodesByTrip, legsByTrip, stopsByTrip
   Object.values(nodesByTrip || {}).forEach((arr) => {
     (arr || []).forEach((n) => {
       nodeById[n.id] = n;
-      if (isFinite(n.latitude) && isFinite(n.longitude) && !n.invisible) {
+      if (hasCoords(n) && !n.invisible) {
         markers.push({ id: n.id, name: n.name, pos: [n.latitude, n.longitude], tripId: n.trip_id });
         latlngsForBounds.push([n.latitude, n.longitude]);
       }
@@ -48,7 +53,7 @@ export function buildMapLayersForAllTrips({ nodesByTrip, legsByTrip, stopsByTrip
   Object.entries(stopsByTrip || {}).forEach(([tripIdStr, stops]) => {
     const tripId = Number(tripIdStr);
     (stops || []).forEach((s) => {
-      if (isFinite(s.latitude) && isFinite(s.longitude)) {
+      if (hasCoords(s)) {
         let visited = null;
         if (s.leg_id && legById[s.leg_id]?.date) visited = legById[s.leg_id].date;
         else if (s.node_id && nodeById[s.node_id]?.arrival_date) visited = nodeById[s.node_id].arrival_date;
@@ -111,7 +116,7 @@ export function buildMapLayersForAllTrips({ nodesByTrip, legsByTrip, stopsByTrip
 
   // Adventures: global single-day points (not tied to trips)
   (adventures || []).forEach(a => {
-    if (isFinite(a.latitude) && isFinite(a.longitude)) {
+    if (hasCoords(a)) {
       adventureMarkers.push({ id: a.id, name: a.name, category: a.category, pos: [a.latitude, a.longitude], start_date: a.start_date, end_date: a.end_date, notes: a.notes });
       latlngsForBounds.push([a.latitude, a.longitude]);
       if (a.osm_country) visitedCountries.add(a.osm_country);
@@ -135,7 +140,7 @@ export function buildMapLayersForTrip({ nodes, legs, stops, carPolylineByLeg, fl
   const nodeById = {};
   (nodes || []).forEach((n) => {
     nodeById[n.id] = n;
-    if (isFinite(n.latitude) && isFinite(n.longitude) && !n.invisible) {
+    if (hasCoords(n) && !n.invisible) {
       markers.push({ id: n.id, name: n.name, pos: [n.latitude, n.longitude], tripId: Number(tripID) });
       latlngsForBounds.push([n.latitude, n.longitude]);
     }
@@ -147,7 +152,7 @@ export function buildMapLayersForTrip({ nodes, legs, stops, carPolylineByLeg, fl
   (legs || []).forEach((l) => { if (l?.id) legById[l.id] = l; });
 
   (stops || []).forEach((s) => {
-    if (isFinite(s.latitude) && isFinite(s.longitude)) {
+    if (hasCoords(s)) {
       let visited = null;
       if (s.leg_id && legById[s.leg_id]?.date) visited = legById[s.leg_id].date;
       else if (s.node_id && nodeById[s.node_id]?.arrival_date) visited = nodeById[s.node_id].arrival_date;

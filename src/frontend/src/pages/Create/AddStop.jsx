@@ -46,12 +46,13 @@ function AddStop() {
                 node_id: data.nodeID || null,
                 category: data.category,
                 notes: data.notes,
-                latitude: data.latitude,
-                longitude: data.longitude,
-                osm_name: data.osmName,
-                osm_id: data.osmID,
-                osm_country: data.osmCountry,
-                osm_state: data.osmState,
+                // No location picked: send null (an empty string isn't a valid coordinate)
+                latitude: data.latitude || null,
+                longitude: data.longitude || null,
+                osm_name: data.osmName || null,
+                osm_id: data.osmID || null,
+                osm_country: data.osmCountry || null,
+                osm_state: data.osmState || null,
                 start_date: data.start_date || null,
                 end_date: data.end_date || null
             });

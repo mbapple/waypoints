@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 #from src.backend.app.routers.connect import get_db
 from .connect import get_db
@@ -24,6 +24,12 @@ class Stop(BaseModel):
     osm_country: str | None = None
     osm_state: str | None = None
 
+    # A stop doesn't need a location; treat blank coordinates from forms as "none"
+    @field_validator("latitude", "longitude", mode="before")
+    @classmethod
+    def _blank_coord_is_none(cls, v):
+        return None if isinstance(v, str) and not v.strip() else v
+
 # Stop update model (all fields optional)
 class StopUpdate(BaseModel):
     name: str | None = None
@@ -41,6 +47,12 @@ class StopUpdate(BaseModel):
     osm_id: str | None = None
     osm_country: str | None = None
     osm_state: str | None = None
+
+    # A stop doesn't need a location; treat blank coordinates from forms as "none"
+    @field_validator("latitude", "longitude", mode="before")
+    @classmethod
+    def _blank_coord_is_none(cls, v):
+        return None if isinstance(v, str) and not v.strip() else v
 
 # Return a list of all stops corresponding to a specific leg
 @router.get("/by_leg/{leg_id}")

@@ -1,21 +1,12 @@
 import React, { useState } from "react";
 import useDocumentTitle from "../../utils/useDocumentTitle";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import styled from "styled-components";
-import { Card, Button, Text, Flex } from "../../styles/components";
+import { FormCard } from "../../components/input-components";
+import { PageHeader } from "../../components/page-components";
+import { Button, Text, Flex } from "../../styles/components";
 import { createNode } from "../../api/nodes";
 import NodeForm from "../../components/forms/NodeForm";
-
-const PageHeader = styled.div`
-  margin: ${props => props.theme.space[8]} 0 ${props => props.theme.space[6]} 0;
-`;
-
-const FormCard = styled(Card)`
-  max-width: 600px;
-  margin: 0 auto;
-`;
-
-// Buttons handled in NodeForm
+import TripContext from "../../components/forms/TripContext";
 
 function AddNode() {
   useDocumentTitle("Add node");
@@ -67,6 +58,7 @@ function AddNode() {
       </PageHeader>
 
       <FormCard>
+        <TripContext tripID={tripID} what="destination" />
         <NodeForm
           initialValues={{
             name: "",

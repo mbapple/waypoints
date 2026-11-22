@@ -9,6 +9,7 @@ import { Button, Text, Flex } from "../../styles/components";
 import { listNodesByTrip } from "../../api/nodes";
 import { createLeg, createCarDetails, createFlightDetails } from "../../api/legs";
 import LegForm from "../../components/forms/LegForm";
+import TripContext from "../../components/forms/TripContext";
 import { flightFormToPayload } from "../../utils/flightFields";
 
 function AddLeg() {
@@ -94,6 +95,7 @@ function AddLeg() {
             </PageHeader>
 
             <FormCard>
+                <TripContext tripID={tripID} what="leg" />
                 <LegForm
                     nodes={nodes}
                     onSubmit={handleSubmit}

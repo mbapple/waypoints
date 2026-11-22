@@ -52,10 +52,30 @@ services:
       - ./backups:/workspaces/src/backups
     command: ["bash", "-lc", "chmod +x /workspaces/src/backend/app/start.sh && /workspaces/src/backend/app/start.sh"]
 
+  # Production frontend: nginx serving the built app (src/frontend/Dockerfile) and
+  # forwarding /api and /uploads to the backend. Rebuilt by `docker compose up --build`.
   frontend:
-    image: node:24
+    build:
+      context: ./src/frontend
     container_name: waypoints_frontend
     restart: always
+    depends_on:
+      - backend
+    environment:
+      BACKEND_URL: "http://waypoints_backend:3001"
+      FRONTEND_ALLOWED_HOSTS: ${FRONTEND_ALLOWED_HOSTS:-}
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+
+  # Development only: the Vite dev server with hot reload, serving the bind-mounted
+  # source. A plain `docker compose up` doesn't start it. Run it in place of `frontend`:
+  #   docker compose stop frontend && docker compose --profile dev up -d frontend-dev
+  # and switch back with:
+  #   docker compose stop frontend-dev && docker compose up -d --build frontend
+  frontend-dev:
+    profiles: ["dev"]
+    image: node:24
+    container_name: waypoints_frontend_dev
     depends_on:
       - backend
     environment:

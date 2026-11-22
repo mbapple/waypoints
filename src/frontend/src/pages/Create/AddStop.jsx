@@ -1,5 +1,5 @@
 import React, {useState} from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, Link, useNavigate, useSearchParams } from "react-router-dom";
 import {FormCard} from "../../components/input-components";
 import {PageHeader} from "../../components/page-components";
 import { Button, Text, Flex } from "../../styles/components";
@@ -13,10 +13,13 @@ function AddStop() {
     const { tripID } = useParams();
     const navigate = useNavigate();
 
+    // The itinerary's per-day "+" links here with ?date=YYYY-MM-DD&nodeID=N to prefill
+    const [searchParams] = useSearchParams();
+
     const [formData] = useState({
         name: "",
         legID: "",
-        nodeID: "",
+        nodeID: searchParams.get("nodeID") || "",
         category: "",
         notes: "",
         latitude: "",
@@ -25,7 +28,7 @@ function AddStop() {
         osmID: "",
         osmCountry: "",
         osmState: "",
-    start_date: "",
+    start_date: searchParams.get("date") || "",
     end_date: "",
     });
 

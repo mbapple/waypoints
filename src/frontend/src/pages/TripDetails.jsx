@@ -1,23 +1,24 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { useParams, Link } from "react-router-dom";
 import { PageHeader } from "../components/page-components";
-import { AddButtons, TripInfoCard } from "../components/trip-details/trip-detail-components";
-import { Button, Text, Flex, Badge } from "../styles/components";
+import { Button, Text, Flex } from "../styles/components";
 import MapView from "../components/MapView";
 import { buildMapLayersForTrip } from "../utils/mapData";
-// import TripMiniMap from "../components/TripMiniMap";
 import { getTrip, getTripMiles } from "../api/trips";
 import { listNodesByTrip } from "../api/nodes";
 import { listLegsByTrip, loadLegPolylines } from "../api/legs";
 import { listStopsByTrip } from "../api/stops";
-import { listPhotosByTrip, listPhotosByLeg, listPhotosByNode, listPhotosByStop } from "../api/photos";
+import { listPhotosByTrip } from "../api/photos";
+import { refreshStopCategoryEmojis } from "../styles/mapTheme";
 import PhotoSlideshowLarge from "../components/photos/PhotoSlideshowLarge";
 import PhotoUploadButton from "../components/photos/PhotoUploadButton";
 import PhotoTargetSelect from "../components/photos/PhotoTargetSelect";
 import ImmichPickerPopup from "../components/photos/ImmichPickerPopup";
 import { getIntegrationStatus } from "../api/integrations";
-import TripDetailsList from "../components/trip-details/TripDetailsList";
-import TripDetailsDaily from "../components/trip-details/TripDetailsDaily";
+import TripItinerary from "../components/trip-details/TripItinerary";
+import { HERO_HEIGHT, Header, Crumb, TripMeta, Description, Actions, Hero, SectionHeader, PhotoBar } from "../components/trip-details/trip-page-styles";
+import { CameraIcon, EditIcon, MapIcon, PlusIcon } from "../components/common/Icons";
+import { dateRange, fmtTripRange } from "../utils/itinerary";
 import NodePopup from "../components/trip-details/popups/NodePopup";
 import LegPopup from "../components/trip-details/popups/LegPopup";
 import StopPopup from "../components/trip-details/popups/StopPopup";
@@ -30,15 +31,13 @@ function TripDetails() {
   const [legs, setLegs] = useState([]);
   const [stops, setStops] = useState([]);
   const [tripPhotos, setTripPhotos] = useState([]);
-  const [entityPhotos, setEntityPhotos] = useState({}); // cache by type:id
-  const [expanded, setExpanded] = useState({}); // key: type:id -> bool
   const [uploadTarget, setUploadTarget] = useState(""); // e.g. node:3 / leg:5 / stop:7
   const [carPolylineByLeg, setCarPolylineByLeg] = useState({});
   const [flightPolylineByLeg, setFlightPolylineByLeg] = useState({});
-  const [viewMode, setViewMode] = useState('list'); // 'list' | 'daily'
   const [popupEntity, setPopupEntity] = useState(null); // { type: 'node'|'leg'|'stop', data: obj }
   const [immichConfigured, setImmichConfigured] = useState(false);
   const [immichOpen, setImmichOpen] = useState(false);
+  const [, setEmojiVersion] = useState(0);
 
   const [miles, setMiles] = useState(0);
 
@@ -57,7 +56,6 @@ function TripDetails() {
         setLegs(legsData);
         setStops(stopsData);
         setTripPhotos(photosData);
-
 
         // Use freshly fetched legsData (not state) for road routes and flight tracks
         const polylines = await loadLegPolylines(legsData);
@@ -87,184 +85,114 @@ function TripDetails() {
     getIntegrationStatus()
       .then(s => setImmichConfigured(!!s?.immich_configured))
       .catch(() => setImmichConfigured(false));
+    // Category emojis come from the API; re-render once they're cached
+    refreshStopCategoryEmojis().then(() => setEmojiVersion(v => v + 1));
   }, []);
 
   const { markers, stopMarkers, polylines, bounds, nodeById, visitedCountries, visitedStates } = useMemo(() =>
       buildMapLayersForTrip({ nodes, legs, stops, carPolylineByLeg, flightPolylineByLeg, tripID })
     , [nodes, legs, stops, carPolylineByLeg, flightPolylineByLeg, tripID]);
 
-  // Identify the first and last nodes by arrival_date (must be before early returns to satisfy Hooks rules)
-
-    
   if (loading) {
     return (
-      <div>
-        <PageHeader>
-          <Text variant="muted">Loading trip details...</Text>
-        </PageHeader>
-      </div>
+      <PageHeader>
+        <Text variant="muted">Loading trip details...</Text>
+      </PageHeader>
     );
   }
 
   if (!trip) {
     return (
-      <div>
-        <PageHeader>
-          <h1>Trip Not Found</h1>
-          <Text variant="muted">The trip you're looking for doesn't exist.</Text>
-          <div style={{ marginTop: '1rem' }}>
-            <Button as={Link} to="/" variant="primary">
-              Back to Trips
-            </Button>
-          </div>
-        </PageHeader>
-      </div>
+      <PageHeader>
+        <h1>Trip Not Found</h1>
+        <Text variant="muted">The trip you're looking for doesn't exist.</Text>
+        <div style={{ marginTop: '1rem' }}>
+          <Button as={Link} to="/" variant="primary">Back to Trips</Button>
+        </div>
+      </PageHeader>
     );
   }
 
-  // After adding a photo: reload the trip slideshow and the cached photos of its target ('node:3' etc.)
-  const refreshPhotos = async (target) => {
-    try {
-      setTripPhotos(await listPhotosByTrip(tripID));
-      if (!target) return;
-      const [type, idStr] = target.split(':');
-      const id = Number(idStr);
-      const loader = { node: listPhotosByNode, leg: listPhotosByLeg, stop: listPhotosByStop }[type];
-      if (!loader) return;
-      const key = `${type}:${id}`;
-      setEntityPhotos(prev => ({ ...prev, [key]: undefined }));
-      const ph = await loader(id);
-      setEntityPhotos(prev => ({ ...prev, [key]: ph }));
-    } catch {}
+  // After adding a photo: reload the trip's photos (the itinerary groups them by stop/node/leg)
+  const refreshPhotos = async () => {
+    try { setTripPhotos(await listPhotosByTrip(tripID)); } catch {}
   };
+
+  const dayCount = trip.start_date && trip.end_date ? dateRange(trip.start_date, trip.end_date).length : 0;
+  const nodeCount = nodes.filter(n => !n.invisible).length;
+  const openEntity = (type, data) => setPopupEntity({ type, data });
 
   return (
     <div>
-      <PageHeader>
-        <Flex justify="space-between" align="flex-start" wrap>
-          <div>
-            <h1>{trip.name}</h1>
-            <Flex gap={3} align="center" style={{ marginTop: '0.5rem' }}>
-              <Badge variant="primary">{trip.start_date}</Badge>
-              <Text>→</Text>
-              <Badge variant="primary">{trip.end_date}</Badge>
-            </Flex>
-          </div>
-          <Button as={Link} to="/" variant="outline">
-            ← Back to Trips
-          </Button>
-        </Flex>
-      </PageHeader>
-
-      {/* Large slideshow above the map */}
-      {tripPhotos && tripPhotos.length > 0 && (
-        <div style={{ marginBottom: '1rem' }}>
-          <PhotoSlideshowLarge photos={tripPhotos} />
+      <Header>
+        <div style={{ minWidth: 0, flex: '1 1 320px' }}>
+          <Crumb to="/">← All trips</Crumb>
+          <h1>{trip.name}</h1>
+          <TripMeta>
+            <span>{fmtTripRange(trip.start_date, trip.end_date)}</span>
+            {dayCount > 0 && <span>{dayCount} {dayCount === 1 ? 'day' : 'days'}</span>}
+            {nodeCount > 0 && <span>{nodeCount} {nodeCount === 1 ? 'node' : 'nodes'}</span>}
+            {miles > 0 && <span>{Number(miles).toLocaleString(undefined, { maximumFractionDigits: 1 })} mi</span>}
+          </TripMeta>
+          {trip.description && <Description>{trip.description}</Description>}
         </div>
-      )}
+        <Actions>
+          <Button as={Link} to={`/trip/${tripID}/map`} variant="outline" size="sm"><MapIcon size={14} /> Full map</Button>
+          <Button as={Link} to={`/trip/${tripID}/update`} variant="outline" size="sm"><EditIcon size={14} /> Edit trip</Button>
+        </Actions>
+      </Header>
 
-      {/* Mini Map
-      <div style={{ marginBottom: '1.25rem' }}>
-        <Flex justify="space-between" align="center" style={{ marginBottom: '0.5rem' }}>
-          <h3>Map preview</h3>
-          <Button as={Link} to={`/trip/${tripID}/map`} variant="ghost" size="sm">Open full map →</Button>
+      <Hero $photos={tripPhotos.length > 0}>
+        {tripPhotos.length > 0 && <PhotoSlideshowLarge photos={tripPhotos} image_height={HERO_HEIGHT} />}
+        <div className="hero-map">
+          <MapView
+            markers={markers}
+            stopMarkers={stopMarkers}
+            polylines={polylines}
+            bounds={bounds}
+            highlightMode={"off"}
+            nodeById={nodeById}
+            visitedCountries={visitedCountries}
+            visitedStates={visitedStates}
+            pathForTripId={() => `/trip/${tripID}`}
+            linkLabel="View trip details"
+          />
+        </div>
+      </Hero>
+
+      <SectionHeader>
+        <h2>Itinerary</h2>
+        <Flex gap={2} wrap>
+          <Button as={Link} to={`/trip/${tripID}/add-node`} variant="ghost" size="sm"><PlusIcon size={14} /> Add Node</Button>
+          <Button as={Link} to={`/trip/${tripID}/add-leg`} variant="ghost" size="sm"><PlusIcon size={14} /> Add Leg</Button>
+          <Button as={Link} to={`/trip/${tripID}/add-stop`} variant="ghost" size="sm"><PlusIcon size={14} /> Add Stop</Button>
         </Flex>
-        <TripMiniMap tripID={tripID} nodes={nodes} legs={legs} />
-      </div> */}
-      {/* Mini Map */}
-      <div style={{ marginBottom: '7vh', height: "30vh"}}>
-        <Flex justify="space-between" align="center" style={{ marginBottom: '0.5rem' }}>
-          <h3>Map preview</h3>
-          <Button as={Link} to={`/trip/${tripID}/map`} variant="ghost" size="sm">Open full map →</Button>
-        </Flex>
-        <MapView
-          markers={markers}
-          stopMarkers={stopMarkers}
-          polylines={polylines}
-          bounds={bounds}
-          highlightMode={"off"}
-          nodeById={nodeById}
-          visitedCountries={visitedCountries}
-          visitedStates={visitedStates}
-          pathForTripId={() => `/trip/${tripID}`}
-          linkLabel="View trip details"
+      </SectionHeader>
+
+      <TripItinerary
+        trip={trip}
+        tripID={tripID}
+        nodes={nodes}
+        legs={legs}
+        stops={stops}
+        photos={tripPhotos}
+        onOpen={openEntity}
+      />
+
+      <PhotoBar>
+        <span className="label"><CameraIcon size={15} /> Add photos to</span>
+        <PhotoTargetSelect nodes={nodes} legs={legs} stops={stops} value={uploadTarget} onChange={setUploadTarget} placeholder="The trip (no specific item)" />
+        <PhotoUploadButton
+          tripId={tripID}
+          nodeId={uploadTarget.startsWith('node:') ? Number(uploadTarget.split(':')[1]) : undefined}
+          legId={uploadTarget.startsWith('leg:') ? Number(uploadTarget.split(':')[1]) : undefined}
+          stopId={uploadTarget.startsWith('stop:') ? Number(uploadTarget.split(':')[1]) : undefined}
+          onUploaded={refreshPhotos}
         />
-      </div>
-
-      {/* Trip information Card */}
-      <TripInfoCard>
-        <Flex justify="space-between" align="flex-start">
-          <h3>Trip Information</h3>
-          <Button as={Link} to={`/trip/${tripID}/update`} variant="ghost" size="sm" aria-label="Edit Trip">
-            Edit
-          </Button>
-        </Flex>
-        <Text variant="secondary">
-          <strong>Description:</strong> {trip.description || "No description provided."}
-        </Text>
-        <Text variant="secondary" style={{ display: 'block', marginTop: '1rem' }}>
-          <strong>Total Miles:</strong> {miles} miles
-        </Text>
-      </TripInfoCard>
-
-      {/* Itinerary / Daily Toggle Section */}
-      <div style={{ marginBottom: '2rem' }}>
-        <Flex justify="space-between" align="center" style={{ marginBottom: '1rem' }}>
-          <h2 style={{ margin: 0 }}>Trip Details</h2>
-          <Flex gap={2}>
-            <Button variant={viewMode === 'list' ? 'primary' : 'outline'} size="sm" onClick={() => setViewMode('list')}>List</Button>
-            <Button variant={viewMode === 'daily' ? 'primary' : 'outline'} size="sm" onClick={() => setViewMode('daily')}>Daily</Button>
-          </Flex>
-        </Flex>
-        {viewMode === 'list' ? (
-          <TripDetailsList
-            tripID={tripID}
-            nodes={nodes}
-            legs={legs}
-            stops={stops}
-            expanded={expanded}
-            setExpanded={setExpanded}
-            entityPhotos={entityPhotos}
-            setEntityPhotos={setEntityPhotos}
-            onEntityClick={(type, data) => setPopupEntity({ type, data })}
-          />
-        ) : (
-          <TripDetailsDaily
-            trip={trip}
-            tripID={tripID}
-            nodes={nodes}
-            legs={legs}
-            stops={stops}
-            expanded={expanded}
-            setExpanded={setExpanded}
-            entityPhotos={entityPhotos}
-            setEntityPhotos={setEntityPhotos}
-            onEntityClick={(type, data) => setPopupEntity({ type, data })}
-          />
+        {immichConfigured && (
+          <Button variant="outline" size="sm" onClick={() => setImmichOpen(true)}>Link from Immich</Button>
         )}
-      </div>
-
-      {/* Bottom unified upload container */}
-      <TripInfoCard>
-        <h3>Add Photos</h3>
-        <Flex gap={2} align="center" wrap>
-          <div style={{ flex: '1 1 240px' }}>
-            <PhotoTargetSelect nodes={nodes} legs={legs} stops={stops} value={uploadTarget} onChange={setUploadTarget} />
-          </div>
-          <PhotoUploadButton
-            tripId={tripID}
-            nodeId={uploadTarget.startsWith('node:') ? Number(uploadTarget.split(':')[1]) : undefined}
-            legId={uploadTarget.startsWith('leg:') ? Number(uploadTarget.split(':')[1]) : undefined}
-            stopId={uploadTarget.startsWith('stop:') ? Number(uploadTarget.split(':')[1]) : undefined}
-            onUploaded={() => refreshPhotos(uploadTarget)}
-          />
-          {immichConfigured && (
-            <Button variant="outline" size="sm" onClick={() => setImmichOpen(true)}>
-              Link from Immich
-            </Button>
-          )}
-        </Flex>
-      </TripInfoCard>
+      </PhotoBar>
       {immichOpen && (
         <ImmichPickerPopup
           tripId={tripID}
@@ -275,7 +203,6 @@ function TripDetails() {
           onLinked={refreshPhotos}
         />
       )}
-      <AddButtons tripID={tripID} style={{ marginTop: '1.5rem', marginBottom: '3.0rem' }} />
 
       {/* Centralized popup renderer */}
       {popupEntity && popupEntity.type === 'node' && (
@@ -285,7 +212,7 @@ function TripDetails() {
         <LegPopup
           leg={popupEntity.data}
           startName={startNode?.name || 'Start'}
-            endName={endNode?.name || 'End'}
+          endName={endNode?.name || 'End'}
           startNode={startNode}
           endNode={endNode}
           onClose={() => setPopupEntity(null)}

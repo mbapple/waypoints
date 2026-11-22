@@ -303,7 +303,7 @@ def calendar_photos(start: date = Query(...), end: date = Query(...)):
 
 
 @router.get("/by_trip/{trip_id}")
-async def list_photos_by_trip(trip_id: int):
+def list_photos_by_trip(trip_id: int):
     conn = get_db()
     cur = conn.cursor()
     cur.execute("SELECT id, url, description, leg_id, node_id, stop_id, adventure_id FROM photos WHERE trip_id = %s ORDER BY id DESC", (trip_id,))
@@ -314,7 +314,7 @@ async def list_photos_by_trip(trip_id: int):
 
 
 @router.get("/by_leg/{leg_id}")
-async def list_photos_by_leg(leg_id: int):
+def list_photos_by_leg(leg_id: int):
     conn = get_db()
     cur = conn.cursor()
     cur.execute("SELECT id, url, description, trip_id, node_id, stop_id, adventure_id FROM photos WHERE leg_id = %s ORDER BY id DESC", (leg_id,))
@@ -325,7 +325,7 @@ async def list_photos_by_leg(leg_id: int):
 
 
 @router.get("/by_node/{node_id}")
-async def list_photos_by_node(node_id: int):
+def list_photos_by_node(node_id: int):
     conn = get_db()
     cur = conn.cursor()
     cur.execute("SELECT id, url, description, trip_id, leg_id, stop_id, adventure_id FROM photos WHERE node_id = %s ORDER BY id DESC", (node_id,))
@@ -336,7 +336,7 @@ async def list_photos_by_node(node_id: int):
 
 
 @router.get("/by_stop/{stop_id}")
-async def list_photos_by_stop(stop_id: int):
+def list_photos_by_stop(stop_id: int):
     conn = get_db()
     cur = conn.cursor()
     cur.execute("SELECT id, url, description, trip_id, leg_id, node_id, adventure_id FROM photos WHERE stop_id = %s ORDER BY id DESC", (stop_id,))
@@ -346,7 +346,7 @@ async def list_photos_by_stop(stop_id: int):
     return rows
 
 @router.get("/by_adventure/{adventure_id}")
-async def list_photos_by_adventure(adventure_id: int):
+def list_photos_by_adventure(adventure_id: int):
     conn = get_db()
     cur = conn.cursor()
     cur.execute("SELECT id, url, description, trip_id, leg_id, node_id, stop_id FROM photos WHERE adventure_id = %s ORDER BY id DESC", (adventure_id,))
@@ -357,7 +357,7 @@ async def list_photos_by_adventure(adventure_id: int):
 
 
 @router.delete("/{photo_id}")
-async def delete_photo(photo_id: int):
+def delete_photo(photo_id: int):
     conn = get_db()
     cur = conn.cursor()
     cur.execute("SELECT url FROM photos WHERE id = %s", (photo_id,))
@@ -383,5 +383,43 @@ async def delete_photo(photo_id: int):
             pass
 
     return {"message": "Photo deleted"}
+
+
+# Fixed column names for /covers (never interpolate request values into SQL)
+COVER_KINDS = {"trip": "trip_id", "adventure": "adventure_id"}
+
+
+@router.get("/covers")
+def list_cover_photos(kind: str = Query(..., pattern="^(trip|adventure)$"), limit: int = Query(5, ge=1, le=20)):
+    """The newest `limit` photos of every trip (or adventure) in one query, for the list pages.
+
+    Returns {"<trip or adventure id>": [photo, ...]}; ids with no photos are left out.
+    """
+    col = COVER_KINDS[kind]
+    conn = get_db()
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            f"""
+            SELECT id, url, description, trip_id, leg_id, node_id, stop_id, adventure_id, immich_asset_id
+            FROM (
+                SELECT *, ROW_NUMBER() OVER (PARTITION BY {col} ORDER BY id DESC) AS rn
+                FROM photos
+                WHERE {col} IS NOT NULL
+            ) p
+            WHERE rn <= %s
+            ORDER BY {col}, id DESC
+            """,
+            (limit,),
+        )
+        rows = cur.fetchall()
+        cur.close()
+    finally:
+        conn.close()
+
+    covers = {}
+    for r in rows:
+        covers.setdefault(r[col], []).append(r)
+    return covers
 
 

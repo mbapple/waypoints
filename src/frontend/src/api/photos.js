@@ -12,3 +12,5 @@ export const listPhotosByAdventure = (adventureID) => api.get(`/photos/by_advent
 // One random trip/adventure photo per day in [start, end] (YYYY-MM-DD, inclusive)
 export const listCalendarPhotos = (start, end) => api.get('/photos/calendar', { params: { start, end } }).then(r => r.data);
 export const deletePhoto = (id) => api.delete(`/photos/${id}`).then(r => r.data);
+// Newest few photos of every trip or adventure in one request: { [id]: photos[] } (kind: 'trip' | 'adventure')
+export const listCoverPhotos = (kind) => api.get('/photos/covers', { params: { kind } }).then(r => r.data);

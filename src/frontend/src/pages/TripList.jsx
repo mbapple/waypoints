@@ -4,12 +4,12 @@ import { Link, useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import { Button, Text } from "../styles/components";
 import { listTrips } from "../api/trips";
-import { listPhotosByTrip } from "../api/photos";
+import { listCoverPhotos } from "../api/photos";
 import PhotoSlideshowLarge from "../components/photos/PhotoSlideshowLarge";
 import { ListHeader } from "../components/page-components";
 import {
   CardGrid, MediaCard, MediaPlaceholder, MediaCardBody, MediaCardTitle,
-  MetaLine, MetaItem, CalendarIcon, MoonIcon, MountainIcon,
+  MetaLine, MetaItem, CalendarIcon, MoonIcon, MountainIcon, useMediaHeight,
 } from "../components/common/MediaCard";
 import { formatDateRange, nightsBetween } from "../utils/format";
 
@@ -24,40 +24,15 @@ function TripList() {
   const [trips, setTrips] = useState([]);
   const [loading, setLoading] = useState(true);
   const [tripPhotos, setTripPhotos] = useState({});
-  const [imageHeight, setImageHeight] = useState(220);
+  const imageHeight = useMediaHeight();
   const navigate = useNavigate();
 
+  // Cards render as soon as the trips arrive; their photos (one request for all
+  // trips) fill in when ready, with the placeholder shown meanwhile.
   useEffect(() => {
-    const handleResize = () => {
-      setImageHeight(window.innerWidth < 768 ? 200 : 220);
-    };
-
-    window.addEventListener('resize', handleResize);
-    handleResize(); // Call on initial render
-
-    return () => window.removeEventListener('resize', handleResize);
+    listTrips().then(setTrips).catch(console.error).finally(() => setLoading(false));
+    listCoverPhotos('trip').then(setTripPhotos).catch(console.error);
   }, []);
-
-  useEffect(() => {
-    fetchTrips();
-  }, []);
-
-  const fetchTrips = async () => {
-    try {
-      const res = await listTrips();
-      setTrips(res);
-      // Fetch photos for each trip in parallel (first 5 for speed)
-      const photoPromises = res.map(t => listPhotosByTrip(t.id).then(p => ({ id: t.id, photos: p.slice(0, 5) })).catch(() => ({ id: t.id, photos: [] })));
-      const photoResults = await Promise.all(photoPromises);
-      const grouped = {};
-      photoResults.forEach(r => { grouped[r.id] = r.photos; });
-      setTripPhotos(grouped);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const openTrip = (id) => navigate(`/trip/${id}`);
 

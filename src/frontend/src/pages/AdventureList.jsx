@@ -1,16 +1,16 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import useDocumentTitle from "../utils/useDocumentTitle";
 import { Link, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { Button, Text, Badge } from '../styles/components';
 import { listAdventures } from '../api/adventures';
-import { listPhotosByAdventure } from '../api/photos';
+import { listCoverPhotos } from '../api/photos';
 import PhotoSlideshowLarge from '../components/photos/PhotoSlideshowLarge';
 import MapView from '../components/MapView';
 import { ListHeader } from '../components/page-components';
 import {
   CardGrid, MediaCard, MediaPlaceholder, MediaCardBody, MediaCardTitle,
-  MetaLine, MetaItem, PillRow, CalendarIcon, PinIcon, MountainIcon,
+  MetaLine, MetaItem, PillRow, CalendarIcon, PinIcon, MountainIcon, useMediaHeight,
 } from '../components/common/MediaCard';
 import { formatDateRange } from '../utils/format';
 
@@ -33,26 +33,21 @@ export default function AdventureList() {
   const [adventures, setAdventures] = useState([]);
   useDocumentTitle("Adventures");
   const [loading, setLoading] = useState(true);
-  const [adventurePhotos, setAdventurePhotos] = useState({}); // id -> photos array (slice)
-  const [imageHeight, setImageHeight] = useState(220);
+  const [adventurePhotos, setAdventurePhotos] = useState({}); // id -> newest few photos
+  const imageHeight = useMediaHeight();
   const navigate = useNavigate();
 
+  // Cards render as soon as the adventures arrive; photos fill in when ready.
   useEffect(() => {
-    const handleResize = () => setImageHeight(window.innerWidth < 768 ? 200 : 220);
-    window.addEventListener('resize', handleResize);
-    handleResize();
-    return () => window.removeEventListener('resize', handleResize);
+    listAdventures().then(setAdventures).catch(console.error).finally(() => setLoading(false));
+    listCoverPhotos('adventure').then(setAdventurePhotos).catch(console.error);
   }, []);
 
-  useEffect(() => { (async () => { try {
-      const data = await listAdventures();
-      setAdventures(data);
-      const photoPromises = data.map(a => listPhotosByAdventure(a.id).then(p => ({ id: a.id, photos: p.slice(0,5) })).catch(() => ({ id: a.id, photos: [] })));
-      const photoResults = await Promise.all(photoPromises);
-      const grouped = {};
-      photoResults.forEach(r => { grouped[r.id] = r.photos; });
-      setAdventurePhotos(grouped);
-    } finally { setLoading(false); } })(); }, []);
+  // Memoised so later re-renders (photos arriving, resizing) don't re-fit the map
+  const { markers, bounds } = useMemo(() => {
+    const markers = adventures.filter(a => a.latitude && a.longitude).map(a => ({ id: a.id, pos: [a.latitude, a.longitude], name: a.name, category: a.category, start_date: a.start_date, end_date: a.end_date, notes: a.notes }));
+    return { markers, bounds: markers.length ? markers.map(m => m.pos) : undefined };
+  }, [adventures]);
 
   const openAdventure = (id) => navigate(`/adventures/view?adventureID=${id}`);
 
@@ -76,8 +71,8 @@ export default function AdventureList() {
       {adventures.length > 0 && (
         <MapFrame>
           <MapView
-            adventureMarkers={adventures.filter(a => a.latitude && a.longitude).map(a => ({ id: a.id, pos: [a.latitude, a.longitude], name: a.name, category: a.category, start_date: a.start_date, end_date: a.end_date, notes: a.notes }))}
-            bounds={(() => { const pts = adventures.filter(a => a.latitude && a.longitude).map(a => [a.latitude, a.longitude]); return pts.length ? pts : undefined; })()}
+            adventureMarkers={markers}
+            bounds={bounds}
             highlightMode="off"
           />
         </MapFrame>

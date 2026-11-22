@@ -608,6 +608,12 @@ Form fields: file (binary), trip_id?, leg_id?, node_id?, stop_id?, adventure_id?
 Response:
 { "id": 1, "url": "/uploads/xxxx.jpg" }
 
+### GET `/api/photos/covers?kind=trip|adventure&limit=5`
+The newest `limit` (default 5, at most 20) photos of every trip or adventure in one request, used by the trip and adventure list pages instead of one request per card. Trips or adventures without photos are left out.
+
+Response (keyed by trip or adventure id):
+{ "12": [ { "id": 40, "url": "/uploads/....jpg", "description": null, "trip_id": 12, "leg_id": null, "node_id": 3, "stop_id": null, "adventure_id": null, "immich_asset_id": null } ] }
+
 ### GET `/api/photos/calendar?start=YYYY-MM-DD&end=YYYY-MM-DD`
 One random trip or adventure photo per day in the range (inclusive, at most 120 days), used by the calendar's month view. A photo's day is its capture date (`taken_at`); photos without one fall back to the date of their stop, node or leg, or to their trip's or adventure's date when that is a single day.
 

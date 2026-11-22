@@ -87,6 +87,13 @@ There is no test suite (frontend or backend) and no linter. Verify changes by:
 - `docker compose up --build`, then exercising the UI and endpoints (`curl localhost:3000/api/...` goes through the frontend proxy).
 - Frontend compile check: `docker run --rm -v $PWD/src/frontend:/app -w /app node:24 bash -lc "npm ci && npm run build"` (or `npm ci && npm run build` locally with Node ≥20.19).
 
+## Git workflow
+
+- **Never commit, merge, rebase or push to `master`.** The maintainer merges into `master` themselves.
+- Do all work on a feature branch (e.g. `feature/<topic>`, `fix/<topic>`, `docs/<topic>`). If you are on `master`, create a branch before making any commit.
+- Committing on that branch is fine. Don't merge it, open a PR against `master` or push unless asked.
+- When finished, give a summary of the branch: its name, each commit (hash and subject) with a short description of what changed and why, and how it was verified.
+
 ## Docs
 
 - `README.md`: user-facing features, install and to-do list.

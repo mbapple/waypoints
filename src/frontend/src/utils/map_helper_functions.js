@@ -107,11 +107,11 @@ function splitAtDateLine(points) {
 }
 
 // Recorded flight track -> drawable segments (always an array of [lat, lon] arrays).
-// Gaps in coverage (common over oceans) are filled with great-circle arcs rather than
-// straight map lines, and the track is joined to the leg's start/end points.
+// Only the recorded path is drawn; gaps in coverage (common over oceans) are filled
+// with great-circle arcs rather than straight map lines.
 const TRACK_GAP_DEGREES = 1.5;
-export function flightTrackSegments(start, end, track) {
-	const points = [start, ...track, end].filter(Boolean);
+export function flightTrackSegments(track) {
+	const points = (track || []).filter(Boolean);
 	const dense = [];
 	points.forEach((p, i) => {
 		if (i === 0) { dense.push(p); return; }

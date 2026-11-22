@@ -192,6 +192,14 @@ function trackAvailability(date) {
   return null;
 }
 
+// Unix seconds -> "20 Nov 2026, 22:30 UTC". OpenSky only gives UTC times; the
+// airport's local date can differ near midnight.
+function formatUtc(seconds) {
+  const d = new Date(seconds * 1000);
+  if (Number.isNaN(d.getTime())) return null;
+  return `${d.toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'UTC' })} UTC`;
+}
+
 export const FlightDetails = ({
   start,
   end,
@@ -264,7 +272,10 @@ export const FlightDetails = ({
       if (!startAirport.trim()) setStartAirport(origin?.iata || data?.departure_airport || '');
       if (!endAirport.trim()) setEndAirport(destination?.iata || data?.arrival_airport || '');
       const route = [data?.departure_airport, data?.arrival_airport].filter(Boolean).join(' → ');
-      setTrackMessage({ text: `Found ${data?.callsign}${route ? ` (${route})` : ''}: ${points.length} track points. Save the leg to keep it.` });
+      const departed = data?.first_seen ? formatUtc(data.first_seen) : null;
+      setTrackMessage({
+        text: `Found ${data?.callsign}${route ? ` ${route}` : ''}${departed ? `, departed ${departed}` : ''}: ${points.length} track points. Check the date, then save the leg to keep it.`,
+      });
     } catch (e) {
       const detail = e?.response?.data?.detail;
       setTrackMessage({ text: typeof detail === 'string' ? detail : 'Could not fetch the flight path.', error: true });

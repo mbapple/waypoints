@@ -9,7 +9,7 @@ function flightSegments(start, end, encodedTrack) {
   if (encodedTrack) {
     try {
       const track = polylineCodec.decode(encodedTrack);
-      if (track.length >= 2) return flightTrackSegments(start, end, track);
+      if (track.length >= 2) return flightTrackSegments(track);
     } catch {}
   }
   const curve = curvedFlightPath(start, end, 128);

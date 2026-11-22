@@ -192,6 +192,35 @@ Response:
 
 Returns 400 if nothing is selected or the only source is the target itself.
 
+## Cities API (`/api/cities`)
+
+Each node and stop stores the city it's in: `osm_city`, `osm_city_id`, `osm_city_lat`, `osm_city_lon`. These come from a Nominatim reverse lookup at city level (`/reverse?zoom=10`), which returns the city itself with its own OSM id and centre. Creating or updating a node or stop with coordinates, a quick-created trip, and a destination merge all schedule the lookup as a background task. Lookups are spaced about 1 per second and cached by rounded coordinates. Configure with `NOMINATIM_URL` and `NOMINATIM_LANGUAGE`.
+
+### GET `/api/cities/`
+Visited cities: visible nodes and all stops, grouped by `osm_city_id`. Airports are a separate view (`/api/destinations/airports`).
+
+Response:
+[ { "key": "R7444", "osm_city_id": "R7444", "name": "Paris", "latitude": 48.85, "longitude": 2.32, "node_count": 2, "stop_count": 5, "trips": [{ "id": 1, "name": "Europe 2024" }] } ]
+
+### GET `/api/cities/status`
+Rows with coordinates but no city yet.
+
+Response: `{ "missing": { "nodes": 12, "stops": 40 } }`
+
+### POST `/api/cities/backfill`
+Look up the city for up to `limit` rows that lack one, starting after a cursor. Call it repeatedly with `next` until `next` is null. Rows where no city is found are reported and skipped, so a run always finishes.
+
+Request body: `{ "table": "nodes", "after_id": 0, "limit": 5 }` (all optional; `limit` 1–20)
+
+Response:
+{
+  "results": [ { "table": "nodes", "id": 3, "name": "Hotel Lutetia", "status": "found", "city": "Paris" },
+               { "table": "nodes", "id": 4, "name": "Trailhead", "status": "none", "city": null } ],
+  "next": { "table": "nodes", "after_id": 4 },
+  "missing": { "nodes": 10, "stops": 40 }
+}
+`status` is `found`, `none` or `error` (with `error` text).
+
 ## Lists API (`/api/lists`): item locations
 
 Only the location parts are described here.

@@ -5,6 +5,7 @@ import { useSettings } from '../context/SettingsContext';
 import { getIntegrationStatus } from '../api/integrations';
 import useDocumentTitle from "../utils/useDocumentTitle";
 import styled from 'styled-components';
+import CityBackfill from '../components/settings/CityBackfill';
 
 const Sections = styled.div`
     display: flex;
@@ -341,6 +342,9 @@ const Settings = () => {
                         <Button type="submit" variant="primary" disabled={catLoading || !newCategory.trim()}>Add</Button>
                     </div>
                 </form>
+            </Section>
+            <Section>
+                <CityBackfill />
             </Section>
             <Section>
                 <h2>Database Backups</h2>

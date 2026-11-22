@@ -1,8 +1,9 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, BackgroundTasks, HTTPException
 from pydantic import BaseModel
 
 #from src.backend.app.routers.connect import get_db
 from .connect import get_db
+from .cities import refresh_city
 
 router = APIRouter(prefix="/api/nodes", tags=["nodes"])
 
@@ -76,7 +77,7 @@ def get_nodes_by_trip(trip_id: int):
 # Create a new node
 @router.post("/")
 @router.post("")
-def create_node(node: Node):
+def create_node(node: Node, background_tasks: BackgroundTasks):
     conn = get_db()
     cur = conn.cursor()
     cur.execute("""
@@ -102,6 +103,7 @@ def create_node(node: Node):
     conn.commit()
     cur.close()
     conn.close()
+    background_tasks.add_task(refresh_city, "nodes", row["id"])
     return {"message": "Node created", "id": row["id"]}
 
 # Return a specific single node
@@ -156,7 +158,7 @@ def delete_node(node_id: int):
 
 
 @router.put("/{node_id}")
-def update_node(node_id: int, update: NodeUpdate):
+def update_node(node_id: int, update: NodeUpdate, background_tasks: BackgroundTasks):
     data = update.model_dump(exclude_unset=True) if hasattr(update, "model_dump") else update.dict(exclude_unset=True)
     allowed = {"name", "trip_id", "description", "notes", "arrival_date", "departure_date", "latitude", "longitude", "osm_name", "osm_id", "osm_country", "osm_state", "invisible"}
     data = {k: v for k, v in data.items() if k in allowed}
@@ -177,4 +179,6 @@ def update_node(node_id: int, update: NodeUpdate):
     if not row:
         raise HTTPException(status_code=404, detail="Node not found")
 
+    if "latitude" in data or "longitude" in data:
+        background_tasks.add_task(refresh_city, "nodes", node_id)
     return {"message": f"Node {node_id} updated"}

@@ -1,9 +1,10 @@
 import psycopg2
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, BackgroundTasks, HTTPException
 from pydantic import BaseModel, Field
 
 #from src.backend.app.connect import get_db
 from .connect import get_db
+from .cities import refresh_cities
 
 router = APIRouter(prefix="/api/trips", tags=["trips"])
 
@@ -117,7 +118,7 @@ class QuickTripCreate(BaseModel):
 
 
 @router.post("/quick")
-def create_trip_quick(payload: QuickTripCreate):
+def create_trip_quick(payload: QuickTripCreate, background_tasks: BackgroundTasks):
     """Create a trip with its nodes, legs and car/flight details atomically:
     either everything is saved or nothing is."""
     if len(payload.nodes) < 2:
@@ -190,6 +191,7 @@ def create_trip_quick(payload: QuickTripCreate):
         cur.close()
         conn.close()
 
+    background_tasks.add_task(refresh_cities, "nodes", node_ids)
     return {"message": "Trip created", "id": trip_id, "node_ids": node_ids}
 
 

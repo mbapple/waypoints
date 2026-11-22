@@ -1,8 +1,9 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, BackgroundTasks, HTTPException
 from pydantic import BaseModel, field_validator
 
 #from src.backend.app.routers.connect import get_db
 from .connect import get_db
+from .cities import refresh_city
 
 router = APIRouter(prefix="/api/stops", tags=["stops"])
 
@@ -162,12 +163,13 @@ def get_stops_by_node(trip_id: int):
 
 @router.post("/")
 @router.post("")
-def create_stop(stop: Stop):
+def create_stop(stop: Stop, background_tasks: BackgroundTasks):
     conn = get_db()
     cur = conn.cursor()
     cur.execute("""
     INSERT INTO stops (trip_id, name, leg_id, node_id, category, notes, start_date, end_date, latitude, longitude, osm_name, osm_id, osm_country, osm_state)
     VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+    RETURNING id
     """, (
         stop.trip_id,
         stop.name,
@@ -184,10 +186,12 @@ def create_stop(stop: Stop):
         stop.osm_country,
         stop.osm_state
     ))
+    row = cur.fetchone()
     conn.commit()
     cur.close()
     conn.close()
-    return {"message": "Stop created successfully"}
+    background_tasks.add_task(refresh_city, "stops", row["id"])
+    return {"message": "Stop created successfully", "id": row["id"]}
 
 @router.get("/{stop_id}")
 def get_stop_by_id(stop_id: int):
@@ -225,7 +229,7 @@ def get_stop_by_id(stop_id: int):
 
 
 @router.put("/{stop_id}")
-def update_stop(stop_id: int, update: StopUpdate):
+def update_stop(stop_id: int, update: StopUpdate, background_tasks: BackgroundTasks):
     data = update.model_dump(exclude_unset=True) if hasattr(update, "model_dump") else update.dict(exclude_unset=True)
     allowed = {"name", "trip_id", "leg_id", "node_id", "category", "notes", "start_date", "end_date", "latitude", "longitude", "osm_name", "osm_id", "osm_country", "osm_state"}
     data = {k: v for k, v in data.items() if k in allowed}
@@ -246,6 +250,8 @@ def update_stop(stop_id: int, update: StopUpdate):
     if not row:
         raise HTTPException(status_code=404, detail="Stop not found")
 
+    if "latitude" in data or "longitude" in data:
+        background_tasks.add_task(refresh_city, "stops", stop_id)
     return {"message": f"Stop {stop_id} updated"}
 
 @router.delete("/{stop_id}")

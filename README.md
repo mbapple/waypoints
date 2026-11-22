@@ -24,7 +24,7 @@ The database also stores additonal information about your legs. For car legs, yo
 # Features:
 ## Map View:
 View all of your trips on a single map. Here you can visualize your waypoints around the world. You can also view any single trip on a map.
-Switch the map to **Airports visited** (both ends of every flight, including hidden layover nodes) or **Cities visited** (every unique destination) to see just those places. Selecting a trip under the map focuses it and fades every other trip.
+Switch the map to **Airports visited** (both ends of every flight, including hidden layover nodes) or **Cities visited** (every city you've had a node or stop in, grouped by the city itself even when the places have different OpenStreetMap ids) to see just those places. Selecting a trip under the map focuses it and fades every other trip.
 Lists with linked locations appear in the **Lists…** menu next to these views: every item is pinned at the list's own coordinates, and items you haven't visited yet are faded.
 
 ## Calendar View:
@@ -34,6 +34,9 @@ View an overview of your trips on the yearly calendar where you can easily see t
 With the statistics view, you can see how many miles you have travelled on each transportation type, how many nights you have spent away from home, and track custom lists of travel goals.
 Click **Unique destinations** to list every destination. Use **Merge mode** to combine duplicates: select destinations, press Merge, then keep one of them or search for a different OpenStreetMap place. Every node of the merged destinations takes that place's name, OSM details and coordinates, and leg endpoints and `osm_id` lists follow. Stored leg miles are not recalculated. Back up first, as a merge can't be undone.
 On a list, **Link Locations** gives each item a map location (it never happens automatically). Every item without one is searched on OpenStreetMap and the first result is filled in; change or clear any row, then Save. Reopen it at any time to edit the locations. Searches run about one per second to respect Nominatim's usage policy, so long lists take a while. Date lists can't be linked.
+
+## Settings:
+**Visited cities** looks up which city each existing node and stop is in (new and edited places are looked up automatically when saved). Press **Look up missing cities** and watch each place get fixed in the log. Places with no city at that spot (rural stops, for example) are listed and skipped.
 
 ## Backups:
 Backups of the database can be created in the settings menu. These backups can be downloaded and restored.

@@ -14,7 +14,8 @@ import { listAdventures } from "../api/adventures";
 import { getTripColor } from "../styles/mapTheme";
 import MapView from "../components/MapView";
 import { buildMapLayersForAllTrips } from "../utils/mapData";
-import { listAirports, listDestinations } from "../api/destinations";
+import { listAirports } from "../api/destinations";
+import { listCities } from "../api/cities";
 import { listLists, getList } from "../api/lists";
 
 const MAP_VIEWS = [
@@ -121,7 +122,7 @@ function MapPage() {
 			}
 		};
 		if (mapView === "airports" && airports === null) load(listAirports, setAirports);
-		if (mapView === "cities" && cities === null) load(listDestinations, setCities);
+		if (mapView === "cities" && cities === null) load(listCities, setCities);
 		return () => { cancelled = true; };
 	}, [mapView, airports, cities]);
 

@@ -1,9 +1,10 @@
 """Visited places across all trips: unique destinations (cities), airports, and
 merging duplicate destinations into one OSM place."""
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, BackgroundTasks, HTTPException
 from pydantic import BaseModel, Field
 
 from .connect import get_db
+from .cities import refresh_cities
 
 router = APIRouter(prefix="/api/destinations", tags=["destinations"])
 
@@ -174,7 +175,7 @@ def list_airports():
 # place (name, OSM fields and coordinates). Leg endpoints at those nodes follow,
 # and osm_id-based lists are rewritten to the target osm_id.
 @router.post("/merge")
-def merge_destinations(payload: MergeRequest):
+def merge_destinations(payload: MergeRequest, background_tasks: BackgroundTasks):
     src_osm = sorted({s.strip() for s in payload.sources.osm_ids if s and s.strip()})
     src_nodes = sorted(set(payload.sources.node_ids))
     t = payload.target
@@ -265,4 +266,6 @@ def merge_destinations(payload: MergeRequest):
         cur.close()
         conn.close()
 
+    # Merged nodes all sit at the target now: one (cached) lookup covers them
+    background_tasks.add_task(refresh_cities, "nodes", node_ids)
     return {"nodes_updated": nodes_updated, "legs_updated": len(leg_ids), "lists_updated": lists_updated}

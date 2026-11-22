@@ -20,6 +20,7 @@ from routers import integrations
 from routers import immich
 from routers import opensky
 from routers import destinations
+from routers import cities
 
 app = FastAPI()
 
@@ -50,6 +51,7 @@ app.include_router(integrations.router)
 app.include_router(immich.router)
 app.include_router(opensky.router)
 app.include_router(destinations.router)
+app.include_router(cities.router)
 
 # Serve uploaded photos statically
 app.mount("/uploads", StaticFiles(directory=config.UPLOAD_DIR), name="uploads")

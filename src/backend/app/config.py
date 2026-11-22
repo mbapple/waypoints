@@ -46,3 +46,9 @@ IMMICH_URL = os.getenv("IMMICH_URL", "").strip().rstrip("/")
 if IMMICH_URL.endswith("/api"):
     IMMICH_URL = IMMICH_URL[: -len("/api")]
 IMMICH_API_KEY = os.getenv("IMMICH_API_KEY", "").strip()
+
+# Nominatim (OpenStreetMap geocoder) for the backend's city lookups. The public
+# server allows about 1 request per second; point this at your own instance to
+# go faster. NOMINATIM_LANGUAGE sets the language of returned city names.
+NOMINATIM_URL = os.getenv("NOMINATIM_URL", "https://nominatim.openstreetmap.org").strip().rstrip("/")
+NOMINATIM_LANGUAGE = os.getenv("NOMINATIM_LANGUAGE", "en").strip()

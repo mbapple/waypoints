@@ -18,8 +18,10 @@ src/
       requirements.txt
       routers/             # one module per resource; connect.py provides get_db()
   frontend/                # Vite + React 19 (react-router 7, styled-components, react-leaflet)
+    Dockerfile             # production image: npm run build, then nginx serves build/
+    nginx/                 # nginx config template (proxy, host check, caching) + allowed-hosts hook
     index.html             # Vite entry HTML → src/index.jsx
-    vite.config.js         # dev-server port, /api + /uploads proxy, allowed hosts
+    vite.config.js         # dev/preview server port, /api + /uploads proxy, allowed hosts
     public/                # static assets served at / (favicon, manifest, logos)
     src/
       App.jsx              # all routes
@@ -42,10 +44,10 @@ cp .env.example .env      # set POSTGRES_PASSWORD, optionally ORS_API_KEY
 docker compose up --build
 ```
 
-- Only the frontend is published (port 3000). The Vite dev server (`src/frontend/vite.config.js`) proxies `/api` and `/uploads` to `BACKEND_URL` (`http://waypoints_backend:3001`). The backend and DB are not exposed to the host by default.
-- Vite rejects unknown Host headers. localhost and IPs always work; other hostnames need `FRONTEND_ALLOWED_HOSTS` in `.env`.
-- Source dirs are bind-mounted. Frontend edits hot-reload. After backend edits, run `docker compose restart backend`, which also applies new migrations.
-- The frontend container (`node:24`) runs `npm ci && npm start` (the Vite dev server) on every start. Serving a production build instead is a pending TODO.
+- Only the frontend is published (port 3000). The `frontend` service is a production image (`src/frontend/Dockerfile`): the app is built once at image build time and nginx serves it, proxying `/api` and `/uploads` to `BACKEND_URL` (`http://waypoints_backend:3001`). The backend and DB are not exposed to the host by default.
+- Unknown Host headers are rejected (403) to block DNS rebinding, both by nginx (`nginx/default.conf.template`) and by the Vite dev server. localhost and IPs always work; other hostnames need `FRONTEND_ALLOWED_HOSTS` in `.env`. Keep the two checks equivalent.
+- Frontend edits need `docker compose up -d --build frontend` to show up. For hot reload, run the `frontend-dev` service (Vite dev server, bind-mounted source) in its place: `docker compose stop frontend && docker compose --profile dev up -d frontend-dev`.
+- The backend source is bind-mounted. After backend edits, run `docker compose restart backend`, which also applies new migrations.
 - Backend API docs: `http://localhost:3001/docs` (needs the backend port uncommented in compose) or via `docker compose exec`.
 
 ## Backend conventions

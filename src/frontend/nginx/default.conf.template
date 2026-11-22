@@ -1,0 +1,59 @@
+# nginx config for the production frontend image (see ../Dockerfile). At start the nginx
+# image fills in ${BACKEND_URL} and ${NGINX_LOCAL_RESOLVERS} from the environment.
+
+# Answer only to known hostnames, like Vite's allowedHosts. This blocks DNS-rebinding
+# attacks (a web page pointing its own domain at this server), which matters because
+# WayPoints has no authentication. localhost and IP addresses always work; other names
+# come from FRONTEND_ALLOWED_HOSTS, written to allowed_hosts.conf by 40-allowed-hosts.sh.
+map $host $waypoints_known_host {
+    hostnames;
+    default 0;
+    localhost 1;
+    ~^[0-9.]+$ 1;
+    ~^\[[0-9a-f:.]+\]$ 1;
+    include /etc/nginx/allowed_hosts.conf;
+}
+
+server {
+    listen 3000;
+    server_name _;
+
+    if ($waypoints_known_host = 0) {
+        return 403 "Blocked host. Add it to FRONTEND_ALLOWED_HOSTS in .env.\n";
+    }
+
+    # Photo uploads and database restores pass straight through; the backend enforces its own limits
+    client_max_body_size 0;
+
+    gzip on;
+    gzip_types text/css application/javascript application/json image/svg+xml;
+
+    # API and photo requests go to the backend. Using a variable makes nginx re-resolve the
+    # name through Docker's DNS, so a recreated backend container (new IP) keeps working.
+    resolver ${NGINX_LOCAL_RESOLVERS} valid=10s;
+    set $backend ${BACKEND_URL};
+
+    location ~ ^/(api|uploads)/ {
+        proxy_pass $backend;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_request_buffering off;
+        # Database backups and restores can take a while
+        proxy_read_timeout 1h;
+        proxy_send_timeout 1h;
+    }
+
+    root /usr/share/nginx/html;
+
+    # Built JS/CSS have a content hash in their names, so they can be cached for good
+    location /assets/ {
+        add_header Cache-Control "public, max-age=31536000, immutable";
+        try_files $uri =404;
+    }
+
+    # Everything else is the single-page app. index.html is revalidated so updates show up.
+    location / {
+        add_header Cache-Control "no-cache";
+        try_files $uri /index.html;
+    }
+}

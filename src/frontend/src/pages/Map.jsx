@@ -4,7 +4,7 @@ import L from "leaflet";
 // no Link usage in this page after refactor
 import { PageHeader } from "../components/page-components";
 import useDocumentTitle from "../utils/useDocumentTitle";
-import { Text, Flex, Badge } from "../styles/components";
+import { Text, Flex, Badge, Select } from "../styles/components";
 import { listTrips, getTripStatistics } from "../api/trips";
 import { listNodesByTrip } from "../api/nodes";
 import { listStopsByTrip } from "../api/stops";
@@ -15,6 +15,7 @@ import { getTripColor } from "../styles/mapTheme";
 import MapView from "../components/MapView";
 import { buildMapLayersForAllTrips } from "../utils/mapData";
 import { listAirports, listDestinations } from "../api/destinations";
+import { listLists, getList } from "../api/lists";
 
 const MAP_VIEWS = [
 	{ id: "trips", label: "Trips" },
@@ -23,6 +24,35 @@ const MAP_VIEWS = [
 ];
 
 const plural = (n, word, many = `${word}s`) => `${n} ${n === 1 ? word : many}`;
+
+const LIST_PREFIX = "list:";
+const listIdOf = (view) => (view?.startsWith(LIST_PREFIX) ? Number(view.slice(LIST_PREFIX.length)) : null);
+
+// List detail (GET /lists/{id}) -> pins at the list's own linked coordinates
+function listPlaceMarkers(detail) {
+	const locations = detail?.locations || {};
+	const matched = new Map((detail?.summary || []).map((s) => [s.item, s.matched]));
+	const markers = Object.entries(locations)
+		.filter(([, loc]) => Number.isFinite(loc.latitude) && Number.isFinite(loc.longitude))
+		.map(([item, loc]) => {
+			const ents = detail.entities?.[item] || {};
+			const trips = new Map();
+			[...(ents.nodes || []), ...(ents.stops || [])].forEach((e) => {
+				if (e.trip_id && !trips.has(e.trip_id)) trips.set(e.trip_id, { id: e.trip_id, name: e.trip_name || "Trip" });
+			});
+			const visited = !!matched.get(item);
+			return {
+				key: item,
+				name: item,
+				pos: [loc.latitude, loc.longitude],
+				faded: !visited,
+				countLabel: visited ? "Visited" : "Not visited yet",
+				trips: [...trips.values()],
+			};
+		});
+	// Faded first so visited pins draw on top
+	return markers.sort((a, b) => Number(!a.faded) - Number(!b.faded));
+}
 
 
 
@@ -41,10 +71,37 @@ function MapPage() {
 	const [totalCountries, setTotalCountries] = useState(0);
 	const [highlightMode, setHighlightMode] = useState("off"); // off | countries | states
 	const [focusTripId, setFocusTripId] = useState(null);
-	const [mapView, setMapView] = useState("trips"); // trips | airports | cities
+	const [mapView, setMapView] = useState("trips"); // trips | airports | cities | list:<id>
 	const [airports, setAirports] = useState(null); // lazy-loaded on first use
 	const [cities, setCities] = useState(null);
-	const [placesError, setPlacesError] = useState({}); // { airports?: msg, cities?: msg }
+	const [placesError, setPlacesError] = useState({}); // { airports?: msg, cities?: msg, "list:<id>"?: msg }
+	const [mapLists, setMapLists] = useState([]); // lists that have linked locations
+	const [listDetails, setListDetails] = useState({}); // { listId: getList() response }
+
+	useEffect(() => {
+		let cancelled = false;
+		listLists()
+			.then((rows) => { if (!cancelled) setMapLists((rows || []).filter((l) => l.location_count > 0)); })
+			.catch((e) => console.error("Failed to load lists", e));
+		return () => { cancelled = true; };
+	}, []);
+
+	// A list's detail (matches + locations) is fetched the first time its view opens
+	const activeListId = listIdOf(mapView);
+	useEffect(() => {
+		if (!activeListId || listDetails[activeListId]) return undefined;
+		let cancelled = false;
+		getList(activeListId)
+			.then((d) => { if (!cancelled) setListDetails((prev) => ({ ...prev, [activeListId]: d })); })
+			.catch((e) => {
+				console.error("Failed to load list", e);
+				if (!cancelled) {
+					setPlacesError((prev) => ({ ...prev, [mapView]: "Failed to load list" }));
+					setListDetails((prev) => ({ ...prev, [activeListId]: { summary: [], locations: {} } }));
+				}
+			});
+		return () => { cancelled = true; };
+	}, [activeListId, listDetails, mapView]);
 
 	const selectView = (view) => {
 		setMapView(view);
@@ -126,9 +183,22 @@ function MapPage() {
 		buildMapLayersForAllTrips({ nodesByTrip, legsByTrip, stopsByTrip, carPolylineByLeg, flightPolylineByLeg, adventures })
 	, [nodesByTrip, legsByTrip, stopsByTrip, carPolylineByLeg, flightPolylineByLeg, adventures]);
 
-	// Place markers + bounds for the airports / cities views
+	// Place markers + bounds for the airports / cities / list views
 	const placeView = useMemo(() => {
 		if (mapView === "trips") return null;
+		if (activeListId) {
+			const detail = listDetails[activeListId];
+			const placeMarkers = listPlaceMarkers(detail);
+			const total = detail?.summary?.length || 0;
+			const visited = placeMarkers.filter((m) => !m.faded).length;
+			const unlocated = total - placeMarkers.length;
+			return {
+				placeMarkers,
+				placeBounds: placeMarkers.length ? L.latLngBounds(placeMarkers.map((m) => m.pos)) : bounds,
+				loaded: !!detail,
+				label: `${visited} of ${placeMarkers.length} visited${unlocated > 0 ? ` (${unlocated} not located)` : ""}`,
+			};
+		}
 		const rows = (mapView === "airports" ? airports : cities) || [];
 		const placeMarkers = rows
 			.filter((r) => Number.isFinite(r.latitude) && Number.isFinite(r.longitude))
@@ -141,8 +211,15 @@ function MapPage() {
 				countLabel: plural(r.trips?.length || 0, "trip"),
 			}));
 		const placeBounds = placeMarkers.length ? L.latLngBounds(placeMarkers.map((m) => m.pos)) : bounds;
-		return { placeMarkers, placeBounds, loaded: (mapView === "airports" ? airports : cities) !== null };
-	}, [mapView, airports, cities, bounds]);
+		return {
+			placeMarkers,
+			placeBounds,
+			loaded: (mapView === "airports" ? airports : cities) !== null,
+			label: mapView === "airports"
+				? plural(placeMarkers.length, "airport")
+				: plural(placeMarkers.length, "city", "cities"),
+		};
+	}, [mapView, airports, cities, bounds, activeListId, listDetails]);
 
 	return (
 		<div>
@@ -162,13 +239,20 @@ function MapPage() {
 				{MAP_VIEWS.map((v) => (
 					<Button key={v.id} variant="ghost" onClick={() => selectView(v.id)} disabled={mapView === v.id}>{v.label}</Button>
 				))}
+				{mapLists.length > 0 && (
+					<Select
+						aria-label="Show a list on the map"
+						value={activeListId ? String(activeListId) : ""}
+						onChange={(e) => selectView(e.target.value ? `${LIST_PREFIX}${e.target.value}` : "trips")}
+						style={{ width: "auto", minWidth: 140 }}
+					>
+						<option value="">Lists…</option>
+						{mapLists.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
+					</Select>
+				)}
 				{placeView && (
 					<Text variant="muted">
-						{placesError[mapView] || (!placeView.loaded
-							? "Loading…"
-							: mapView === "airports"
-								? plural(placeView.placeMarkers.length, "airport")
-								: plural(placeView.placeMarkers.length, "city", "cities"))}
+						{placesError[mapView] || (!placeView.loaded ? "Loading…" : placeView.label)}
 					</Text>
 				)}
 			</Flex>

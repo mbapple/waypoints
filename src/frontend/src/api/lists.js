@@ -10,5 +10,9 @@ export const deleteList = (id) => api.delete(`/lists/${id}`).then(r => r.data);
 export const addOverride = (id, item) => api.post(`/lists/${id}/overrides`, { item }).then(r => r.data);
 export const removeOverride = (id, item) => api.delete(`/lists/${id}/overrides`, { params: { item } }).then(r => r.data);
 
-const listsApi = { listLists, getList, createList, updateList, deleteList, addOverride, removeOverride };
+// Linked item locations: replace-all; items left out are unlinked
+// locations: [{ item, latitude, longitude, osm_id, osm_name, osm_country, osm_state }]
+export const saveListLocations = (id, locations) => api.put(`/lists/${id}/locations`, { locations }).then(r => r.data);
+
+const listsApi = { listLists, getList, createList, updateList, deleteList, addOverride, removeOverride, saveListLocations };
 export default listsApi;

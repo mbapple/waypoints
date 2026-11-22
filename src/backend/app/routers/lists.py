@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, Query
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 import re
 import datetime as dt
@@ -23,6 +23,18 @@ class ListUpdate(BaseModel):
 
 class OverrideOp(BaseModel):
     item: str
+
+class ItemLocation(BaseModel):
+    item: str = Field(..., min_length=1)
+    latitude: float = Field(..., ge=-90, le=90)
+    longitude: float = Field(..., ge=-180, le=180)
+    osm_id: Optional[str] = None
+    osm_name: Optional[str] = None
+    osm_country: Optional[str] = None
+    osm_state: Optional[str] = None
+
+class ItemLocationsUpdate(BaseModel):
+    locations: List[ItemLocation]
 
 VALID_MATCH_TYPES = {"name", "osm_name", "osm_id", "date", "osm_country", "osm_state"}
 
@@ -129,7 +141,13 @@ def create_list(payload: ListCreate):
 @router.get("")
 def list_lists():
     conn = get_db(); cur = conn.cursor()
-    cur.execute("SELECT id, name, match_type, items, manual_overrides, created_at, updated_at FROM lists ORDER BY name ASC")
+    cur.execute("""
+        SELECT l.id, l.name, l.match_type, l.items, l.manual_overrides, l.created_at, l.updated_at,
+               (SELECT COUNT(*) FROM list_item_locations li
+                 WHERE li.list_id = l.id AND li.item = ANY(l.items))::int AS location_count
+        FROM lists l
+        ORDER BY l.name ASC
+    """)
     rows = cur.fetchall(); cur.close(); conn.close()
     return rows
 
@@ -166,6 +184,12 @@ def update_list(list_id: int, payload: ListUpdate):
     if not row:
         conn.rollback(); cur.close(); conn.close()
         raise HTTPException(status_code=404, detail="List not found")
+    if 'items' in updates:
+        # Locations are keyed by item text; drop those for items no longer on the list
+        cur.execute(
+            "DELETE FROM list_item_locations WHERE list_id=%s AND NOT (item = ANY(%s))",
+            (list_id, updates['items'])
+        )
     conn.commit(); cur.close(); conn.close()
     return {"message": f"List {list_id} updated"}
 
@@ -212,6 +236,55 @@ def remove_override(list_id: int, item: str = Query(..., description="Item to re
     cur.execute("UPDATE lists SET manual_overrides=%s WHERE id=%s", (new_overrides, list_id))
     conn.commit(); cur.close(); conn.close()
     return {"manual_overrides": new_overrides}
+
+# ------------------------ Item locations ------------------------ #
+
+def _fetch_locations(cur, list_id: int, items: List[str]) -> Dict[str, Dict[str, Any]]:
+    cur.execute(
+        """
+        SELECT item, latitude, longitude, osm_id, osm_name, osm_country, osm_state
+        FROM list_item_locations
+        WHERE list_id=%s AND item = ANY(%s)
+        """,
+        (list_id, items)
+    )
+    return {r['item']: {k: r[k] for k in r if k != 'item'} for r in cur.fetchall() or []}
+
+@router.put("/{list_id}/locations")
+def save_item_locations(list_id: int, payload: ItemLocationsUpdate):
+    """Replace all linked locations for a list; items left out are unlinked."""
+    conn = get_db(); cur = conn.cursor()
+    try:
+        cur.execute("SELECT items FROM lists WHERE id=%s", (list_id,))
+        row = cur.fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="List not found")
+        items = set(row['items'] or [])
+        unknown = [loc.item for loc in payload.locations if loc.item not in items]
+        if unknown:
+            raise HTTPException(status_code=400, detail=f"Not on this list: {', '.join(unknown[:5])}")
+        cur.execute("DELETE FROM list_item_locations WHERE list_id=%s", (list_id,))
+        seen = set()
+        for loc in payload.locations:
+            if loc.item in seen:
+                continue
+            seen.add(loc.item)
+            cur.execute(
+                """
+                INSERT INTO list_item_locations
+                    (list_id, item, latitude, longitude, osm_id, osm_name, osm_country, osm_state)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                """,
+                (list_id, loc.item, loc.latitude, loc.longitude,
+                 loc.osm_id, loc.osm_name, loc.osm_country, loc.osm_state)
+            )
+        locations = _fetch_locations(cur, list_id, list(items))
+        conn.commit()
+    except HTTPException:
+        conn.rollback(); raise
+    finally:
+        cur.close(); conn.close()
+    return {"locations": locations}
 
 # ------------------------ Matching logic ------------------------ #
 
@@ -451,6 +524,7 @@ def get_list_with_matches(list_id: int):
                 if r.get('target') == key:
                     item_to_entities[it]['stops'].append(r)
 
+    locations = _fetch_locations(cur, list_id, items)
     cur.close(); conn.close()
 
     # Build matches summary
@@ -475,6 +549,7 @@ def get_list_with_matches(list_id: int):
             "updated_at": lst['updated_at']
         },
         "summary": matches_summary,
-        "entities": item_to_entities
+        "entities": item_to_entities,
+        "locations": locations
     }
     return response

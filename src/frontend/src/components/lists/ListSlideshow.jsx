@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import styled from 'styled-components';
 import { Card, Button, Flex, Text, Badge, Input } from '../../styles/components';
 import Popup from '../common/Popup';
+import LinkLocationsPanel from './LinkLocationsPanel';
 import { listLists, getList, addOverride, removeOverride } from '../../api/lists';
 import { Link, useNavigate } from 'react-router-dom';
 
@@ -172,6 +173,19 @@ export default function ListSlideshow() {
   setPopup({ open: true, title: `Visits for ${itemEntry.item}`, content });
   };
 
+  const openLinkLocations = () => {
+    if (!detail || !current) return;
+    const id = current.id;
+    setPopup({
+      open: true,
+      title: `Link locations: ${current.name}`,
+      // key forces a fresh panel (and a fresh autofill) each time it opens
+      content: <LinkLocationsPanel key={`${id}-${Date.now()}`} list={detail} onSaved={() => loadDetail(id)} />,
+    });
+  };
+
+  const locatedCount = detail ? Object.keys(detail.locations || {}).length : 0;
+
   const handleAddOverride = async () => {
     const value = newOverride.trim(); if (!value || !current) return;
     try { await addOverride(current.id, value); setNewOverride(''); await loadDetail(current.id); }
@@ -194,6 +208,9 @@ export default function ListSlideshow() {
           <h3 style={{ margin: 0 }}>{current.name}</h3>
         </div>
         <Flex gap={8} wrap>
+          {detail && current.match_type !== 'date' && (
+            <Button size="sm" variant="outline" onClick={openLinkLocations}>Link Locations</Button>
+          )}
           <Button size="sm" variant="secondary" onClick={() => navigate(`/lists/${current.id}/update`)}>Edit</Button>
         </Flex>
       </HeaderRow>
@@ -202,7 +219,9 @@ export default function ListSlideshow() {
       </ProgressTrack>
       <Flex justify="space-between" align="center" style={{ marginBottom: 8 }}>
         <Text size="sm" variant="muted">Progress: {progressPct}%{detail ? ` (${detail.summary.filter(s=>s.matched).length}/${detail.summary.length})` : ''}</Text>
-        <Text size="sm" variant="muted">List {index + 1} / {lists.length}</Text>
+        <Text size="sm" variant="muted">
+          {locatedCount > 0 && `📍 ${locatedCount} / ${detail.summary.length} located · `}List {index + 1} / {lists.length}
+        </Text>
       </Flex>
       {loadingDetail && <Text variant="muted" size="sm">Loading list details…</Text>}
       {detail && (

@@ -39,7 +39,7 @@ export default function MapView({
   markers = [],
   stopMarkers = [],
   adventureMarkers = [],
-  placeMarkers = [], // [{ key, name, code?, pos, countLabel?, trips: [{id, name}] }]
+  placeMarkers = [], // [{ key, name, code?, pos, countLabel?, faded?, trips: [{id, name}] }]
   polylines = [],
   bounds,
   highlightMode = "off",
@@ -293,10 +293,12 @@ export default function MapView({
             key={`place-${p.key}`}
             center={p.pos}
             radius={6}
-            pathOptions={{ color: theme.colors.background || '#000', weight: 1.5, fillColor: theme.colors.accent || '#f59e0b', fillOpacity: 0.95 }}
+            pathOptions={p.faded
+              ? { color: theme.colors.background || '#000', weight: 1, opacity: 0.4, fillColor: theme.colors.textMuted || '#94a3b8', fillOpacity: 0.3 }
+              : { color: theme.colors.background || '#000', weight: 1.5, opacity: 1, fillColor: theme.colors.accent || '#f59e0b', fillOpacity: 0.95 }}
           >
             <Tooltip direction="top" offset={[0, -10]} opacity={1} sticky>
-              <span><strong>{p.code ? `${p.code}` : p.name}</strong>{p.code && p.name && p.name !== p.code ? ` · ${p.name}` : ""}</span>
+              <span><strong>{p.code ? `${p.code}` : p.name}</strong>{p.code && p.name && p.name !== p.code ? ` · ${p.name}` : ""}{p.faded ? " · not visited" : ""}</span>
             </Tooltip>
             <Popup>
               <div style={{ minWidth: 200 }}>

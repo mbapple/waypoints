@@ -192,6 +192,26 @@ Response:
 
 Returns 400 if nothing is selected or the only source is the target itself.
 
+## Lists API (`/api/lists`): item locations
+
+Only the location parts are described here.
+
+### GET `/api/lists/`
+Each list also has `location_count`: the number of its items that have a linked location.
+
+### GET `/api/lists/{list_id}`
+Besides `list`, `summary` and `entities`, the response has `locations`, keyed by item:
+{ "locations": { "Paris": { "latitude": 48.85, "longitude": 2.35, "osm_id": "R7444", "osm_name": "Paris, Île-de-France, France", "osm_country": "France", "osm_state": "Île-de-France" } } }
+
+### PUT `/api/lists/{list_id}/locations`
+Replace every linked location for the list. Items left out are unlinked.
+
+Request body:
+{ "locations": [ { "item": "Paris", "latitude": 48.85, "longitude": 2.35, "osm_id": "R7444", "osm_name": "Paris, Île-de-France, France", "osm_country": "France", "osm_state": "Île-de-France" } ] }
+
+Response: `{ "locations": { ... } }` (same shape as above).
+Returns 404 if the list doesn't exist, and 400 if an `item` isn't on the list or coordinates are out of range. Locations are keyed by item text, so `PUT /api/lists/{list_id}` deletes the locations of items it removes or renames.
+
 ## Nodes API (`/api/nodes`)
 
 ### GET `/api/nodes/by_trip/{trip_id}`

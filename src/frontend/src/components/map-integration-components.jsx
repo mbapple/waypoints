@@ -20,6 +20,48 @@ const DropdownHeading = styled.div`
 `;
 
 const MAX_LOCAL_MATCHES = 5;
+const NOMINATIM = 'https://nominatim.openstreetmap.org';
+
+const nominatimOsmId = (place) => `${place.osm_type.charAt(0).toUpperCase()}${place.osm_id}`;
+
+// Nominatim result -> the place shape PlaceSearchInput passes to onPlaceSelect
+export const nominatimToPlace = (place) => ({
+    name: place.display_name,
+    lat: parseFloat(place.lat),
+    lon: parseFloat(place.lon),
+    boundingBox: place.boundingbox,
+    type: place.type,
+    address: place.address,
+    osm_id: nominatimOsmId(place),
+    osm_country: place.address?.country,
+    osm_state: place.address?.state,
+    shortName: placeShortName(place),
+});
+
+// First Nominatim hit for free text (any feature type), or null
+export async function searchNominatimFirst(query, { signal } = {}) {
+    const resp = await fetch(
+        `${NOMINATIM}/search?format=json&limit=1&addressdetails=1&q=${encodeURIComponent(query)}`,
+        { signal }
+    );
+    if (!resp.ok) throw new Error(`Nominatim search failed (${resp.status})`);
+    const data = await resp.json();
+    return Array.isArray(data) && data.length ? nominatimToPlace(data[0]) : null;
+}
+
+// Look up OSM ids like "R7444" / "N123" (max 50 per Nominatim call) -> { osmId: place }
+export async function lookupNominatimOsmIds(ids, { signal } = {}) {
+    if (!ids.length) return {};
+    const resp = await fetch(
+        `${NOMINATIM}/lookup?format=json&addressdetails=1&osm_ids=${encodeURIComponent(ids.join(','))}`,
+        { signal }
+    );
+    if (!resp.ok) throw new Error(`Nominatim lookup failed (${resp.status})`);
+    const data = await resp.json();
+    const out = {};
+    (Array.isArray(data) ? data : []).forEach((p) => { const place = nominatimToPlace(p); out[place.osm_id] = place; });
+    return out;
+}
 
 // localPlaces (optional): places already visited, shaped like listDestinations() rows
 // ({ name, osm_name, osm_id, osm_country, osm_state, latitude, longitude }). Matches are
@@ -87,8 +129,6 @@ export const PlaceSearchInput = ({ onPlaceSelect, placeholder = "Search for a pl
         }
     };
 
-    const nominatimOsmId = (place) => `${place.osm_type.charAt(0).toUpperCase()}${place.osm_id}`;
-
     // Hide Nominatim hits that are already listed as visited places
     const localIds = new Set(localMatches.map(p => p.osm_id).filter(Boolean));
     const remoteResults = results.filter(place => !localIds.has(nominatimOsmId(place)));
@@ -104,20 +144,7 @@ export const PlaceSearchInput = ({ onPlaceSelect, placeholder = "Search for a pl
     };
 
     const handleSelectPlace = (place) => {
-        if (onPlaceSelect) {
-            onPlaceSelect({
-                name: place.display_name,
-                lat: parseFloat(place.lat),
-                lon: parseFloat(place.lon),
-                boundingBox: place.boundingbox,
-                type: place.type,
-                address: place.address,
-                osm_id: nominatimOsmId(place),
-                osm_country: place.address?.country,
-                osm_state: place.address?.state,
-                shortName: placeShortName(place),
-            });
-        }
+        if (onPlaceSelect) onPlaceSelect(nominatimToPlace(place));
         finishSelect(place.display_name);
     };
 

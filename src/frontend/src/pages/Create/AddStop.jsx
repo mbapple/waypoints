@@ -8,6 +8,7 @@ import { listNodesByTrip } from "../../api/nodes";
 import { listLegsByTrip } from "../../api/legs";
 import { createStop } from "../../api/stops";
 import StopForm from "../../components/forms/StopForm";
+import TripContext from "../../components/forms/TripContext";
 
 
 function AddStop() {
@@ -104,6 +105,7 @@ function AddStop() {
             </PageHeader>
 
                         <FormCard>
+                                <TripContext tripID={tripID} what="stop" />
                                 <StopForm
                                     nodes={nodes}
                                     legs={legs}

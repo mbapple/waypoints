@@ -3,7 +3,7 @@ import styled from 'styled-components';
 import { Card, Button, Flex, Text, Badge, Input } from '../../styles/components';
 import Popup from '../common/Popup';
 import { listLists, getList, addOverride, removeOverride } from '../../api/lists';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 const Wrapper = styled(Card)`
   margin-top: 2rem;
@@ -144,7 +144,7 @@ export default function ListSlideshow() {
         {(entities.nodes || []).map(n => (
           <SubRow key={`node-${n.id}`} direction="column" style={{ alignItems: 'flex-start' }}>
             <Text size="sm" weight="semibold">{n.name || n.osm_name || `Node #${n.id}`}</Text>
-            {n.trip_id && <Text size="xs"><a href={`/trip/${n.trip_id}`}>{n.trip_name || 'Trip'}</a></Text>}
+            {n.trip_id && <Text size="xs"><Link to={`/trip/${n.trip_id}`}>{n.trip_name || 'Trip'}</Link></Text>}
             {n.start_date && <Text size="xs" variant="muted">{n.start_date}{n.end_date && n.end_date !== n.start_date ? ` → ${n.end_date}` : ''}</Text>}
           </SubRow>
         ))}
@@ -154,7 +154,7 @@ export default function ListSlideshow() {
         {(entities.stops || []).map(s => (
           <SubRow key={`stop-${s.id}`} direction="column" style={{ alignItems: 'flex-start' }}>
             <Text size="sm" weight="semibold">{s.name || s.osm_name || `Stop #${s.id}`}</Text>
-            {s.trip_id && <Text size="xs"><a href={`/trip/${s.trip_id}`}>{s.trip_name || 'Trip'}</a></Text>}
+            {s.trip_id && <Text size="xs"><Link to={`/trip/${s.trip_id}`}>{s.trip_name || 'Trip'}</Link></Text>}
             {s.start_date && <Text size="xs" variant="muted">{s.start_date}{s.end_date && s.end_date !== s.start_date ? ` → ${s.end_date}` : ''}</Text>}
           </SubRow>
         ))}

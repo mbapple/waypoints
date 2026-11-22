@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import styled from 'styled-components';
 import { getAdventure } from '../api/adventures';
 import { listPhotosByAdventure } from '../api/photos';
@@ -17,7 +17,7 @@ const Wrapper = styled.div`
 `;
 
 export default function AdventureDetails() {
-  const params = new URLSearchParams(window.location.search);
+  const [params] = useSearchParams();
   const adventureID = params.get('adventureID');
   const navigate = useNavigate();
   const [adventure, setAdventure] = useState(null);

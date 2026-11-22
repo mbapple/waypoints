@@ -22,7 +22,7 @@ function UpdateTrip() {
   const handleDeleteTrip = async () => {
     try {
       await apiDeleteTrip(tripID);
-      navigate(`/trips`);
+      navigate("/");
     } catch (err) {
       alert("Failed to delete trip.");
       console.error(err);

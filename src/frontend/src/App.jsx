@@ -28,6 +28,8 @@ import UpdateAdventure from "./pages/Update/UpdateAdventure";
 import AdventureDetails from "./pages/AdventureDetails";
 import AddList from "./pages/Lists/AddList";
 import UpdateList from "./pages/Lists/UpdateList";
+import NotFound from "./pages/NotFound";
+import RouteErrorBoundary from "./components/common/RouteErrorBoundary";
 
 const ThemedApp = () => {
   const { settings } = useSettings();
@@ -38,15 +40,18 @@ const ThemedApp = () => {
     } catch {}
   }, [settings.fontScale]);
   const location = useLocation();
+  const pageKey = location.pathname === '/search' ? location.pathname : location.pathname + location.search;
   return (
     <ThemeProvider theme={theme}>
         <GlobalStyles />
       {/* Navigation sits outside keyed page container to avoid full remount */}
         <Navigation />
-        {/* Key the page container by pathname so route-level state resets reliably when navigating.
-            This can fix cases where a page appears stale unless a manual reload occurs due to
-            components retaining state across different dynamic params or paths. */}
-        <Container key={location.pathname}>
+        {/* Remount the page on every route change so page state never leaks between URLs.
+            Pages that keep their identity in the query string (update-node?nodeID=…,
+            adventures/view?adventureID=…) need the search in the key too. /search is the
+            exception: it rewrites its own query while typing and must not remount. */}
+        <Container key={pageKey}>
+          <RouteErrorBoundary>
           <Routes location={location}>
             <Route path="/map" element={<Map />} />
             <Route path="/settings" element={<Settings />} />
@@ -71,7 +76,9 @@ const ThemedApp = () => {
             <Route path="/adventures/view" element={<AdventureDetails />} />
             <Route path="/lists/create" element={<AddList />} />
             <Route path="/lists/:id/update" element={<UpdateList />} />
+            <Route path="*" element={<NotFound />} />
           </Routes>
+          </RouteErrorBoundary>
         </Container>
     </ThemeProvider>
   );

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, Link, useNavigate, useSearchParams } from "react-router-dom";
 import { FormCard, DangerZone } from "../../components/input-components";
 import { PageHeader } from "../../components/page-components";
 import { Button, Text, Flex } from "../../styles/components";
@@ -11,7 +11,7 @@ import StopForm from "../../components/forms/StopForm";
 
 function UpdateStop() {
   const { tripID } = useParams();
-  const params = new URLSearchParams(window.location.search);
+  const [params] = useSearchParams();
   const stopID = params.get("stopID");
   const navigate = useNavigate();
 

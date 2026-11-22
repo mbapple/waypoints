@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Button, Text, Flex } from "../../styles/components";
 import { PageHeader } from "../../components/page-components";
 import { FormCard, DangerZone } from "../../components/input-components";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, Link, useNavigate, useSearchParams } from "react-router-dom";
 import ConfirmDeleteButton from "../../components/common/ConfirmDeleteButton";
 import { deleteNode as apiDeleteNode, getNode as apiGetNode, updateNode as apiUpdateNode } from "../../api/nodes";
 import NodeForm from "../../components/forms/NodeForm";
@@ -10,7 +10,7 @@ import NodeForm from "../../components/forms/NodeForm";
 function UpdateNode() {
   const { tripID } = useParams();
   const navigate = useNavigate();
-  const params = new URLSearchParams(window.location.search);
+  const [params] = useSearchParams();
   const nodeID = params.get("nodeID");
 
   const [formData, setFormData] = useState({

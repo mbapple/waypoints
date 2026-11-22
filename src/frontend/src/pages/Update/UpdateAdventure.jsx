@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { FormCard, DangerZone } from '../../components/input-components';
 import { PageHeader } from '../../components/page-components';
 import { Button, Text, Flex } from '../../styles/components';
@@ -12,7 +12,7 @@ import ImmichPickerPopup from '../../components/photos/ImmichPickerPopup';
 
 export default function UpdateAdventure() {
   const navigate = useNavigate();
-  const params = new URLSearchParams(window.location.search);
+  const [params] = useSearchParams();
   const adventureID = params.get('adventureID');
   const [formData, setFormData] = useState(null);
   const [loading, setLoading] = useState(true);

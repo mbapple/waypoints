@@ -101,6 +101,7 @@ def _canonicalize_items(match_type: str, items: List[str]) -> List[str]:
 # ----------------------------- CRUD ------------------------------ #
 
 @router.post("/")
+@router.post("")
 def create_list(payload: ListCreate):
     if payload.match_type not in VALID_MATCH_TYPES:
         raise HTTPException(status_code=400, detail="Invalid match_type")

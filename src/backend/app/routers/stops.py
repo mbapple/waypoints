@@ -149,6 +149,7 @@ def get_stops_by_node(trip_id: int):
     ]
 
 @router.post("/")
+@router.post("")
 def create_stop(stop: Stop):
     conn = get_db()
     cur = conn.cursor()

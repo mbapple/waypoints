@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import styled from 'styled-components';
 import Popup from '../../common/Popup';
 import { Text, Flex, Badge } from '../../../styles/components';
 import { Link } from 'react-router-dom';
@@ -9,8 +10,32 @@ import { getCarDetails, getFlightDetails } from '../../../api/legs';
 import { aircraftLabel } from '../../../utils/aircraftTypes';
 import AircraftPhoto from '../../flights/AircraftPhoto';
 
-// photos: this leg's photos, from the trip's photo list
-const LegPopup = ({ leg, photos = [], onClose, startName, endName, startNode, endNode, onPhotosChanged }) => {
+const Section = styled.section`
+  & + & {
+    margin-top: ${(p) => p.theme.space[4]};
+    padding-top: ${(p) => p.theme.space[4]};
+    border-top: 1px solid ${(p) => p.theme.colors.border};
+  }
+`;
+
+const SectionTitle = styled.h4`
+  margin: 0 0 ${(p) => p.theme.space[2]};
+  font-size: ${(p) => p.theme.fontSizes.base};
+  color: ${(p) => p.theme.colors.text};
+`;
+
+const formatDrivingTime = (seconds) => {
+  if (seconds == null) return null;
+  const hrs = Math.floor(seconds / 3600);
+  const mins = Math.round((seconds % 3600) / 60);
+  return hrs > 0 ? `${hrs}h ${mins}m` : `${mins}m`;
+};
+
+const legLabel = (leg, startNode, endNode) =>
+  `${leg.name || getTransportTypeLabel(leg.type)} ${startNode?.name || 'Start'} → ${endNode?.name || 'End'}`;
+
+// Details of one leg; `title` is set when several legs share the popup.
+function LegSection({ leg, startNode, endNode, photos = [], title, onPhotosChanged }) {
   const [car, setCar] = useState(null);
   const [flight, setFlight] = useState(null);
   useEffect(() => {
@@ -23,37 +48,28 @@ const LegPopup = ({ leg, photos = [], onClose, startName, endName, startNode, en
       } catch {}
     })(); return () => { active = false; };
   }, [leg]);
-  const formatDrivingTime = (seconds) => {
-    if (seconds == null) return null;
-    const hrs = Math.floor(seconds / 3600);
-    const mins = Math.round((seconds % 3600) / 60);
-    if (hrs > 0) return `${hrs}h ${mins}m`;
-    return `${mins}m`;
-  };
+
+  const isCar = (leg.type || '').toLowerCase() === 'car';
+  const drivingTime = car?.driving_time_seconds;
 
   return (
-    <Popup title={`Leg: ${leg.name || getTransportTypeLabel(leg.type)} ${startName} → ${endName}`} onClose={onClose}>
-      <Flex gap={3} align="center" style={{ marginBottom: '0.75rem' }}>
-        {leg.date && <Badge variant="primary">{leg.date}</Badge>}
-      </Flex>
-      {/* Universal distance + driving time (if car) summary */}
-      {(() => {
-        const isCar = (leg.type || '').toLowerCase() === 'car';
-        const drivingTime = car?.driving_time_seconds;
-        if (leg.miles != null || (isCar && drivingTime != null)) {
-          return (
-            <div style={{ marginBottom: '0.75rem' }}>
-              {leg.miles != null && (
-                <Text variant="muted" size="sm" style={{ display: 'block' }}>Miles: {leg.miles} mi</Text>
-              )}
-              {isCar && drivingTime != null && (
-                <Text variant="muted" size="sm" style={{ display: 'block' }}>Driving Time: {formatDrivingTime(drivingTime)}</Text>
-              )}
-            </div>
-          );
-        }
-        return null;
-      })()}
+    <Section>
+      {title && <SectionTitle>{title}</SectionTitle>}
+      {leg.date && (
+        <Flex gap={3} align="center" style={{ marginBottom: '0.75rem' }}>
+          <Badge variant="primary">{leg.date}</Badge>
+        </Flex>
+      )}
+      {(leg.miles != null || (isCar && drivingTime != null)) && (
+        <div style={{ marginBottom: '0.75rem' }}>
+          {leg.miles != null && (
+            <Text variant="muted" size="sm" style={{ display: 'block' }}>Miles: {leg.miles} mi</Text>
+          )}
+          {isCar && drivingTime != null && (
+            <Text variant="muted" size="sm" style={{ display: 'block' }}>Driving Time: {formatDrivingTime(drivingTime)}</Text>
+          )}
+        </div>
+      )}
       {(startNode?.osm_id || endNode?.osm_id) && (
         <div style={{ marginBottom: '0.75rem' }}>
           {startNode?.osm_id && (
@@ -93,6 +109,39 @@ const LegPopup = ({ leg, photos = [], onClose, startName, endName, startNode, en
           <PhotoSlideshowLarge photos={photos} expandable onPhotoRemoved={onPhotosChanged} />
         </div>
       )}
+    </Section>
+  );
+}
+
+/**
+ * Detail popup for one leg, or for a chain of legs joined through invisible nodes
+ * (Pensacola → DFW → Bonham shows as one group, with a section per leg).
+ * legs: ordered leg objects; nodes: the trip's nodes; photosByLeg: Map legId → photos.
+ */
+const LegPopup = ({ legs, nodes = [], photosByLeg, onClose, onPhotosChanged }) => {
+  const nodeById = new Map(nodes.map((n) => [n.id, n]));
+  const startOf = (l) => nodeById.get(l.start_node_id);
+  const endOf = (l) => nodeById.get(l.end_node_id);
+  const photosOf = (l) => photosByLeg?.get(l.id) || [];
+
+  if (legs.length === 1) {
+    const [leg] = legs;
+    return (
+      <Popup title={`Leg: ${legLabel(leg, startOf(leg), endOf(leg))}`} onClose={onClose}>
+        <LegSection leg={leg} startNode={startOf(leg)} endNode={endOf(leg)} photos={photosOf(leg)} onPhotosChanged={onPhotosChanged} />
+      </Popup>
+    );
+  }
+
+  const first = startOf(legs[0]);
+  const last = endOf(legs[legs.length - 1]);
+  const via = legs.slice(0, -1).map(endOf).filter(Boolean).map((n) => n.name).join(', ');
+  return (
+    <Popup title={`Legs: ${first?.name || 'Start'} → ${last?.name || 'End'}${via ? ` via ${via}` : ''}`} onClose={onClose}>
+      {legs.map((leg) => (
+        <LegSection key={leg.id} leg={leg} startNode={startOf(leg)} endNode={endOf(leg)} photos={photosOf(leg)}
+          title={legLabel(leg, startOf(leg), endOf(leg))} onPhotosChanged={onPhotosChanged} />
+      ))}
     </Popup>
   );
 };

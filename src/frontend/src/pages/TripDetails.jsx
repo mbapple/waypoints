@@ -36,7 +36,7 @@ function TripDetails() {
   const [uploadTarget, setUploadTarget] = useState(""); // e.g. node:3 / leg:5 / stop:7
   const [carPolylineByLeg, setCarPolylineByLeg] = useState({});
   const [flightPolylineByLeg, setFlightPolylineByLeg] = useState({});
-  const [popupEntity, setPopupEntity] = useState(null); // { type: 'node'|'leg'|'stop', data: obj }
+  const [popupEntity, setPopupEntity] = useState(null); // { type: 'node'|'leg'|'stop', data: obj } (for 'leg', data may be an array of chained legs)
   const [immichConfigured, setImmichConfigured] = useState(false);
   const [immichOpen, setImmichOpen] = useState(false);
   const [, setEmojiVersion] = useState(0);
@@ -213,17 +213,15 @@ function TripDetails() {
       {popupEntity && popupEntity.type === 'node' && (
         <NodePopup node={popupEntity.data} photos={photosOf.node.get(popupEntity.data.id)} onClose={() => setPopupEntity(null)} onPhotosChanged={refreshPhotos} />
       )}
-      {popupEntity && popupEntity.type === 'leg' && (() => { const startNode = nodes.find(n=>n.id===popupEntity.data.start_node_id); const endNode = nodes.find(n=>n.id===popupEntity.data.end_node_id); return (
+      {popupEntity && popupEntity.type === 'leg' && (
         <LegPopup
-          leg={popupEntity.data}
-          photos={photosOf.leg.get(popupEntity.data.id)}
-          startName={startNode?.name || 'Start'}
-          endName={endNode?.name || 'End'}
-          startNode={startNode}
-          endNode={endNode}
+          legs={[].concat(popupEntity.data)}
+          nodes={nodes}
+          photosByLeg={photosOf.leg}
           onClose={() => setPopupEntity(null)}
           onPhotosChanged={refreshPhotos}
-        />); })()}
+        />
+      )}
       {popupEntity && popupEntity.type === 'stop' && (
         <StopPopup stop={popupEntity.data} photos={photosOf.stop.get(popupEntity.data.id)} onClose={() => setPopupEntity(null)} onPhotosChanged={refreshPhotos} />
       )}

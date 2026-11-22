@@ -23,17 +23,25 @@ function legMeta(seg) {
 export function LegLine({ seg, tripID, onOpen }) {
   // Leg i runs from (i === 0 ? from : via[i-1]) to (via[i] ?? to)
   const legRoute = (i) => `${(i === 0 ? seg.from : seg.via[i - 1])?.name || "?"} → ${(seg.via[i] || seg.to)?.name || "?"}`;
+  // Each leg, followed by the invisible node it connects through (otherwise not shown anywhere)
+  const menuItems = seg.legs.length === 1
+    ? [{ label: "Edit leg", to: `/trip/${tripID}/update-leg?legID=${seg.legs[0].id}` }]
+    : seg.legs.flatMap((l, i) => [
+      { label: `Edit ${legRoute(i)}`, to: `/trip/${tripID}/update-leg?legID=${l.id}` },
+      seg.via[i] && { label: `Edit ${seg.via[i].name} (connection)`, to: `/trip/${tripID}/update-node?nodeID=${seg.via[i].id}` },
+    ]);
+  const open = () => onOpen("leg", seg.legs);
   return (
     <LegRow as="div" role="button" tabIndex={0}
-      onClick={() => onOpen("leg", seg.legs[0])}
-      onKeyDown={(e) => { if (e.key === "Enter") onOpen("leg", seg.legs[0]); }}>
+      onClick={open}
+      onKeyDown={(e) => { if (e.key === "Enter") open(); }}>
       <TransportIcon type={seg.types.length === 1 ? seg.types[0] : "mixed"} size={15} />
       <span className="route">
         <strong>{seg.from?.name || "?"}</strong> → <strong>{seg.to?.name || "?"}</strong>
         {seg.via.length > 0 && <> via {seg.via.map((n) => n.name).join(", ")}</>}
       </span>
       <span className="meta">{legMeta(seg)}</span>
-      <EntityMenu bare label="Leg actions" items={seg.legs.map((l, i) => ({ label: seg.legs.length > 1 ? `Edit ${legRoute(i)}` : "Edit leg", to: `/trip/${tripID}/update-leg?legID=${l.id}` }))} />
+      <EntityMenu bare label="Leg actions" items={menuItems} />
     </LegRow>
   );
 }

@@ -17,6 +17,7 @@ from routers import search
 from routers import adventures
 from routers import lists
 from routers import integrations
+from routers import immich
 
 app = FastAPI()
 
@@ -44,6 +45,7 @@ app.include_router(search.router)
 app.include_router(adventures.router)
 app.include_router(lists.router)
 app.include_router(integrations.router)
+app.include_router(immich.router)
 
 # Serve uploaded photos statically
 app.mount("/uploads", StaticFiles(directory=config.UPLOAD_DIR), name="uploads")

@@ -30,7 +30,10 @@ class RouteRequest(BaseModel):
 @router.get("/status")
 def integration_status():
     """Report which integrations are configured (without revealing keys)."""
-    return {"ors_configured": bool(config.ORS_API_KEY)}
+    return {
+        "ors_configured": bool(config.ORS_API_KEY),
+        "immich_configured": bool(config.IMMICH_URL and config.IMMICH_API_KEY),
+    }
 
 
 @router.post("/ors/route")

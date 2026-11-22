@@ -57,7 +57,8 @@ docker compose up --build
 - **Imports**: uvicorn runs from `app/`. `main.py` uses `from routers import x`. Routers use `from .connect import get_db` and `import config`.
 - **Config**: read settings only via `app/config.py`. Never hardcode credentials, hosts or paths. To add a setting, add it to `config.py`, `.env.example` and the backend `environment:` in `docker-compose.yml.example`.
 - **Migrations**: add `alembic/versions/YYYYMMDD_NNNN_description.py` with `revision`/`down_revision` chained to the previous file. Use `op.execute("...")` raw SQL (`target_metadata = None`, no autogenerate). Migrations run automatically on backend start. Geography columns (`geog`) are maintained by triggers (see migration 0002).
-- **External APIs needing keys** go through a backend proxy so the key stays server-side. See `routers/integrations.py` (OpenRouteService). It uses stdlib `urllib`, so no extra dependency.
+- **External APIs needing keys** go through a backend proxy so the key stays server-side. See `routers/integrations.py` (OpenRouteService) and `routers/immich.py`. Both use stdlib `urllib`, so no extra dependency.
+- **Immich**: all communication with Immich stays in the backend (`routers/immich.py`). The frontend must never call Immich or receive its URL or key. Linked photos are rows in `photos` with `immich_asset_id` set and `url` = `/api/integrations/immich/assets/<id>/preview` (the backend image proxy), so photo display code needs no special case.
 
 ## Frontend conventions
 
@@ -74,6 +75,7 @@ docker compose up --build
 
 - **There is no authentication anywhere.** That includes `/api/admin`, whose DB restore runs `psql -f` on an uploaded `.sql` file, which means arbitrary SQL. The app must be deployed on a trusted network or behind a VPN or authenticating reverse proxy. Don't claim otherwise in docs.
 - Secrets live only in `.env`. Compose maps variables per service, so the frontend container gets no DB creds or API keys. Keep it that way.
+- The Immich proxy lets anyone who can reach WayPoints view any image the `IMMICH_API_KEY` can read. Asset ids are UUID-checked before being put in Immich URLs.
 - Photo uploads are restricted by extension and size and saved under random UUID names (`routers/photos.py`). Backup filenames are path-checked (`routers/admin.py::_safe_backup_path`).
 
 ## Testing / verification

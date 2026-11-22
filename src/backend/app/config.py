@@ -33,3 +33,11 @@ BACKUP_DIR = os.getenv("BACKUP_DIR", "/workspaces/src/backups")
 
 # Integrations (secrets stay server-side; never expose them to the frontend)
 ORS_API_KEY = os.getenv("ORS_API_KEY", "").strip()
+
+# Immich (self-hosted photo library). All Immich calls are made by the backend;
+# the browser only sees WayPoints' own proxy URLs. Accept the base URL with or
+# without a trailing "/api".
+IMMICH_URL = os.getenv("IMMICH_URL", "").strip().rstrip("/")
+if IMMICH_URL.endswith("/api"):
+    IMMICH_URL = IMMICH_URL[: -len("/api")]
+IMMICH_API_KEY = os.getenv("IMMICH_API_KEY", "").strip()

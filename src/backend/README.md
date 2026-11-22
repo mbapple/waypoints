@@ -505,7 +505,7 @@ List photos linked to a node.
 List photos linked to a stop.
 
 ### DELETE `/api/photos/{photo_id}`
-Delete a photo and remove the file if present.
+Delete a photo and remove the file if present. For a photo linked from Immich this only removes the link; the photo stays in Immich.
 
 ## Flight Details API (`/api/flight_details`)
 
@@ -552,7 +552,7 @@ Server-side proxies for third-party APIs, so API keys stay in `.env` and never r
 Which integrations are configured (keys are never returned).
 
 Response:
-{ "ors_configured": true }
+{ "ors_configured": true, "immich_configured": false }
 
 ### POST `/api/integrations/ors/route`
 Driving route between two points via OpenRouteService (requires `ORS_API_KEY`).
@@ -571,6 +571,47 @@ Response:
 }
 
 Errors: 503 if `ORS_API_KEY` is not set; 502 if OpenRouteService fails or is unreachable.
+
+## Immich API (`/api/integrations/immich`)
+
+Links photos from a self-hosted Immich library (requires `IMMICH_URL` and `IMMICH_API_KEY`). The backend makes every Immich request; the browser only calls these endpoints. Linked photos are not copied: they're stored in `photos` with `immich_asset_id` set and a `url` pointing at the image proxy below.
+
+### GET `/api/integrations/immich/trips/{trip_id}/assets`
+Immich images whose local capture date falls within the trip's start and end dates (or the itinerary's dates if the trip has none). Sorted by capture time and capped at 5000.
+
+Response:
+{
+  "start_date": "2026-05-01",
+  "end_date": "2026-05-09",
+  "truncated": false,
+  "assets": [
+    {
+      "id": "<immich asset uuid>",
+      "taken_at": "2026-05-02T10:14:03",   // local time
+      "date": "2026-05-02",
+      "latitude": 38.73, "longitude": -109.59,   // null without GPS
+      "city": "Moab", "state": "Utah", "country": "United States",
+      "filename": "IMG_1234.HEIC",
+      "linked": false,                     // already linked to this trip
+      "thumbnail_url": "/api/integrations/immich/assets/<id>/thumbnail",
+      "preview_url": "/api/integrations/immich/assets/<id>/preview"
+    }
+  ]
+}
+
+### GET `/api/integrations/immich/assets/{asset_id}/{size}`
+Image proxy. `size` is `thumbnail` (small) or `preview` (large JPEG/WebP).
+
+### POST `/api/integrations/immich/link`
+Link an Immich image to a trip and, optionally, one of its nodes, legs or stops.
+
+Request Body:
+{ "asset_id": "<uuid>", "trip_id": 1, "node_id": 3, "leg_id": null, "stop_id": null, "description": null }
+
+Response:
+{ "id": 12, "url": "/api/integrations/immich/assets/<uuid>/preview", "immich_asset_id": "<uuid>" }
+
+Errors: 503 if Immich is not configured; 502 if Immich is unreachable or rejects the key; 404 if the asset or trip doesn't exist; 400 if more than one target is given or the target belongs to another trip; 409 if the photo is already linked to the trip.
 
 ## Data Models (summaries)
 

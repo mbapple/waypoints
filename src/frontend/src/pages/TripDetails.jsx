@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo } from "react";
 import { useParams, Link } from "react-router-dom";
 import { PageHeader } from "../components/page-components";
 import { AddButtons, TripInfoCard } from "../components/trip-details/trip-detail-components";
-import { Button, Text, Flex, Badge, Select } from "../styles/components";
+import { Button, Text, Flex, Badge } from "../styles/components";
 import MapView from "../components/MapView";
 import { buildMapLayersForTrip } from "../utils/mapData";
 // import TripMiniMap from "../components/TripMiniMap";
@@ -10,10 +10,12 @@ import { getTrip, getTripMiles } from "../api/trips";
 import { listNodesByTrip } from "../api/nodes";
 import { listLegsByTrip, getCarDetails } from "../api/legs";
 import { listStopsByTrip } from "../api/stops";
-import { getTransportTypeLabel } from "../utils/format";
 import { listPhotosByTrip, listPhotosByLeg, listPhotosByNode, listPhotosByStop } from "../api/photos";
 import PhotoSlideshowLarge from "../components/photos/PhotoSlideshowLarge";
 import PhotoUploadButton from "../components/photos/PhotoUploadButton";
+import PhotoTargetSelect from "../components/photos/PhotoTargetSelect";
+import ImmichPickerPopup from "../components/photos/ImmichPickerPopup";
+import { getIntegrationStatus } from "../api/integrations";
 import TripDetailsList from "../components/trip-details/TripDetailsList";
 import TripDetailsDaily from "../components/trip-details/TripDetailsDaily";
 import NodePopup from "../components/trip-details/popups/NodePopup";
@@ -34,6 +36,8 @@ function TripDetails() {
   const [carPolylineByLeg, setCarPolylineByLeg] = useState({});
   const [viewMode, setViewMode] = useState('list'); // 'list' | 'daily'
   const [popupEntity, setPopupEntity] = useState(null); // { type: 'node'|'leg'|'stop', data: obj }
+  const [immichConfigured, setImmichConfigured] = useState(false);
+  const [immichOpen, setImmichOpen] = useState(false);
 
   const [miles, setMiles] = useState(0);
 
@@ -90,6 +94,12 @@ function TripDetails() {
     fetchTripData();
   }, [tripID]);
 
+  useEffect(() => {
+    getIntegrationStatus()
+      .then(s => setImmichConfigured(!!s?.immich_configured))
+      .catch(() => setImmichConfigured(false));
+  }, []);
+
   const { markers, stopMarkers, polylines, bounds, nodeById, visitedCountries, visitedStates } = useMemo(() =>
       buildMapLayersForTrip({ nodes, legs, stops, carPolylineByLeg, tripID })
     , [nodes, legs, stops, carPolylineByLeg, tripID]);
@@ -123,11 +133,21 @@ function TripDetails() {
     );
   }
 
-  const getNodeName = (nodeID) => { // retained for possible future use (e.g., upload select labels)
-    const node = nodes.find(n => n.id === nodeID);
-    return node ? node.name : `Node ${nodeID}`;
+  // After adding a photo: reload the trip slideshow and the cached photos of its target ('node:3' etc.)
+  const refreshPhotos = async (target) => {
+    try {
+      setTripPhotos(await listPhotosByTrip(tripID));
+      if (!target) return;
+      const [type, idStr] = target.split(':');
+      const id = Number(idStr);
+      const loader = { node: listPhotosByNode, leg: listPhotosByLeg, stop: listPhotosByStop }[type];
+      if (!loader) return;
+      const key = `${type}:${id}`;
+      setEntityPhotos(prev => ({ ...prev, [key]: undefined }));
+      const ph = await loader(id);
+      setEntityPhotos(prev => ({ ...prev, [key]: ph }));
+    } catch {}
   };
-
 
   return (
     <div>
@@ -237,54 +257,35 @@ function TripDetails() {
 
       {/* Bottom unified upload container */}
       <TripInfoCard>
-        <h3>Upload Photos</h3>
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-          <Select value={uploadTarget} onChange={e => setUploadTarget(e.target.value)}>
-            <option value="">Select target…</option>
-            {nodes.map(n => (
-              <option key={`node:${n.id}`} value={`node:${n.id}`}>Node: {n.name}</option>
-            ))}
-            {legs.map(l => (
-              <option key={`leg:${l.id}`} value={`leg:${l.id}`}>
-                Leg: {getTransportTypeLabel(l.type)} {getNodeName(l.start_node_id)} → {getNodeName(l.end_node_id)}
-              </option>
-            ))}
-            {stops.map(s => (
-              <option key={`stop:${s.id}`} value={`stop:${s.id}`}>Stop: {s.name}</option>
-            ))}
-          </Select>
+        <h3>Add Photos</h3>
+        <Flex gap={2} align="center" wrap>
+          <div style={{ flex: '1 1 240px' }}>
+            <PhotoTargetSelect nodes={nodes} legs={legs} stops={stops} value={uploadTarget} onChange={setUploadTarget} />
+          </div>
           <PhotoUploadButton
             tripId={tripID}
             nodeId={uploadTarget.startsWith('node:') ? Number(uploadTarget.split(':')[1]) : undefined}
             legId={uploadTarget.startsWith('leg:') ? Number(uploadTarget.split(':')[1]) : undefined}
             stopId={uploadTarget.startsWith('stop:') ? Number(uploadTarget.split(':')[1]) : undefined}
-            onUploaded={async () => {
-              try {
-                const p = await listPhotosByTrip(tripID);
-                setTripPhotos(p);
-                // Refresh cache for selected entity
-                if (uploadTarget) {
-                  const [type, idStr] = uploadTarget.split(':');
-                  const id = Number(idStr);
-                  if (type === 'node') {
-                    setEntityPhotos(prev => ({ ...prev, [`node:${id}`]: undefined }));
-                    const ph = await listPhotosByNode(id);
-                    setEntityPhotos(prev => ({ ...prev, [`node:${id}`]: ph }));
-                  } else if (type === 'leg') {
-                    setEntityPhotos(prev => ({ ...prev, [`leg:${id}`]: undefined }));
-                    const ph = await listPhotosByLeg(id);
-                    setEntityPhotos(prev => ({ ...prev, [`leg:${id}`]: ph }));
-                  } else if (type === 'stop') {
-                    setEntityPhotos(prev => ({ ...prev, [`stop:${id}`]: undefined }));
-                    const ph = await listPhotosByStop(id);
-                    setEntityPhotos(prev => ({ ...prev, [`stop:${id}`]: ph }));
-                  }
-                }
-              } catch {}
-            }}
+            onUploaded={() => refreshPhotos(uploadTarget)}
           />
-        </div>
+          {immichConfigured && (
+            <Button variant="outline" size="sm" onClick={() => setImmichOpen(true)}>
+              Link from Immich
+            </Button>
+          )}
+        </Flex>
       </TripInfoCard>
+      {immichOpen && (
+        <ImmichPickerPopup
+          tripId={tripID}
+          nodes={nodes}
+          legs={legs}
+          stops={stops}
+          onClose={() => setImmichOpen(false)}
+          onLinked={refreshPhotos}
+        />
+      )}
       <AddButtons tripID={tripID} style={{ marginTop: '1.5rem', marginBottom: '3.0rem' }} />
 
       {/* Centralized popup renderer */}

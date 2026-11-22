@@ -743,7 +743,7 @@ Response:
   "coordinates": [[-0.46, 51.47], ...]
 }
 
-`aircraft` is the airframe that flew it, looked up best-effort from `icao24` (null if the lookup fails; the track is still returned).
+`aircraft` is the airframe that flew it, looked up from `icao24`. If adsbdb and hexdb don't know it, only `icao24` is filled in (the other fields are null) so it can still be saved; lookup failures are logged and never lose the track. If the photo can't be saved (for example, `uploads/` isn't writable), `photo` is null and the reason is logged.
 
 Errors: 503 if OpenSky is not configured; 400 for an unrecognisable flight number; 409 if the date is today or later (OpenSky publishes flights in a nightly batch); 410 if the date is more than ~30 days ago (OpenSky no longer has the track); 422 if no airport can be determined; 404 if no matching flight or track is found; 429 if the OpenSky daily credit limit is used up; 502 if OpenSky fails or rejects the credentials.
 

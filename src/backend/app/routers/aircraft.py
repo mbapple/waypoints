@@ -8,6 +8,7 @@
   Photos remain the photographers' copyright: always show the credit and link.
 """
 import json
+import logging
 import os
 import re
 import urllib.parse
@@ -20,6 +21,7 @@ import config
 from .http_util import download, lookup
 
 router = APIRouter(prefix="/api/integrations/aircraft", tags=["aircraft"])
+log = logging.getLogger(__name__)
 
 ADSBDB_API = "https://api.adsbdb.com/v0"
 HEXDB_API = "https://hexdb.io/api/v1"
@@ -96,14 +98,18 @@ def fetch_aircraft_photo(registration: Optional[str], icao24: Optional[str] = No
     if not data:
         return None
 
-    os.makedirs(PHOTO_DIR, exist_ok=True)
-    tmp = f"{base}.{uuid.uuid4().hex}.tmp"
-    with open(tmp, "wb") as f:
-        f.write(data)
-    os.replace(tmp, f"{base}.jpg")
     photo = {"url": f"{PHOTO_URL_PREFIX}/{registration}.jpg", "credit": item.get("photographer"), "link": item.get("link")}
-    with open(meta_path, "w") as f:
-        json.dump(photo, f)
+    tmp = f"{base}.{uuid.uuid4().hex}.tmp"
+    try:
+        os.makedirs(PHOTO_DIR, exist_ok=True)
+        with open(tmp, "wb") as f:
+            f.write(data)
+        os.replace(tmp, f"{base}.jpg")
+        with open(meta_path, "w") as f:
+            json.dump(photo, f)
+    except OSError as e:  # e.g. uploads/ not writable: keep the details, skip the photo
+        log.warning("Could not save aircraft photo for %s in %s: %s", registration, PHOTO_DIR, e)
+        return None
     return photo
 
 

@@ -18,6 +18,7 @@ a flight can be fetched from the day after it flew until ~30 days later.
 Callers should store the result; it can't be fetched again later.
 """
 import json
+import logging
 import re
 import threading
 import time
@@ -35,6 +36,7 @@ from .aircraft import describe_aircraft
 from .http_util import TIMEOUT_SECONDS, USER_AGENT, get_json as _get_json, lookup as _lookup
 
 router = APIRouter(prefix="/api/integrations/opensky", tags=["opensky"])
+log = logging.getLogger(__name__)
 
 OPENSKY_API = "https://opensky-network.org/api"
 OPENSKY_TOKEN_URL = "https://auth.opensky-network.org/auth/realms/opensky-network/protocol/openid-connect/token"
@@ -296,14 +298,22 @@ def flight_track(req: FlightTrackRequest):
         "first_seen": first_seen,
         "last_seen": last_seen,
         "route": {"origin": _airport_summary(origin or None), "destination": _airport_summary(destination or None)} if route else None,
-        "aircraft": _aircraft_or_none(icao24),
+        "aircraft": _aircraft(icao24),
         "coordinates": coordinates,
     }
 
 
-def _aircraft_or_none(icao24: str):
-    """The airframe that flew it (type, registration, photo), best-effort."""
-    try:
-        return describe_aircraft(icao24=icao24) if icao24 else None
-    except Exception:  # a failed lookup or photo download must not lose the track
+def _aircraft(icao24: str):
+    """The airframe that flew it (type, registration, photo), best-effort. If it
+    can't be identified, still return its transponder address so it's saved."""
+    if not icao24:
         return None
+    try:
+        aircraft = describe_aircraft(icao24=icao24)
+    except Exception:  # a failed lookup must not lose the track
+        log.exception("Aircraft lookup failed for icao24 %s", icao24)
+        aircraft = None
+    if not aircraft:
+        log.warning("Aircraft %s not found in adsbdb or hexdb", icao24)
+        return {"icao24": icao24, "registration": None, "type": None, "icao_type": None, "operator": None, "photo": None}
+    return aircraft

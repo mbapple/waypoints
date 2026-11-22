@@ -24,13 +24,16 @@ export default function AircraftDetails({ value, onChange }) {
   const [lookingUp, setLookingUp] = useState(false);
   const [message, setMessage] = useState(null); // { text, error }
   const registration = value.aircraft_registration || '';
+  const icao24 = value.aircraft_icao24 || ''; // from OpenSky, when the registration is unknown
+  const canLookUp = Boolean(registration.trim() || icao24);
 
+  // By registration when one is entered, otherwise by the transponder address
   const lookup = async () => {
-    if (!registration.trim() || lookingUp) return;
+    if (!canLookUp || lookingUp) return;
     setLookingUp(true);
     setMessage(null);
     try {
-      const data = await lookupAircraft({ registration: registration.trim() });
+      const data = await lookupAircraft(registration.trim() ? { registration: registration.trim() } : { icao24 });
       onChange(aircraftFromLookup(data));
       setMessage({ text: [aircraftTypeName(data.icao_type, data.type), data.operator].filter(Boolean).join(' · ') });
     } catch (e) {
@@ -64,10 +67,13 @@ export default function AircraftDetails({ value, onChange }) {
               onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); lookup(); } }}
               style={{ flex: 1 }}
             />
-            <Button type="button" size="sm" variant="outline" disabled={lookingUp || !registration.trim()} onClick={lookup}>
+            <Button type="button" size="sm" variant="outline" disabled={lookingUp || !canLookUp} onClick={lookup}>
               {lookingUp ? 'Looking up…' : 'Look up'}
             </Button>
           </Flex>
+          {icao24 && !registration.trim() && (
+            <Text variant="muted" size="xs" style={{ display: 'block', marginTop: 4 }}>Transponder {icao24}</Text>
+          )}
           <Label htmlFor={`${uid}-icao`} style={{ marginTop: 8 }}>ICAO type code</Label>
           <Input
             id={`${uid}-icao`}

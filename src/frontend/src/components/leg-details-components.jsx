@@ -4,6 +4,7 @@ import styled from 'styled-components';
 import { Input, Label, FormGroup, Text, Button, Flex } from '../styles/components';
 import { getIntegrationStatus, fetchDrivingRoute, fetchFlightTrack, lookupFlightRoute } from '../api/integrations';
 import { AIRCRAFT_KEYS, aircraftFromLookup } from '../utils/flightFields';
+import { aircraftLabel } from '../utils/aircraftTypes';
 import AircraftDetails from './flights/AircraftDetails';
 import { haversineMiles } from '../utils/geo';
 
@@ -336,8 +337,12 @@ export const FlightDetails = ({
       if (!endAirport.trim()) setEndAirport(destination?.iata || data?.arrival_airport || '');
       const route = [data?.departure_airport, data?.arrival_airport].filter(Boolean).join(' → ');
       const departed = data?.first_seen ? formatUtc(data.first_seen) : null;
+      const found = data?.aircraft;
+      const aircraftText = !found ? ''
+        : found.registration ? ` Aircraft: ${aircraftLabel(aircraftFromLookup(found))}.`
+          : ` The aircraft (transponder ${found.icao24}) isn't in the aircraft databases; enter its registration if you know it.`;
       setTrackMessage({
-        text: `Found ${data?.callsign}${route ? ` ${route}` : ''}${departed ? `, departed ${departed}` : ''}: ${points.length} track points. Check the date, then save the leg to keep it.`,
+        text: `Found ${data?.callsign}${route ? ` ${route}` : ''}${departed ? `, departed ${departed}` : ''}: ${points.length} track points.${aircraftText} Check the date, then save the leg to keep it.`,
       });
     } catch (e) {
       const detail = e?.response?.data?.detail;

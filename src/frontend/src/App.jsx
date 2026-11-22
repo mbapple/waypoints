@@ -1,36 +1,39 @@
-import React, { useEffect } from "react";
+import React, { Suspense, lazy, useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
 import { ThemeProvider } from "styled-components";
 import { themes } from "./styles/theme";
 import { SettingsProvider, useSettings } from "./context/SettingsContext";
-import { GlobalStyles, Container } from "./styles/components";
-import Map from "./pages/Map";
+import { GlobalStyles, Container, Text } from "./styles/components";
 import Navigation from "./components/Navigation";
-import TripList from "./pages/TripList";
-import CreateTrip from "./pages/Create/CreateTrip";
-import CreateTripQuick from "./pages/Create/CreateTripQuick";
-import TripDetails from "./pages/TripDetails";
-import TripMap from "./pages/TripMap";
-import AddNode from "./pages/Create/AddNode";
-import AddLeg from "./pages/Create/AddLeg";
-import AddStop from "./pages/Create/AddStop";
-import Settings from "./pages/Settings";
-import UpdateTrip from "./pages/Update/UpdateTrip";
-import UpdateNode from "./pages/Update/UpdateNode";
-import UpdateLeg from "./pages/Update/UpdateLeg";
-import UpdateStop from "./pages/Update/UpdateStop";
-import Statistics from "./pages/Statistics";
-import FlightData from "./pages/FlightData";
-import Calendar from "./pages/Calendar";
-import SearchPage from "./pages/Search";
-import AdventureList from "./pages/AdventureList";
-import AddAdventure from "./pages/Create/AddAdventure";
-import UpdateAdventure from "./pages/Update/UpdateAdventure";
-import AdventureDetails from "./pages/AdventureDetails";
-import AddList from "./pages/Lists/AddList";
-import UpdateList from "./pages/Lists/UpdateList";
 import NotFound from "./pages/NotFound";
 import RouteErrorBoundary from "./components/common/RouteErrorBoundary";
+
+// Each page is its own chunk, loaded when first visited, so the first load doesn't
+// pull in every page (maps, charts, forms). NotFound is tiny and stays in the main bundle.
+const Map = lazy(() => import("./pages/Map"));
+const TripList = lazy(() => import("./pages/TripList"));
+const CreateTrip = lazy(() => import("./pages/Create/CreateTrip"));
+const CreateTripQuick = lazy(() => import("./pages/Create/CreateTripQuick"));
+const TripDetails = lazy(() => import("./pages/TripDetails"));
+const TripMap = lazy(() => import("./pages/TripMap"));
+const AddNode = lazy(() => import("./pages/Create/AddNode"));
+const AddLeg = lazy(() => import("./pages/Create/AddLeg"));
+const AddStop = lazy(() => import("./pages/Create/AddStop"));
+const Settings = lazy(() => import("./pages/Settings"));
+const UpdateTrip = lazy(() => import("./pages/Update/UpdateTrip"));
+const UpdateNode = lazy(() => import("./pages/Update/UpdateNode"));
+const UpdateLeg = lazy(() => import("./pages/Update/UpdateLeg"));
+const UpdateStop = lazy(() => import("./pages/Update/UpdateStop"));
+const Statistics = lazy(() => import("./pages/Statistics"));
+const FlightData = lazy(() => import("./pages/FlightData"));
+const Calendar = lazy(() => import("./pages/Calendar"));
+const SearchPage = lazy(() => import("./pages/Search"));
+const AdventureList = lazy(() => import("./pages/AdventureList"));
+const AddAdventure = lazy(() => import("./pages/Create/AddAdventure"));
+const UpdateAdventure = lazy(() => import("./pages/Update/UpdateAdventure"));
+const AdventureDetails = lazy(() => import("./pages/AdventureDetails"));
+const AddList = lazy(() => import("./pages/Lists/AddList"));
+const UpdateList = lazy(() => import("./pages/Lists/UpdateList"));
 
 const ThemedApp = () => {
   const { settings } = useSettings();
@@ -53,6 +56,7 @@ const ThemedApp = () => {
             exception: it rewrites its own query while typing and must not remount. */}
         <Container key={pageKey}>
           <RouteErrorBoundary>
+          <Suspense fallback={<Text variant="muted" as="p" style={{ marginTop: '1.5rem' }}>Loading…</Text>}>
           <Routes location={location}>
             <Route path="/map" element={<Map />} />
             <Route path="/settings" element={<Settings />} />
@@ -80,6 +84,7 @@ const ThemedApp = () => {
             <Route path="/lists/:id/update" element={<UpdateList />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
+          </Suspense>
           </RouteErrorBoundary>
         </Container>
     </ThemeProvider>

@@ -8,7 +8,8 @@ import { Card, Button, Text, Flex } from "../../styles/components";
  * Without a boundary, React unmounts the entire tree when a page throws during a route
  * change, leaving the new URL in the address bar over an empty screen until a manual
  * refresh. The boundary is keyed by location in App.jsx, so navigating anywhere else
- * resets it.
+ * resets it. A page chunk that fails to download (e.g. after an update) also lands
+ * here, and "Reload page" fetches the new one.
  */
 export default class RouteErrorBoundary extends React.Component {
   constructor(props) {

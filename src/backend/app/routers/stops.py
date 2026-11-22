@@ -24,6 +24,7 @@ class Stop(BaseModel):
     osm_id: str | None = None
     osm_country: str | None = None
     osm_state: str | None = None
+    is_lodging: bool = False
 
     # A stop doesn't need a location; treat blank coordinates from forms as "none"
     @field_validator("latitude", "longitude", mode="before")
@@ -48,6 +49,7 @@ class StopUpdate(BaseModel):
     osm_id: str | None = None
     osm_country: str | None = None
     osm_state: str | None = None
+    is_lodging: bool | None = None
 
     # A stop doesn't need a location; treat blank coordinates from forms as "none"
     @field_validator("latitude", "longitude", mode="before")
@@ -55,137 +57,66 @@ class StopUpdate(BaseModel):
     def _blank_coord_is_none(cls, v):
         return None if isinstance(v, str) and not v.strip() else v
 
-# Return a list of all stops corresponding to a specific leg
-@router.get("/by_leg/{leg_id}")
-def get_stops_by_leg(leg_id: int):
+# Columns a stop can be created with; also the columns PUT may update.
+WRITE_COLS = (
+    "trip_id", "name", "leg_id", "node_id", "category", "notes", "start_date", "end_date",
+    "latitude", "longitude", "osm_name", "osm_id", "osm_country", "osm_state", "is_lodging",
+)
+
+
+def _select_cols(*link_cols):
+    """Columns returned for a stop; link_cols picks which of leg_id / node_id are included."""
+    return ("id", "trip_id", "name", "notes", "category", *link_cols, "start_date", "end_date",
+            "latitude", "longitude", "osm_name", "osm_id", "osm_country", "osm_state", "is_lodging")
+
+
+def _stop_dict(row, cols):
+    d = {c: row[c] for c in cols}
+    d["notes"] = d["notes"] or None
+    return d
+
+
+def _list_stops(where_col, value, link_cols):
+    # where_col is always a fixed column name from this module, never request input
+    cols = _select_cols(*link_cols)
     conn = get_db()
     cur = conn.cursor()
-    cur.execute("""
-    SELECT id, trip_id, name, notes, category, leg_id, start_date, end_date, latitude, longitude, osm_name, osm_id, osm_country, osm_state
+    cur.execute(f"""
+    SELECT {", ".join(cols)}
         FROM stops
-        WHERE leg_id = %s
+        WHERE {where_col} = %s
     ORDER BY start_date ASC NULLS LAST, updated_at ASC NULLS LAST
-    """, (leg_id,))
+    """, (value,))
     rows = cur.fetchall()
     cur.close()
     conn.close()
+    return [_stop_dict(r, cols) for r in rows]
 
-    return [
-        {
-            "id": r["id"],
-            "trip_id": r["trip_id"],
-            "name": r["name"],
-            "notes": r["notes"] if r["notes"] else None,
-            "category": r["category"],
-            "leg_id": r["leg_id"],
-            "start_date": r["start_date"],
-            "end_date": r["end_date"],
-            "latitude": r["latitude"],
-            "longitude": r["longitude"],
-            "osm_name": r["osm_name"],
-            "osm_id": r["osm_id"],
-            "osm_country": r["osm_country"],
-            "osm_state": r["osm_state"]
-        }
-        for r in rows
-    ]
+# Return a list of all stops corresponding to a specific leg
+@router.get("/by_leg/{leg_id}")
+def get_stops_by_leg(leg_id: int):
+    return _list_stops("leg_id", leg_id, ("leg_id",))
 
 # Return a list of all stops corresponding to a specific node
 @router.get("/by_node/{node_id}")
 def get_stops_by_node(node_id: int):
-    conn = get_db()
-    cur = conn.cursor()
-    cur.execute("""
-    SELECT id, trip_id, name, notes, category, node_id, start_date, end_date, latitude, longitude, osm_name, osm_id, osm_country, osm_state
-        FROM stops
-        WHERE node_id = %s
-    ORDER BY start_date ASC NULLS LAST, updated_at ASC NULLS LAST
-    """, (node_id,))
-    rows = cur.fetchall()
-    cur.close()
-    conn.close()
+    return _list_stops("node_id", node_id, ("node_id",))
 
-    return [
-        {
-            "id": r["id"],
-            "trip_id": r["trip_id"],
-            "name": r["name"],
-            "notes": r["notes"] if r["notes"] else None,
-            "category": r["category"],
-            "node_id": r["node_id"],
-            "start_date": r["start_date"],
-            "end_date": r["end_date"],
-            "latitude": r["latitude"],
-            "longitude": r["longitude"],
-            "osm_name": r["osm_name"],
-            "osm_id": r["osm_id"],
-            "osm_country": r["osm_country"],
-            "osm_state": r["osm_state"]
-        }
-        for r in rows
-    ]
-
-# Return a list of all stops corresponding to a specific node
+# Return a list of all stops corresponding to a specific trip
 @router.get("/by_trip/{trip_id}")
-def get_stops_by_node(trip_id: int):
-    conn = get_db()
-    cur = conn.cursor()
-    cur.execute("""
-    SELECT id, trip_id, name, notes, category, node_id, leg_id, start_date, end_date, latitude, longitude, osm_name, osm_id, osm_country, osm_state
-        FROM stops
-        WHERE trip_id = %s
-    ORDER BY start_date ASC NULLS LAST, updated_at ASC NULLS LAST
-    """, (trip_id,))
-    rows = cur.fetchall()
-    cur.close()
-    conn.close()
-
-    return [
-        {
-            "id": r["id"],
-            "trip_id": r["trip_id"],
-            "name": r["name"],
-            "notes": r["notes"] if r["notes"] else None,
-            "category": r["category"],
-            "node_id": r["node_id"],
-            "leg_id": r["leg_id"],
-            "start_date": r["start_date"],
-            "end_date": r["end_date"],
-            "latitude": r["latitude"],
-            "longitude": r["longitude"],
-            "osm_name": r["osm_name"],
-            "osm_id": r["osm_id"],
-            "osm_country": r["osm_country"],
-            "osm_state": r["osm_state"]
-        }
-        for r in rows
-    ]
+def get_stops_by_trip(trip_id: int):
+    return _list_stops("trip_id", trip_id, ("node_id", "leg_id"))
 
 @router.post("/")
 @router.post("")
 def create_stop(stop: Stop, background_tasks: BackgroundTasks):
     conn = get_db()
     cur = conn.cursor()
-    cur.execute("""
-    INSERT INTO stops (trip_id, name, leg_id, node_id, category, notes, start_date, end_date, latitude, longitude, osm_name, osm_id, osm_country, osm_state)
-    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+    cur.execute(f"""
+    INSERT INTO stops ({", ".join(WRITE_COLS)})
+    VALUES ({", ".join(["%s"] * len(WRITE_COLS))})
     RETURNING id
-    """, (
-        stop.trip_id,
-        stop.name,
-        stop.leg_id,
-        stop.node_id,
-        stop.category,
-        stop.notes,
-    stop.start_date,
-    stop.end_date,
-        stop.latitude,
-        stop.longitude,
-        stop.osm_name,
-        stop.osm_id,
-        stop.osm_country,
-        stop.osm_state
-    ))
+    """, [getattr(stop, c) for c in WRITE_COLS])
     row = cur.fetchone()
     conn.commit()
     cur.close()
@@ -195,44 +126,25 @@ def create_stop(stop: Stop, background_tasks: BackgroundTasks):
 
 @router.get("/{stop_id}")
 def get_stop_by_id(stop_id: int):
+    cols = _select_cols("leg_id", "node_id")
     conn = get_db()
     cur = conn.cursor()
-    cur.execute("""
-    SELECT id, trip_id, name, notes, category, leg_id, node_id, start_date, end_date, latitude, longitude, osm_name, osm_id, osm_country, osm_state
-        FROM stops
-        WHERE id = %s
-    """, (stop_id,))
+    cur.execute(f"SELECT {', '.join(cols)} FROM stops WHERE id = %s", (stop_id,))
     row = cur.fetchone()
     cur.close()
     conn.close()
 
-    if row:
-        return {
-            "id": row["id"],
-            "trip_id": row["trip_id"],
-            "name": row["name"],
-            "notes": row["notes"] if row["notes"] else None,
-            "category": row["category"],
-            "leg_id": row["leg_id"],
-            "node_id": row["node_id"],
-            "start_date": row["start_date"],
-            "end_date": row["end_date"],
-            "latitude": row["latitude"],
-            "longitude": row["longitude"],
-            "osm_name": row["osm_name"],
-            "osm_id": row["osm_id"],
-            "osm_country": row["osm_country"],
-            "osm_state": row["osm_state"]
-        }
-    else:
+    if not row:
         raise HTTPException(status_code=404, detail="Stop not found")
+    return _stop_dict(row, cols)
 
 
 @router.put("/{stop_id}")
 def update_stop(stop_id: int, update: StopUpdate, background_tasks: BackgroundTasks):
     data = update.model_dump(exclude_unset=True) if hasattr(update, "model_dump") else update.dict(exclude_unset=True)
-    allowed = {"name", "trip_id", "leg_id", "node_id", "category", "notes", "start_date", "end_date", "latitude", "longitude", "osm_name", "osm_id", "osm_country", "osm_state"}
-    data = {k: v for k, v in data.items() if k in allowed}
+    data = {k: v for k, v in data.items() if k in WRITE_COLS}
+    if data.get("is_lodging", False) is None:  # column is NOT NULL; null means "leave as is"
+        del data["is_lodging"]
     if not data:
         raise HTTPException(status_code=400, detail="No fields provided for update")
 

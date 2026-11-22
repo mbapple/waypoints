@@ -478,7 +478,8 @@ Response:
     "osm_name": "Shell Station, 381 Main Street",
     "osm_id": "1901914",
     "osm_country": "United States",
-    "osm_state": "Illinois"
+    "osm_state": "Illinois",
+    "is_lodging": false
   }
 ]
 
@@ -499,7 +500,8 @@ Response:
     "osm_name": "Shell Station, 381 Main Street",
     "osm_id": "1901914",
     "osm_country": "United States",
-    "osm_state": "Illinois"
+    "osm_state": "Illinois",
+    "is_lodging": false
   }
 ]
 
@@ -521,7 +523,8 @@ Response:
     "osm_name": "Shell Station, 381 Main Street",
     "osm_id": "1901914",
     "osm_country": "United States",
-    "osm_state": "Illinois"
+    "osm_state": "Illinois",
+    "is_lodging": false
   }
 ]
 
@@ -541,11 +544,12 @@ Request Body:
   "osm_name": "Hotel, Street, City",
   "osm_id": "98765",
   "osm_country": "United States",
-  "osm_state": "Illinois"
+  "osm_state": "Illinois",
+  "is_lodging": true // optional, default false; true = somewhere you stay overnight (shown per night in the itinerary)
 }
 
 Response:
-{ "message": "Stop created successfully" }
+{ "message": "Stop created successfully", "id": 1 }
 
 ### GET `/api/stops/{stop_id}`
 Get a specific stop by ID.
@@ -564,7 +568,8 @@ Response:
   "osm_name": "Hotel, Street, City",
   "osm_id": "98765",
   "osm_country": "United States",
-  "osm_state": "Illinois"
+  "osm_state": "Illinois",
+  "is_lodging": true
 }
 
 Errors:
@@ -577,7 +582,8 @@ Request Body (any subset):
 {
   "name": "Hotel California",
   "category": "hotel",
-  "notes": "Updated notes"
+  "notes": "Updated notes",
+  "is_lodging": true
 }
 
 Response:

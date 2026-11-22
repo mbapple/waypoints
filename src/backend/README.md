@@ -159,6 +159,12 @@ Response:
   "states_by_country": { "United States": ["Illinois", "New York"], "Italy": ["Lazio"] }
 }
 
+### GET `/api/trips/data/trips_by_osm?osm_id=R7444`
+Trips that include this OSM place as a node or as a stop (any visibility), once per trip, ordered by start date. Returns 400 if `osm_id` is empty.
+
+Response:
+[ { "id": 1, "name": "Europe 2024", "start_date": "2024-05-01", "end_date": "2024-05-14" } ]
+
 ## Destinations API (`/api/destinations`)
 
 ### GET `/api/destinations/`

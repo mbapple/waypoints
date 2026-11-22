@@ -681,20 +681,24 @@ def get_trips_by_osm(osm_id: str):
         raise HTTPException(status_code=400, detail="osm_id is required")
     conn = get_db()
     cur = conn.cursor()
+    # Trips that include this place as a node or as a stop, once per trip.
     cur.execute(
         """
-        SELECT DISTINCT t.id, t.name
-        FROM nodes n
-        JOIN trips t ON t.id = n.trip_id
-        WHERE n.osm_id = %s
-        ORDER BY t.start_date
+        SELECT t.id, t.name, t.start_date, t.end_date
+        FROM trips t
+        WHERE EXISTS (SELECT 1 FROM nodes n WHERE n.trip_id = t.id AND n.osm_id = %s)
+           OR EXISTS (SELECT 1 FROM stops s WHERE s.trip_id = t.id AND s.osm_id = %s)
+        ORDER BY t.start_date NULLS LAST, t.id
         """,
-        (osm_id,)
+        (osm_id, osm_id)
     )
     rows = cur.fetchall() or []
     cur.close()
     conn.close()
-    return [{"id": r["id"], "name": r["name"]} for r in rows]
+    return [
+        {"id": r["id"], "name": r["name"], "start_date": r["start_date"], "end_date": r["end_date"]}
+        for r in rows
+    ]
 
 @router.get("/data/stops_by_category")
 def get_stops_by_category(category: str):

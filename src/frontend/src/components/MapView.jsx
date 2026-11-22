@@ -41,6 +41,7 @@ export default function MapView({
   adventureMarkers = [],
   placeMarkers = [], // [{ key, name, code?, pos, countLabel?, faded?, trips: [{id, name}] }]
   polylines = [], // [{ positions, color, tripId?, type?, opacity?, weight? }] (opacity/weight override the defaults)
+  headMarkers = [], // [{ key, pos, color, tripId? }] dots at the tip of a line being drawn (Map timeline)
   bounds,
   highlightMode = "off",
   nodeById = {},
@@ -289,6 +290,22 @@ export default function MapView({
               weight: line.weight ?? 3,
               opacity: line.opacity ?? (focusTripId && line.tripId !== focusTripId ? 0.1 : 0.9),
               smoothFactor: 0,
+            }}
+          />
+        ))}
+
+        {headMarkers.map((h) => (
+          <CircleMarker
+            key={h.key}
+            center={h.pos}
+            radius={6}
+            interactive={false}
+            pathOptions={{
+              color: theme.colors.text,
+              weight: 2,
+              opacity: tripOpacity(h.tripId),
+              fillColor: h.color,
+              fillOpacity: tripOpacity(h.tripId),
             }}
           />
         ))}

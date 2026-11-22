@@ -163,12 +163,14 @@ export function slicePolyline(segments, frac) {
 }
 
 // Features -> MapView layers. `partial` = { feature, frac } draws one more feature part-way
-// (a leg grows along its path; a marker simply appears).
+// (a leg grows along its path with a dot at its tip, so a return leg drawn over the
+// outbound one is still visible; a marker simply appears).
 export function layersFromFeatures(features, partial = null) {
   const markers = [];
   const stopMarkers = [];
   const adventureMarkers = [];
   const polylines = [];
+  const heads = [];
   const add = (f, frac = 1) => {
     if (f.kind === "node") markers.push(f.marker);
     else if (f.kind === "stop") stopMarkers.push(f.marker);
@@ -177,9 +179,11 @@ export function layersFromFeatures(features, partial = null) {
       if (frac >= 1) { polylines.push(...f.polylines); return; }
       const cut = slicePolyline(f.polylines.map((p) => p.positions), frac);
       cut.forEach((positions, i) => { if (positions.length >= 2) polylines.push({ ...f.polylines[i], positions }); });
+      const tip = cut[cut.length - 1]?.[cut[cut.length - 1].length - 1];
+      if (tip) heads.push({ key: `head-${f.id}`, pos: tip, color: f.polylines[0]?.color, tripId: f.tripId });
     }
   };
   features.forEach((f) => add(f));
   if (partial?.feature) add(partial.feature, partial.frac);
-  return { markers, stopMarkers, adventureMarkers, polylines };
+  return { markers, stopMarkers, adventureMarkers, polylines, heads };
 }

@@ -10,7 +10,7 @@ import { DAY_MS, layersFromFeatures } from "./timeline";
 
 export const TIMELINE_SPEEDS = [1, 3, 8, 20];
 const DEFAULT_SPEED = 3;
-const EMPTY = { markers: [], stopMarkers: [], adventureMarkers: [], polylines: [] };
+const EMPTY = { markers: [], stopMarkers: [], adventureMarkers: [], polylines: [], heads: [] };
 
 const snapDay = (t, min) => min + Math.round((t - min) / DAY_MS) * DAY_MS;
 
@@ -109,6 +109,7 @@ export default function useTimelinePlayback(features) {
       stopMarkers: extra.stopMarkers.length ? [...base.layers.stopMarkers, ...extra.stopMarkers] : base.layers.stopMarkers,
       adventureMarkers: extra.adventureMarkers.length ? [...base.layers.adventureMarkers, ...extra.adventureMarkers] : base.layers.adventureMarkers,
       polylines: extra.polylines.length ? [...base.layers.polylines, ...extra.polylines] : base.layers.polylines,
+      heads: extra.heads,
     };
   }, [base, partialFeature, frac]);
 

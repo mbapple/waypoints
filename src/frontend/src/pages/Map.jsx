@@ -281,6 +281,7 @@ function MapPage() {
 					adventureMarkers={placeView ? [] : tripLayers.adventureMarkers}
 					placeMarkers={placeView ? placeView.placeMarkers : []}
 					polylines={placeView ? [] : tripLayers.polylines}
+					headMarkers={isTimeline ? tl.visible.heads : []}
 					bounds={placeView ? placeView.placeBounds : bounds}
 					highlightMode={highlightMode}
 					nodeById={nodeById}

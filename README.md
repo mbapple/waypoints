@@ -39,7 +39,13 @@ Backing up of photos coming.
 # Installation:
 Waypoints runs in three docker containers. 
 
-The quickest way to get set up:
+### 1. Copy Docker compose example
+```bash
+cp docker-compose.yml.example docker-compose.yml
+```
+### 2. Make any changes to paths or other in docker-compose.yml
+
+### 3. Launch the containers
 ```bash
 docker compose up
 ```

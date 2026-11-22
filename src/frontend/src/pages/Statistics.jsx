@@ -608,7 +608,7 @@ useEffect(() => {
 					<div style={{ marginTop: '1rem' }}>
 						<ListSlideshow />
 						<div style={{ marginTop: '0.5rem', textAlign: 'right' }}>
-							<Button size="sm" variant="secondary" onClick={() => window.location.href='/lists/create'}>Add List</Button>
+							<Button as={Link} to="/lists/create" size="sm" variant="secondary">Add List</Button>
 						</div>
 					</div>
 				</>

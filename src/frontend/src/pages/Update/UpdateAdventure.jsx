@@ -7,6 +7,8 @@ import AdventureForm from '../../components/forms/AdventureForm';
 import ConfirmDeleteButton from '../../components/common/ConfirmDeleteButton';
 import { getAdventure, updateAdventure, deleteAdventure } from '../../api/adventures';
 import { uploadPhoto, listPhotosByAdventure } from '../../api/photos';
+import { getIntegrationStatus } from '../../api/integrations';
+import ImmichPickerPopup from '../../components/photos/ImmichPickerPopup';
 
 export default function UpdateAdventure() {
   const navigate = useNavigate();
@@ -17,6 +19,8 @@ export default function UpdateAdventure() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [photos, setPhotos] = useState([]);
+  const [immichConfigured, setImmichConfigured] = useState(false);
+  const [immichOpen, setImmichOpen] = useState(false);
 
   useEffect(() => { (async () => {
     try {
@@ -40,6 +44,16 @@ export default function UpdateAdventure() {
     } catch (e) { console.error(e); alert('Failed to load adventure'); }
     finally { setLoading(false); }
   })(); }, [adventureID]);
+
+  useEffect(() => {
+    getIntegrationStatus()
+      .then(s => setImmichConfigured(!!s?.immich_configured))
+      .catch(() => setImmichConfigured(false));
+  }, []);
+
+  const refreshPhotos = async () => {
+    try { const ph = await listPhotosByAdventure(adventureID); setPhotos(ph); } catch {}
+  };
 
   const handleSubmit = async (data) => {
     setSaving(true);
@@ -76,8 +90,7 @@ export default function UpdateAdventure() {
       fd.append('file', file);
       fd.append('adventure_id', adventureID);
       await uploadPhoto(fd);
-      // refresh photos
-      try { const ph = await listPhotosByAdventure(adventureID); setPhotos(ph); } catch {}
+      await refreshPhotos();
     } catch (err) {
       console.error(err); alert('Upload failed');
     } finally {
@@ -109,14 +122,19 @@ export default function UpdateAdventure() {
         <Flex justify="space-between" align="center" wrap style={{ gap: '1rem' }}>
           <div>
             <Text weight="semibold">Photos</Text>
-            <Text variant="muted" size="sm">Upload a photo for this adventure</Text>
+            <Text variant="muted" size="sm">
+              {immichConfigured ? 'Upload a photo or link one from Immich' : 'Upload a photo for this adventure'}
+            </Text>
           </div>
-          <div>
+          <Flex gap={2} wrap>
             <label style={{ cursor: uploading ? 'not-allowed' : 'pointer' }}>
               <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleUpload} disabled={uploading} />
               <Button as="span" variant="primary" disabled={uploading}>{uploading ? 'Uploading…' : 'Upload Photo'}</Button>
             </label>
-          </div>
+            {immichConfigured && (
+              <Button variant="outline" onClick={() => setImmichOpen(true)}>Link from Immich</Button>
+            )}
+          </Flex>
         </Flex>
         {photos && photos.length > 0 && (
           <div style={{ marginTop: '1rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: '8px' }}>
@@ -129,6 +147,13 @@ export default function UpdateAdventure() {
           <Text variant="muted" size="sm" style={{ marginTop: '0.75rem' }}>No photos yet.</Text>
         )}
       </FormCard>
+      {immichOpen && (
+        <ImmichPickerPopup
+          adventureId={adventureID}
+          onClose={() => setImmichOpen(false)}
+          onLinked={refreshPhotos}
+        />
+      )}
       <DangerZone>
         <Text variant="danger" size="lg" style={{ marginBottom: '1rem' }}>Deleting is permanent.</Text>
         <ConfirmDeleteButton onConfirm={handleDelete}>Delete Adventure</ConfirmDeleteButton>

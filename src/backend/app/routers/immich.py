@@ -1,4 +1,4 @@
-"""Immich integration: browse a trip's photos in Immich and link them to the trip.
+"""Immich integration: browse photos in Immich and link them to trips and adventures.
 
 Every request to Immich is made here, server-side, with IMMICH_URL and
 IMMICH_API_KEY from .env. The browser never talks to Immich: it lists assets
@@ -146,27 +146,45 @@ def _asset_summary(asset: dict, linked_ids: set) -> Optional[dict]:
     }
 
 
-@router.get("/trips/{trip_id}/assets")
-def list_trip_assets(trip_id: int):
-    """Immich photos taken during the trip (local capture date within the trip's dates)."""
+def _adventure_date_range(cur, adventure_id: int):
+    cur.execute("SELECT start_date, end_date FROM adventures WHERE id = %s", (adventure_id,))
+    adv = cur.fetchone()
+    if not adv:
+        raise HTTPException(status_code=404, detail="Adventure not found")
+    start = adv["start_date"] or adv["end_date"]
+    end = adv["end_date"] or adv["start_date"]
+    if start is None:
+        raise HTTPException(status_code=400, detail="Adventure has no dates, so its Immich photos can't be found")
+    if end < start:
+        start, end = end, start
+    return start, end
+
+
+def _linked_asset_ids(cur, column: str, owner_id: int) -> set:
+    # column comes from a fixed set ("trip_id" / "adventure_id"), never user input
+    cur.execute(
+        f"SELECT immich_asset_id FROM photos WHERE {column} = %s AND immich_asset_id IS NOT NULL",
+        (owner_id,),
+    )
+    return {r["immich_asset_id"] for r in cur.fetchall()}
+
+
+def _list_assets(owner_column: str, owner_id: int, date_range_fn):
+    """Immich images whose local capture date is within the owner's dates."""
     if not _is_configured():
         raise HTTPException(status_code=503, detail="Immich is not configured (set IMMICH_URL and IMMICH_API_KEY in .env)")
 
     conn = get_db()
     try:
         cur = conn.cursor()
-        start, end = _trip_date_range(cur, trip_id)
-        cur.execute(
-            "SELECT immich_asset_id FROM photos WHERE trip_id = %s AND immich_asset_id IS NOT NULL",
-            (trip_id,),
-        )
-        linked_ids = {r["immich_asset_id"] for r in cur.fetchall()}
+        start, end = date_range_fn(cur, owner_id)
+        linked_ids = _linked_asset_ids(cur, owner_column, owner_id)
         cur.close()
     finally:
         conn.close()
 
     # Immich filters on UTC capture time. Pad a day on each side to cover any
-    # time zone, then keep photos whose *local* capture date is within the trip.
+    # time zone, then keep photos whose *local* capture date is within range.
     taken_after = datetime.combine(start - timedelta(days=1), time.min).isoformat() + "Z"
     taken_before = datetime.combine(end + timedelta(days=2), time.min).isoformat() + "Z"
 
@@ -205,6 +223,18 @@ def list_trip_assets(trip_id: int):
     return {"start_date": start_s, "end_date": end_s, "truncated": truncated, "assets": results}
 
 
+@router.get("/trips/{trip_id}/assets")
+def list_trip_assets(trip_id: int):
+    """Immich photos taken during the trip (local capture date within the trip's dates)."""
+    return _list_assets("trip_id", trip_id, _trip_date_range)
+
+
+@router.get("/adventures/{adventure_id}/assets")
+def list_adventure_assets(adventure_id: int):
+    """Immich photos taken during the adventure (local capture date within its dates)."""
+    return _list_assets("adventure_id", adventure_id, _adventure_date_range)
+
+
 @router.get("/assets/{asset_id}/{size}")
 def asset_image(asset_id: str, size: str):
     """Proxy an Immich thumbnail ('thumbnail', small) or 'preview' (large) image."""
@@ -221,7 +251,10 @@ def asset_image(asset_id: str, size: str):
 
 class LinkRequest(BaseModel):
     asset_id: str
-    trip_id: int
+    # Exactly one of trip_id / adventure_id
+    trip_id: Optional[int] = None
+    adventure_id: Optional[int] = None
+    # Trip links only: optionally attach to one of the trip's items
     node_id: Optional[int] = None
     leg_id: Optional[int] = None
     stop_id: Optional[int] = None
@@ -230,12 +263,16 @@ class LinkRequest(BaseModel):
 
 @router.post("/link")
 def link_asset(req: LinkRequest):
-    """Link an Immich photo to a trip, optionally to one of its nodes, legs or stops.
+    """Link an Immich photo to a trip (optionally one of its nodes, legs or stops) or an adventure.
 
     The photo is not copied: it's stored with a URL pointing at the image proxy.
     """
     asset_id = _check_asset_id(req.asset_id)
+    if (req.trip_id is None) == (req.adventure_id is None):
+        raise HTTPException(status_code=400, detail="Provide exactly one of trip_id or adventure_id")
     targets = {k: v for k, v in (("node_id", req.node_id), ("leg_id", req.leg_id), ("stop_id", req.stop_id)) if v is not None}
+    if req.adventure_id is not None and targets:
+        raise HTTPException(status_code=400, detail="Adventure photos can't be linked to a node, leg or stop")
     if len(targets) > 1:
         raise HTTPException(status_code=400, detail="Link to at most one of node_id, leg_id or stop_id")
 
@@ -243,32 +280,34 @@ def link_asset(req: LinkRequest):
     if asset.get("type") != "IMAGE":
         raise HTTPException(status_code=400, detail="Only Immich images can be linked")
 
+    if req.trip_id is not None:
+        owner_column, owner_id, owner_table, owner_label = "trip_id", req.trip_id, "trips", "trip"
+    else:
+        owner_column, owner_id, owner_table, owner_label = "adventure_id", req.adventure_id, "adventures", "adventure"
+
     conn = get_db()
     try:
         cur = conn.cursor()
-        cur.execute("SELECT 1 FROM trips WHERE id = %s", (req.trip_id,))
+        # owner_table / owner_column / TARGET_TABLES values are fixed strings, never user input
+        cur.execute(f"SELECT 1 FROM {owner_table} WHERE id = %s", (owner_id,))
         if not cur.fetchone():
-            raise HTTPException(status_code=404, detail="Trip not found")
+            raise HTTPException(status_code=404, detail=f"{owner_label.capitalize()} not found")
         for column, target_id in targets.items():
             cur.execute(f"SELECT trip_id FROM {TARGET_TABLES[column]} WHERE id = %s", (target_id,))
             row = cur.fetchone()
             if not row or row["trip_id"] != req.trip_id:
                 raise HTTPException(status_code=400, detail=f"{column} {target_id} does not belong to this trip")
-        cur.execute(
-            "SELECT id FROM photos WHERE trip_id = %s AND immich_asset_id = %s",
-            (req.trip_id, asset_id),
-        )
-        if cur.fetchone():
-            raise HTTPException(status_code=409, detail="This Immich photo is already linked to the trip")
+        if asset_id in _linked_asset_ids(cur, owner_column, owner_id):
+            raise HTTPException(status_code=409, detail=f"This Immich photo is already linked to the {owner_label}")
 
         url_path = f"{router.prefix}/assets/{asset_id}/preview"
         cur.execute(
             """
-            INSERT INTO photos (trip_id, leg_id, node_id, stop_id, url, description, immich_asset_id)
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            INSERT INTO photos (trip_id, adventure_id, leg_id, node_id, stop_id, url, description, immich_asset_id)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
             RETURNING id
             """,
-            (req.trip_id, req.leg_id, req.node_id, req.stop_id, url_path, req.description, asset_id),
+            (req.trip_id, req.adventure_id, req.leg_id, req.node_id, req.stop_id, url_path, req.description, asset_id),
         )
         row = cur.fetchone()
         conn.commit()

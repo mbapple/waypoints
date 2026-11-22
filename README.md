@@ -10,7 +10,7 @@ The main way to track travel is through the creation of trips and components:
 
 Nodes, Legs, and Stops are attached to places in Open Street Maps so that their coordinates can automatically be saved to contribute to the map of all your travels.
 
-Photos can also be uploaded and are attached to Trips themselves or any of the other types. If you use [Immich](https://immich.app), you can link photos from your library instead of uploading them. The picker shows the photos taken during the trip and suggests the node, leg or stop each one belongs to, based on its date and location.
+Photos can also be uploaded and are attached to Trips themselves or any of the other types. If you use [Immich](https://immich.app), you can link photos from your library instead of uploading them. The picker shows the photos taken during the trip and suggests the node, leg or stop each one belongs to, based on its date and location. Adventures can link Immich photos from their dates too, from the adventure's edit page.
 
 **Adventures:**
 `Adventures` are another way to track your journeys. They are similar in schema to `stops` but not associated. These are meant for your day trips, hikes, dives, anything special enough you want to track. They appear onside the map alongside the rest of your trips but don't contain the extra travel information.
@@ -78,7 +78,7 @@ frontend
 - [Nominatim](https://nominatim.org/): API used to search for places in Open Street Map.
 - [Open Route Service](https://openrouteservice.org): Automatically fetch driving path and distance between locations in a leg. Set `ORS_API_KEY` in `.env`. Requests are proxied through the backend, so the key never reaches the browser.
 - [OpenSky Network](https://opensky-network.org): Fetch the actual flown path of a flight from its flight number and date. Create a free OpenSky account, add an API client under Account, and set `OPENSKY_CLIENT_ID` and `OPENSKY_CLIENT_SECRET` in `.env`. OpenSky publishes flights the day after they fly and keeps tracks for about 30 days, so fetch the path within that window. The path is then stored in WayPoints. Flight numbers are matched to radio callsigns with [adsbdb](https://adsbdb.com) and airport codes with [hexdb.io](https://hexdb.io), which need no key. All requests go through the backend.
-- [Immich](https://immich.app): Link photos from your Immich library to a trip and its nodes, legs and stops. Set `IMMICH_URL` (as reachable from the backend container) and `IMMICH_API_KEY` (with `asset.read` and `asset.view` permissions) in `.env`. All Immich requests, including the images themselves, go through the backend. The browser never contacts Immich or sees the key. Linked photos are not copied, so they need Immich to be running to display.
+- [Immich](https://immich.app): Link photos from your Immich library to a trip and its nodes, legs and stops, or to an adventure. Set `IMMICH_URL` (as reachable from the backend container) and `IMMICH_API_KEY` (with `asset.read` and `asset.view` permissions) in `.env`. All Immich requests, including the images themselves, go through the backend. The browser never contacts Immich or sees the key. Linked photos are not copied, so they need Immich to be running to display.
 
 
 # License:

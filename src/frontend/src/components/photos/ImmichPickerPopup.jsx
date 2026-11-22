@@ -3,7 +3,7 @@ import styled from 'styled-components';
 import Popup from '../common/Popup';
 import PhotoTargetSelect, { targetToIds } from './PhotoTargetSelect';
 import { Button, Text, Flex, LoadingSpinner } from '../../styles/components';
-import { listTripImmichAssets, linkImmichAsset } from '../../api/immich';
+import { listTripImmichAssets, listAdventureImmichAssets, linkImmichAsset } from '../../api/immich';
 import { suggestPhotoTarget } from '../../utils/photoMatch';
 
 const DayHeading = styled.h4`
@@ -99,7 +99,12 @@ const placeOf = (a) => [a.city, a.state, a.country].filter(Boolean).join(', ');
 
 const errorMessage = (e, fallback) => e?.response?.data?.detail || fallback;
 
-export default function ImmichPickerPopup({ tripId, nodes, legs, stops, onClose, onLinked }) {
+// Pass tripId (with its nodes/legs/stops, so each photo can be attached to one of them)
+// or adventureId (photos link to the adventure itself).
+export default function ImmichPickerPopup({ tripId, adventureId, nodes = [], legs = [], stops = [], onClose, onLinked }) {
+  const isTrip = tripId != null && tripId !== '';
+  const ownerLabel = isTrip ? 'trip' : 'adventure';
+
   const [assets, setAssets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
@@ -112,7 +117,7 @@ export default function ImmichPickerPopup({ tripId, nodes, legs, stops, onClose,
 
   useEffect(() => {
     let cancelled = false;
-    listTripImmichAssets(tripId)
+    (isTrip ? listTripImmichAssets(tripId) : listAdventureImmichAssets(adventureId))
       .then(data => {
         if (cancelled) return;
         setAssets(data.assets || []);
@@ -121,7 +126,7 @@ export default function ImmichPickerPopup({ tripId, nodes, legs, stops, onClose,
       .catch(e => !cancelled && setLoadError(errorMessage(e, 'Could not load photos from Immich')))
       .finally(() => !cancelled && setLoading(false));
     return () => { cancelled = true; };
-  }, [tripId]);
+  }, [isTrip, tripId, adventureId]);
 
   const byDay = useMemo(() => {
     const groups = [];
@@ -134,7 +139,7 @@ export default function ImmichPickerPopup({ tripId, nodes, legs, stops, onClose,
   }, [assets]);
 
   const select = (asset) => {
-    const s = suggestPhotoTarget(asset, { nodes, legs, stops });
+    const s = isTrip ? suggestPhotoTarget(asset, { nodes, legs, stops }) : { target: '', reason: '' };
     setSelected(asset);
     setSuggestion(s);
     setTarget(s.target);
@@ -146,7 +151,9 @@ export default function ImmichPickerPopup({ tripId, nodes, legs, stops, onClose,
     setLinking(true);
     setLinkError('');
     try {
-      await linkImmichAsset({ asset_id: selected.id, trip_id: Number(tripId), ...targetToIds(target) });
+      await linkImmichAsset(isTrip
+        ? { asset_id: selected.id, trip_id: Number(tripId), ...targetToIds(target) }
+        : { asset_id: selected.id, adventure_id: Number(adventureId) });
       setAssets(prev => prev.map(a => (a.id === selected.id ? { ...a, linked: true } : a)));
       setSelected(null);
       onLinked && onLinked(target);
@@ -169,17 +176,23 @@ export default function ImmichPickerPopup({ tripId, nodes, legs, stops, onClose,
             <Text variant="muted" size="sm">
               {placeOf(selected) || (selected.latitude != null ? `${selected.latitude.toFixed(4)}, ${selected.longitude.toFixed(4)}` : 'No location')}
             </Text>
-            <label htmlFor="immich-link-target"><Text size="sm">Link this photo to:</Text></label>
-            <PhotoTargetSelect
-              id="immich-link-target"
-              nodes={nodes}
-              legs={legs}
-              stops={stops}
-              value={target}
-              onChange={setTarget}
-              placeholder="Trip only (no specific item)"
-            />
-            {suggestion.reason && (
+            {isTrip ? (
+              <>
+                <label htmlFor="immich-link-target"><Text size="sm">Link this photo to:</Text></label>
+                <PhotoTargetSelect
+                  id="immich-link-target"
+                  nodes={nodes}
+                  legs={legs}
+                  stops={stops}
+                  value={target}
+                  onChange={setTarget}
+                  placeholder="Trip only (no specific item)"
+                />
+              </>
+            ) : (
+              <Text size="sm">Link this photo to the adventure?</Text>
+            )}
+            {isTrip && suggestion.reason && (
               <Text variant="muted" size="xs">
                 {target === suggestion.target ? 'Suggested: ' : 'Suggestion was: '}{suggestion.reason}
               </Text>
@@ -205,13 +218,13 @@ export default function ImmichPickerPopup({ tripId, nodes, legs, stops, onClose,
       )}
       {loadError && <Text variant="danger">{loadError}</Text>}
       {!loading && !loadError && assets.length === 0 && (
-        <Text variant="muted">No Immich photos were taken during this trip's dates.</Text>
+        <Text variant="muted">No Immich photos were taken during this {ownerLabel}'s dates.</Text>
       )}
       {!loading && !loadError && assets.length > 0 && (
         <Text variant="muted" size="sm">
-          {assets.length} photo{assets.length === 1 ? '' : 's'} from this trip's dates
+          {assets.length} photo{assets.length === 1 ? '' : 's'} from this {ownerLabel}'s dates
           {linkedCount ? `, ${linkedCount} already linked` : ''}. Select one to link it.
-          {truncated && ' Only the first photos are shown; the trip has too many to list.'}
+          {truncated && ` Only the first photos are shown; the ${ownerLabel} has too many to list.`}
         </Text>
       )}
 

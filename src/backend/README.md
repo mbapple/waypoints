@@ -662,19 +662,24 @@ Response:
   ]
 }
 
+### GET `/api/integrations/immich/adventures/{adventure_id}/assets`
+Same as above for an adventure's `start_date`..`end_date` (`end_date` defaults to `start_date`). 400 if the adventure has no dates. `linked` means already linked to this adventure.
+
 ### GET `/api/integrations/immich/assets/{asset_id}/{size}`
 Image proxy. `size` is `thumbnail` (small) or `preview` (large JPEG/WebP).
 
 ### POST `/api/integrations/immich/link`
-Link an Immich image to a trip and, optionally, one of its nodes, legs or stops.
+Link an Immich image to a trip (optionally one of its nodes, legs or stops) or to an adventure. Give exactly one of `trip_id` / `adventure_id`.
 
 Request Body:
 { "asset_id": "<uuid>", "trip_id": 1, "node_id": 3, "leg_id": null, "stop_id": null, "description": null }
+or
+{ "asset_id": "<uuid>", "adventure_id": 4 }
 
 Response:
 { "id": 12, "url": "/api/integrations/immich/assets/<uuid>/preview", "immich_asset_id": "<uuid>" }
 
-Errors: 503 if Immich is not configured; 502 if Immich is unreachable or rejects the key; 404 if the asset or trip doesn't exist; 400 if more than one target is given or the target belongs to another trip; 409 if the photo is already linked to the trip.
+Errors: 503 if Immich is not configured; 502 if Immich is unreachable or rejects the key; 404 if the asset, trip or adventure doesn't exist; 400 if both or neither of trip_id/adventure_id are given, more than one target is given, a target is given for an adventure, or the target belongs to another trip; 409 if the photo is already linked to that trip or adventure.
 
 ## Data Models (summaries)
 

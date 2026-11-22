@@ -8,6 +8,11 @@ import { api } from './client';
 export const listTripImmichAssets = (tripId) =>
   api.get(`/integrations/immich/trips/${tripId}/assets`).then(r => r.data);
 
-// { asset_id, trip_id, node_id?, leg_id?, stop_id?, description? } -> { id, url, immich_asset_id }
+// Same response shape, for an adventure's start..end dates
+export const listAdventureImmichAssets = (adventureId) =>
+  api.get(`/integrations/immich/adventures/${adventureId}/assets`).then(r => r.data);
+
+// { asset_id, trip_id, node_id?, leg_id?, stop_id?, description? }
+//   or { asset_id, adventure_id, description? } -> { id, url, immich_asset_id }
 export const linkImmichAsset = (payload) =>
   api.post('/integrations/immich/link', payload).then(r => r.data);

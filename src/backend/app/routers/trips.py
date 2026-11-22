@@ -454,7 +454,7 @@ def get_trip_statistics():
     dest_rows = cur.fetchall() or []
     destinations_by_country = {r["osm_country"]: int(r["dest_count"] or 0) for r in dest_rows}
 
-    # Stops + adventures by category counts (ensure all categories present)
+    # Stops + adventures by category counts
     cur.execute(
         """
         SELECT category, COUNT(*) AS cnt
@@ -476,8 +476,10 @@ def get_trip_statistics():
         categories[r["category"]] = categories.get(r["category"], 0) + int(r["cnt"] or 0)
     for r in adv_cat_rows:
         categories[r["category"]] = categories.get(r["category"], 0) + int(r["cnt"] or 0)
-    for key in ('hotel','restaurant','attraction','park','other'):
-        categories.setdefault(key, 0)
+    # Every defined category appears, even with no stops or adventures yet
+    cur.execute("SELECT name FROM stop_categories")
+    for r in cur.fetchall() or []:
+        categories.setdefault(r["name"], 0)
 
     # Trip count
     cur.execute("SELECT COUNT(*) AS trip_count FROM trips")

@@ -1,15 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import Popup from '../../common/Popup';
 import { Text, Flex, Badge } from '../../../styles/components';
 import { getPlaceLink } from '../../map-integration-components';
 import { Link } from 'react-router-dom';
 import PhotoSlideshowLarge from '../../photos/PhotoSlideshowLarge';
-import { listPhotosByStop } from '../../../api/photos';
 import OtherVisits from '../OtherVisits';
 
-const StopPopup = ({ stop, onClose, onPhotosChanged }) => {
-  const [photos, setPhotos] = useState([]);
-  useEffect(() => { if (!stop) return; let active = true; (async () => { try { const ph = await listPhotosByStop(stop.id); if (active) setPhotos(ph || []); } catch {} })(); return () => { active = false; }; }, [stop]);
+// photos: this stop's photos, from the trip's photo list
+const StopPopup = ({ stop, photos = [], onClose, onPhotosChanged }) => {
   return (
     <Popup title={`Stop: ${stop.name}`} onClose={onClose}>
       <Flex gap={3} align="center" style={{ marginBottom: '0.75rem' }}>
@@ -30,7 +28,7 @@ const StopPopup = ({ stop, onClose, onPhotosChanged }) => {
       {stop.notes && <Text variant="muted" size="sm" style={{ display: 'block', whiteSpace: 'pre-wrap', marginTop: '0.5rem', marginBottom: photos && photos.length ? '0.75rem' : 0 }}><strong>Notes:</strong> {stop.notes}</Text>}
       {photos && photos.length > 0 && (
         <div style={{ marginTop: '0.25rem' }}>
-          <PhotoSlideshowLarge photos={photos} expandable onPhotoRemoved={onPhotosChanged && ((p) => { setPhotos(ps => ps.filter(x => x.id !== p.id)); onPhotosChanged(); })} />
+          <PhotoSlideshowLarge photos={photos} expandable onPhotoRemoved={onPhotosChanged} />
         </div>
       )}
       <OtherVisits osmId={stop.osm_id} currentTripId={stop.trip_id} />

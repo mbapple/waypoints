@@ -4,19 +4,17 @@ import { Text, Flex, Badge } from '../../../styles/components';
 import { Link } from 'react-router-dom';
 import { getPlaceLink } from '../../map-integration-components';
 import PhotoSlideshowLarge from '../../photos/PhotoSlideshowLarge';
-import { listPhotosByLeg } from '../../../api/photos';
 import { getTransportTypeLabel } from '../../../utils/format';
 import { getCarDetails, getFlightDetails } from '../../../api/legs';
 import { aircraftLabel } from '../../../utils/aircraftTypes';
 import AircraftPhoto from '../../flights/AircraftPhoto';
 
-const LegPopup = ({ leg, onClose, startName, endName, startNode, endNode, onPhotosChanged }) => {
-  const [photos, setPhotos] = useState([]);
+// photos: this leg's photos, from the trip's photo list
+const LegPopup = ({ leg, photos = [], onClose, startName, endName, startNode, endNode, onPhotosChanged }) => {
   const [car, setCar] = useState(null);
   const [flight, setFlight] = useState(null);
   useEffect(() => {
     if (!leg) return; let active = true; (async () => {
-      try { const ph = await listPhotosByLeg(leg.id); if (active) setPhotos(ph || []); } catch {}
       try {
         if (['car','bus'].includes((leg.type||'').toLowerCase())) { const c = await getCarDetails(leg.id); if (active) setCar(c); }
       } catch {}
@@ -92,7 +90,7 @@ const LegPopup = ({ leg, onClose, startName, endName, startNode, endNode, onPhot
       )}
       {photos && photos.length > 0 && (
         <div style={{ marginTop: '0.25rem' }}>
-          <PhotoSlideshowLarge photos={photos} expandable onPhotoRemoved={onPhotosChanged && ((p) => { setPhotos(ps => ps.filter(x => x.id !== p.id)); onPhotosChanged(); })} />
+          <PhotoSlideshowLarge photos={photos} expandable onPhotoRemoved={onPhotosChanged} />
         </div>
       )}
     </Popup>

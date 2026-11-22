@@ -1,25 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import Popup from '../../common/Popup';
 import { Text, Flex, Badge } from '../../../styles/components';
 import { getPlaceLink } from '../../map-integration-components';
 import { Link } from 'react-router-dom';
 import PhotoSlideshowLarge from '../../photos/PhotoSlideshowLarge';
-import { listPhotosByNode } from '../../../api/photos';
 import OtherVisits from '../OtherVisits';
 
-// Shows node info, photos, and other trips sharing this OSM feature
-const NodePopup = ({ node, onClose, currentTripId, onPhotosChanged }) => {
-  const [photos, setPhotos] = useState([]);
-
-  useEffect(() => {
-    if (!node) return;
-    let active = true;
-    (async () => {
-      try { const ph = await listPhotosByNode(node.id); if (active) setPhotos(ph || []); } catch {}
-    })();
-    return () => { active = false; };
-  }, [node]);
-
+// Shows node info, photos (from the trip's photo list), and other trips sharing this OSM feature
+const NodePopup = ({ node, photos = [], onClose, onPhotosChanged }) => {
   return (
     <Popup title={`Location: ${node.name}`} onClose={onClose}>
       <Flex gap={3} align="center" style={{ marginBottom: '0.75rem' }}>
@@ -40,10 +28,10 @@ const NodePopup = ({ node, onClose, currentTripId, onPhotosChanged }) => {
       )}
       {photos && photos.length > 0 && (
         <div style={{ marginTop: '0.25rem' }}>
-            <PhotoSlideshowLarge photos={photos} expandable onPhotoRemoved={onPhotosChanged && ((p) => { setPhotos(ps => ps.filter(x => x.id !== p.id)); onPhotosChanged(); })} />
+            <PhotoSlideshowLarge photos={photos} expandable onPhotoRemoved={onPhotosChanged} />
         </div>
       )}
-      <OtherVisits osmId={node.osm_id} currentTripId={node.trip_id ?? currentTripId} />
+      <OtherVisits osmId={node.osm_id} currentTripId={node.trip_id} />
     </Popup>
   );
 };

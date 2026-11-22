@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Form, FormGroup, Label, Input, Select, Button } from "../../styles/components";
+import { Form, FormGroup, Label, Input, Select, Button, CheckboxLabel, Checkbox } from "../../styles/components";
 import { PlaceSearchInput } from "../map-integration-components";
 import { placeToOsmFields } from "../../utils/places";
 import { getTransportTypeLabel } from "../../utils/format";
@@ -21,6 +21,7 @@ export default function StopForm({
     osmState: "",
   start_date: "",
   end_date: "",
+    isLodging: false,
   },
   onSubmit,
   onCancel,
@@ -145,6 +146,16 @@ export default function StopForm({
         <Label htmlFor="notes">Notes</Label>
         <Input id="notes" name="notes" as="textarea" rows={4} value={formData.notes} onChange={handleChange} placeholder="Any additional notes about this stop..." />
       </FormGroup>
+
+      <CheckboxLabel>
+        <Checkbox
+          id="isLodging"
+          name="isLodging"
+          checked={!!formData.isLodging}
+          onChange={(e) => setFormData(prev => ({ ...prev, isLodging: e.target.checked }))}
+        />
+        Lodging (somewhere you stay overnight, e.g. hotel, campsite)
+      </CheckboxLabel>
 
       <div style={{ display: 'flex', gap: 12 }}>
         {onCancel && (<Button type="button" variant="outline" onClick={onCancel}>Cancel</Button>)}

@@ -30,6 +30,7 @@ function UpdateStop() {
     osmState: "",
   start_date: "",
   end_date: "",
+    isLodging: false,
   });
 
   const [nodes, setNodes] = useState([]);
@@ -74,6 +75,7 @@ function UpdateStop() {
           osmState: s.osm_state || "",
           start_date: s.start_date || "",
           end_date: s.end_date || "",
+          isLodging: !!s.is_lodging,
         });
       } catch (e) {
         console.error(e);
@@ -103,6 +105,7 @@ function UpdateStop() {
         osm_state: data.osmState || null,
   start_date: data.start_date || null,
   end_date: data.end_date || null,
+        is_lodging: !!data.isLodging,
       });
       navigate(`/trip/${tripID}`);
     } catch (err) {

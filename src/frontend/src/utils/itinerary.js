@@ -4,25 +4,11 @@
 //   legGroups – legs that day, chained through invisible nodes into one group per visible-node hop
 //              (Austin → DFW → Denver becomes one "Austin → Denver via DFW" group)
 //   stops     – stops that day (everything except lodging)
-//   lodging   – lodging stops (hotel / hostel / campground …) for that night
+//   lodging   – stops flagged is_lodging (hotel, campsite …) for each night they cover
 //   nodes     – the visible nodes you are at that day
 // Anything that can't be placed on a day of the trip ends up in `unscheduled`.
 //
 // Dates are plain 'YYYY-MM-DD' strings throughout, so string comparison orders them.
-
-// Stop categories treated as somewhere you stay overnight (matched case-insensitively,
-// also as a word inside a longer category such as "Boutique hotel").
-const LODGING_WORDS = [
-  'hotel', 'motel', 'hostel', 'inn', 'lodge', 'lodging', 'accommodation', 'resort', 'airbnb',
-  'bnb', 'b&b', 'guesthouse', 'guest house', 'cabin', 'campground', 'campsite', 'camping',
-  'camp', 'rv park', 'glamping', 'stay', 'apartment', 'villa', 'hut', 'refuge',
-];
-
-export function isLodging(stop) {
-  const cat = String(stop?.category || '').toLowerCase().trim();
-  if (!cat) return false;
-  return LODGING_WORDS.some((w) => cat === w || new RegExp(`(^|[^a-z])${w.replace(/[.*+?^${}()|[\]\\&]/g, '\\$&')}s?($|[^a-z])`).test(cat));
-}
 
 const DAY_MS = 86400000;
 
@@ -161,7 +147,7 @@ export function buildItinerary({ trip, nodes = [], legs = [], stops = [] }) {
 
   // Stops and lodging
   for (const s of stops) {
-    if (isLodging(s)) {
+    if (s.is_lodging) {
       const nights = lodgingNights(s, nodeById).filter((d) => dayIndex.has(d));
       if (!nights.length) { unscheduled.stops.push(s); continue; }
       const checkOut = s.end_date && s.end_date > (s.start_date || '') ? s.end_date : null;

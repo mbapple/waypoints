@@ -1,8 +1,20 @@
 // Photo-first card used by the trip and adventure list pages: a full-bleed image
 // header (or placeholder), then a compact body with title, muted meta line and pills.
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { Card } from '../../styles/components';
+
+// Height in px of the card image header: a little shorter on narrow screens.
+export function useMediaHeight() {
+  const pick = () => (window.innerWidth < 768 ? 200 : 220);
+  const [height, setHeight] = useState(pick);
+  useEffect(() => {
+    const onResize = () => setHeight(pick());
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+  return height;
+}
 
 export const CardGrid = styled.div`
   display: grid;

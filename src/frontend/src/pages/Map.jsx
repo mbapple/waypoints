@@ -135,9 +135,7 @@ function MapPage() {
 				code: r.code,
 				pos: [r.latitude, r.longitude],
 				trips: r.trips,
-				countLabel: mapView === "airports"
-					? plural(r.visit_count, "visit")
-					: plural(r.trips?.length || 0, "trip"),
+				countLabel: plural(r.trips?.length || 0, "trip"),
 			}));
 		const placeBounds = placeMarkers.length ? L.latLngBounds(placeMarkers.map((m) => m.pos)) : bounds;
 		return { placeMarkers, placeBounds, loaded: (mapView === "airports" ? airports : cities) !== null };

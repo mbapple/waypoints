@@ -23,3 +23,9 @@ export const fetchFlightTrack = ({ flight_number, date, start_airport, end_airpo
     start_airport: start_airport || null,
     end_airport: end_airport || null,
   }).then(r => r.data);
+
+// Scheduled route for a flight number (adsbdb via the backend; no key needed)
+// -> { callsign, airline: { name, iata, icao } | null, origin, destination }
+//    origin/destination: { iata, icao, name, latitude, longitude, municipality, country } | null
+export const lookupFlightRoute = (flightNumber) =>
+  api.get('/integrations/opensky/route', { params: { flight_number: flightNumber } }).then(r => r.data);

@@ -1,5 +1,6 @@
+import psycopg2
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 #from src.backend.app.connect import get_db
 from .connect import get_db
@@ -53,6 +54,143 @@ def create_trip(trip: Trip):
     cur.close()
     conn.close()
     return {"message": "Trip created", "id": row["id"]}
+
+
+# --- Quick create: a whole trip (nodes, legs, car/flight details) in one transaction ---
+
+class QuickNode(BaseModel):
+    name: str = Field(..., min_length=1)
+    description: str | None = None
+    notes: str | None = None
+    arrival_date: str | None = None
+    departure_date: str | None = None
+    latitude: float | None = None
+    longitude: float | None = None
+    osm_name: str | None = None
+    osm_id: str | None = None
+    osm_country: str | None = None
+    osm_state: str | None = None
+    invisible: bool | None = None
+
+
+class QuickCarDetails(BaseModel):
+    driving_time_seconds: int | None = None
+    polyline: str | None = None
+
+
+class QuickFlightDetails(BaseModel):
+    flight_number: str | None = None
+    airline: str | None = None
+    start_airport: str | None = None
+    end_airport: str | None = None
+    polyline: str | None = None
+    track_source: str | None = None
+
+
+class QuickLeg(BaseModel):
+    start_index: int  # positions in QuickTripCreate.nodes
+    end_index: int
+    type: str = Field(..., min_length=1)
+    date: str
+    notes: str | None = None
+    start_latitude: float | None = None
+    start_longitude: float | None = None
+    end_latitude: float | None = None
+    end_longitude: float | None = None
+    start_osm_name: str | None = None
+    start_osm_id: str | None = None
+    start_osm_country: str | None = None
+    start_osm_state: str | None = None
+    end_osm_name: str | None = None
+    end_osm_id: str | None = None
+    end_osm_country: str | None = None
+    end_osm_state: str | None = None
+    miles: float | None = None
+    car: QuickCarDetails | None = None
+    flight: QuickFlightDetails | None = None
+
+
+class QuickTripCreate(BaseModel):
+    trip: Trip
+    nodes: list[QuickNode]
+    legs: list[QuickLeg] = Field(default_factory=list)
+
+
+@router.post("/quick")
+def create_trip_quick(payload: QuickTripCreate):
+    """Create a trip with its nodes, legs and car/flight details atomically:
+    either everything is saved or nothing is."""
+    if len(payload.nodes) < 2:
+        raise HTTPException(status_code=400, detail="A trip needs at least two nodes")
+    for i, leg in enumerate(payload.legs):
+        for idx in (leg.start_index, leg.end_index):
+            if not 0 <= idx < len(payload.nodes):
+                raise HTTPException(status_code=400, detail=f"Leg {i + 1} refers to a node that doesn't exist")
+        if leg.start_index == leg.end_index:
+            raise HTTPException(status_code=400, detail=f"Leg {i + 1} starts and ends at the same node")
+
+    t = payload.trip
+    conn = get_db()
+    cur = conn.cursor()
+    try:
+        cur.execute(
+            "INSERT INTO trips (name, start_date, end_date, description) VALUES (%s, %s, %s, %s) RETURNING id",
+            (t.name, t.start_date, t.end_date, t.description),
+        )
+        trip_id = cur.fetchone()["id"]
+
+        node_ids = []
+        for n in payload.nodes:
+            cur.execute(
+                """
+                INSERT INTO nodes (trip_id, name, description, notes, arrival_date, departure_date, latitude, longitude, osm_name, osm_id, osm_country, osm_state, invisible)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                RETURNING id
+                """,
+                (trip_id, n.name, n.description, n.notes, n.arrival_date, n.departure_date, n.latitude, n.longitude,
+                 n.osm_name, n.osm_id, n.osm_country, n.osm_state, n.invisible),
+            )
+            node_ids.append(cur.fetchone()["id"])
+
+        for leg in payload.legs:
+            cur.execute(
+                """
+                INSERT INTO legs (trip_id, type, notes, date, start_node_id, end_node_id, start_latitude, start_longitude, end_latitude, end_longitude, start_osm_name, start_osm_id, start_osm_country, start_osm_state, end_osm_name, end_osm_id, end_osm_country, end_osm_state, miles)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                RETURNING id
+                """,
+                (trip_id, leg.type, leg.notes, leg.date, node_ids[leg.start_index], node_ids[leg.end_index],
+                 leg.start_latitude, leg.start_longitude, leg.end_latitude, leg.end_longitude,
+                 leg.start_osm_name, leg.start_osm_id, leg.start_osm_country, leg.start_osm_state,
+                 leg.end_osm_name, leg.end_osm_id, leg.end_osm_country, leg.end_osm_state, leg.miles),
+            )
+            leg_id = cur.fetchone()["id"]
+            if leg.car:
+                cur.execute(
+                    "INSERT INTO car_details (leg_id, driving_time_seconds, polyline) VALUES (%s, %s, %s)",
+                    (leg_id, leg.car.driving_time_seconds, leg.car.polyline),
+                )
+            if leg.flight:
+                f = leg.flight
+                cur.execute(
+                    """
+                    INSERT INTO flight_details (leg_id, flight_number, airline, start_airport, end_airport, polyline, track_source)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s)
+                    """,
+                    (leg_id, f.flight_number, f.airline, f.start_airport, f.end_airport, f.polyline, f.track_source),
+                )
+        conn.commit()
+    except psycopg2.DataError as e:  # e.g. a malformed date
+        conn.rollback()
+        raise HTTPException(status_code=400, detail=f"Invalid value: {e.diag.message_primary or 'bad data'}")
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        cur.close()
+        conn.close()
+
+    return {"message": "Trip created", "id": trip_id, "node_ids": node_ids}
 
 
 @router.get("/{trip_id}")

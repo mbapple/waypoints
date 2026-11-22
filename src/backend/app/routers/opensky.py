@@ -26,7 +26,7 @@ import urllib.request
 from datetime import date, datetime, timedelta, timezone
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
 import config
@@ -194,6 +194,8 @@ def _airport_summary(a: Optional[dict]) -> Optional[dict]:
         "name": a.get("name"),
         "latitude": a.get("latitude"),
         "longitude": a.get("longitude"),
+        "municipality": a.get("municipality"),
+        "country": a.get("country_name"),
     }
 
 
@@ -224,7 +226,29 @@ def _find_flight(mode: str, airport: str, other_airport: Optional[str], day: dat
     return None
 
 
-# --- Endpoint ----------------------------------------------------------------
+# --- Endpoints ---------------------------------------------------------------
+
+@router.get("/route")
+def flight_route(flight_number: str = Query(..., min_length=2, max_length=12)):
+    """Scheduled route for a flight number via adsbdb (keyless, so it works
+    without OpenSky credentials): airline and origin/destination airports.
+    This is the route the flight number flies today, which is usually but not
+    always the route it flew in the past."""
+    flight = _normalize_code(flight_number)
+    if not FLIGHT_NUMBER_RE.match(flight):
+        raise HTTPException(status_code=400, detail="Enter a flight number like BA117 or BAW117")
+    route = (_lookup(f"{ADSBDB_API}/callsign/{flight}", "adsbdb") or {}).get("response")
+    route = (route or {}).get("flightroute") if isinstance(route, dict) else None
+    if not route:
+        raise HTTPException(status_code=404, detail=f"No route found for {flight}")
+    airline = route.get("airline") or {}
+    return {
+        "callsign": route.get("callsign_icao") or route.get("callsign"),
+        "airline": {"name": airline.get("name"), "iata": airline.get("iata"), "icao": airline.get("icao")} if airline else None,
+        "origin": _airport_summary(route.get("origin")),
+        "destination": _airport_summary(route.get("destination")),
+    }
+
 
 @router.post("/flight-track")
 def flight_track(req: FlightTrackRequest):

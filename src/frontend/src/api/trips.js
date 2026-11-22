@@ -14,3 +14,5 @@ export const getNodesByCountry = (country) => api.get('/trips/data/nodes_by_coun
 export const getNodesByState = (state, country) => api.get('/trips/data/nodes_by_state', { params: { state, country } }).then(r => r.data);
 export const getTripsByOsm = (osm_id) => api.get('/trips/data/trips_by_osm', { params: { osm_id } }).then(r => r.data);
 export const getStopsByCategory = (category) => api.get('/trips/data/stops_by_category', { params: { category } }).then(r => r.data);
+// Whole trip in one transaction: { trip, nodes: [...], legs: [{ start_index, end_index, ..., car, flight }] }
+export const createTripQuick = (payload) => api.post('/trips/quick', payload).then(r => r.data);

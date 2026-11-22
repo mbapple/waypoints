@@ -25,10 +25,10 @@ src/
       App.jsx              # all routes
       api/                 # one module per backend resource
       pages/               # route-level pages (Create/, Update/, Lists/ subfolders)
-      components/          # reusable components (common/, forms/, trip-details/, photos/, map/, lists/)
+      components/          # reusable components (common/, forms/, trip-details/, photos/, map/, lists/, quick-trip/)
       context/SettingsContext.js   # per-browser UI prefs (theme, font scale) in localStorage
       styles/              # theme.js tokens, components.js styled primitives, mapTheme.js
-      utils/               # geo, formatting, map data helpers
+      utils/               # geo, formatting, map data helpers; quickTrip.js = Quick Create resolver
   database/init.sql        # legacy schema reference only, NOT executed (Alembic owns the schema)
 ```
 

@@ -7,7 +7,18 @@ export function placeToOsmFields(place) {
     osmID: place?.osm_id ?? "",
     osmCountry: place?.osm_country ?? "",
     osmState: place?.osm_state ?? "",
+    shortName: place?.shortName ?? "", // UI-only (display-name autofill); not sent to the API
   };
+}
+
+// Short display name for a place: the settlement from the address, else the
+// first part of the full name ("Paris, Île-de-France, France" -> "Paris").
+export function placeShortName(place) {
+  const a = place?.address || {};
+  return (
+    a.city || a.town || a.village || a.hamlet || a.municipality ||
+    String(place?.display_name || place?.name || "").split(",")[0].trim()
+  );
 }
 
 export function placeToLegStart(place) {

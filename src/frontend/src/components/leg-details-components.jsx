@@ -1,8 +1,9 @@
 // Components and helpers for leg-specific detail capture (Car, etc.)
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useId, useRef, useState } from 'react';
 import styled from 'styled-components';
 import { Input, Label, FormGroup, Text, Button, Flex } from '../styles/components';
-import { getIntegrationStatus, fetchDrivingRoute, fetchFlightTrack } from '../api/integrations';
+import { getIntegrationStatus, fetchDrivingRoute, fetchFlightTrack, lookupFlightRoute } from '../api/integrations';
+import { haversineMiles } from '../utils/geo';
 
 const Inline = styled.div`
   display: grid;
@@ -164,16 +165,7 @@ export const CarDetails = ({
   );
 };
 
-// Haversine distance in miles
-export function haversineMiles(lat1, lon1, lat2, lon2) {
-  const toRad = (deg) => (deg * Math.PI) / 180;
-  const R = 3958.7613; // Earth radius miles
-  const dLat = toRad(lat2 - lat1);
-  const dLon = toRad(lon2 - lon1);
-  const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
-  const c = 2 * Math.asin(Math.sqrt(a));
-  return R * c;
-}
+export { haversineMiles };
 
 // Recorded flight path via OpenSky (proxied through the backend, which holds the
 // OpenSky credentials). OpenSky publishes flights the day after they fly and keeps
@@ -200,18 +192,28 @@ function formatUtc(seconds) {
   return `${d.toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'UTC' })} UTC`;
 }
 
+const airportLabel = (a) => {
+  if (!a) return null;
+  const code = a.iata || a.icao;
+  return a.name ? `${a.name}${code ? ` (${code})` : ''}` : code;
+};
+
 export const FlightDetails = ({
   start,
   end,
   date,
   onAutoFill,
+  onRouteLookup, // ({ origin, destination }) after a flight-number lookup; airports have latitude/longitude
   initialFlightNumber,
   initialAirline,
   initialStartAirport,
   initialEndAirport,
   initialPolyline,
   initialTrackSource,
+  defaultStartAirport, // suggestions adopted into fields the user hasn't typed in
+  defaultEndAirport,
 }) => {
+  const uid = useId();
   const [flightNumber, setFlightNumber] = useState(initialFlightNumber || '');
   const [airline, setAirline] = useState(initialAirline || '');
   const [startAirport, setStartAirport] = useState(initialStartAirport || '');
@@ -220,6 +222,12 @@ export const FlightDetails = ({
   const [openskyConfigured, setOpenskyConfigured] = useState(null);
   const [fetching, setFetching] = useState(false);
   const [trackMessage, setTrackMessage] = useState(null); // { text, error }
+  const [lookingUp, setLookingUp] = useState(false);
+  const [lookupMessage, setLookupMessage] = useState(null); // { text, error }
+  // Airport fields with a value the user typed (or a lookup set) aren't replaced by defaults
+  const pinned = useRef({ start: Boolean(initialStartAirport), end: Boolean(initialEndAirport) });
+  const lastLookedUp = useRef((initialFlightNumber || '').trim().toUpperCase());
+  const lookupInFlight = useRef(false);
 
   useEffect(() => {
     let active = true;
@@ -228,6 +236,13 @@ export const FlightDetails = ({
       .catch(() => { if (active) setOpenskyConfigured(false); });
     return () => { active = false; };
   }, []);
+
+  useEffect(() => {
+    if (defaultStartAirport !== undefined && !pinned.current.start) setStartAirport(defaultStartAirport || '');
+  }, [defaultStartAirport]);
+  useEffect(() => {
+    if (defaultEndAirport !== undefined && !pinned.current.end) setEndAirport(defaultEndAirport || '');
+  }, [defaultEndAirport]);
 
   // Auto-calc miles when coords available
   useEffect(() => {
@@ -249,6 +264,47 @@ export const FlightDetails = ({
       flight_track_source: track.source,
     });
   }, [flightNumber, airline, startAirport, endAirport, track, onAutoFill]);
+
+  const lookupRoute = async () => {
+    const number = flightNumber.trim();
+    if (number.length < 3 || lookupInFlight.current) return; // blur + click can both fire
+    lookupInFlight.current = true;
+    lastLookedUp.current = number.toUpperCase();
+    setLookingUp(true);
+    setLookupMessage(null);
+    try {
+      const data = await lookupFlightRoute(number);
+      const origin = data?.origin;
+      const destination = data?.destination;
+      const originCode = origin?.iata || origin?.icao;
+      const destinationCode = destination?.iata || destination?.icao;
+      if (data?.airline?.name && !airline.trim()) setAirline(data.airline.name);
+      if (originCode && (!startAirport.trim() || !pinned.current.start)) {
+        setStartAirport(originCode);
+        pinned.current.start = true;
+      }
+      if (destinationCode && (!endAirport.trim() || !pinned.current.end)) {
+        setEndAirport(destinationCode);
+        pinned.current.end = true;
+      }
+      onRouteLookup?.({ origin, destination });
+      const route = [airportLabel(origin), airportLabel(destination)].filter(Boolean).join(' → ');
+      setLookupMessage({
+        text: `${data?.callsign || number.toUpperCase()}${data?.airline?.name ? ` (${data.airline.name})` : ''}${route ? `: ${route}` : ''}. This is the route the flight number flies today.`,
+      });
+    } catch (e) {
+      const detail = e?.response?.data?.detail;
+      setLookupMessage({ text: typeof detail === 'string' ? detail : 'Could not look up this flight.', error: true });
+    } finally {
+      lookupInFlight.current = false;
+      setLookingUp(false);
+    }
+  };
+
+  const onFlightNumberBlur = () => {
+    const number = flightNumber.trim().toUpperCase();
+    if (number.length >= 3 && number !== lastLookedUp.current) lookupRoute();
+  };
 
   const unavailableReason = trackAvailability(date);
   const canFetchTrack = openskyConfigured && flightNumber.trim() && !unavailableReason && !fetching;
@@ -294,22 +350,49 @@ export const FlightDetails = ({
       <Text variant="secondary">Flight details</Text>
       <Inline>
         <FormGroup>
-          <Label htmlFor="flightNumber">Flight Number</Label>
-          <Input id="flightNumber" value={flightNumber} onChange={(e) => setFlightNumber(e.target.value)} />
+          <Label htmlFor={`${uid}-flightNumber`}>Flight Number</Label>
+          <Flex gap={3}>
+            <Input
+              id={`${uid}-flightNumber`}
+              placeholder="e.g. BA117"
+              value={flightNumber}
+              onChange={(e) => setFlightNumber(e.target.value)}
+              onBlur={onFlightNumberBlur}
+              style={{ flex: 1 }}
+            />
+            <Button type="button" size="sm" variant="outline" disabled={lookingUp || flightNumber.trim().length < 3} onClick={lookupRoute}>
+              {lookingUp ? 'Looking up…' : 'Look up'}
+            </Button>
+          </Flex>
         </FormGroup>
         <FormGroup>
-          <Label htmlFor="airline">Airline</Label>
-          <Input id="airline" value={airline} onChange={(e) => setAirline(e.target.value)} />
+          <Label htmlFor={`${uid}-airline`}>Airline</Label>
+          <Input id={`${uid}-airline`} value={airline} onChange={(e) => setAirline(e.target.value)} />
         </FormGroup>
       </Inline>
+      {lookupMessage && (
+        <Text variant={lookupMessage.error ? 'danger' : 'muted'} size="sm" style={{ display: 'block', marginBottom: 6 }}>
+          {lookupMessage.text}
+        </Text>
+      )}
       <Inline>
         <FormGroup>
-          <Label htmlFor="startAirport">Start Airport</Label>
-          <Input id="startAirport" placeholder="e.g. LHR" value={startAirport} onChange={(e) => setStartAirport(e.target.value)} />
+          <Label htmlFor={`${uid}-startAirport`}>Start Airport</Label>
+          <Input
+            id={`${uid}-startAirport`}
+            placeholder="e.g. LHR"
+            value={startAirport}
+            onChange={(e) => { pinned.current.start = Boolean(e.target.value.trim()); setStartAirport(e.target.value); }}
+          />
         </FormGroup>
         <FormGroup>
-          <Label htmlFor="endAirport">End Airport</Label>
-          <Input id="endAirport" placeholder="e.g. JFK" value={endAirport} onChange={(e) => setEndAirport(e.target.value)} />
+          <Label htmlFor={`${uid}-endAirport`}>End Airport</Label>
+          <Input
+            id={`${uid}-endAirport`}
+            placeholder="e.g. JFK"
+            value={endAirport}
+            onChange={(e) => { pinned.current.end = Boolean(e.target.value.trim()); setEndAirport(e.target.value); }}
+          />
         </FormGroup>
       </Inline>
 

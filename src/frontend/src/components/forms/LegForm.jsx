@@ -124,6 +124,27 @@ export default function LegForm({
     }));
   }, []);
 
+  // After a flight-number lookup, move endpoints that still sit on their node to the airport
+  const handleRouteLookup = useCallback(({ origin, destination }) => {
+    const atNode = (lat, lon, node) =>
+      lat === "" || lat == null || !node ||
+      (Number(lat) === Number(node.latitude) && Number(lon) === Number(node.longitude));
+    const airportFields = (a, prefix) => (a && Number.isFinite(Number(a.latitude)) && Number.isFinite(Number(a.longitude)) ? {
+      [`${prefix}_latitude`]: Number(a.latitude),
+      [`${prefix}_longitude`]: Number(a.longitude),
+      [`${prefix}_osm_name`]: a.name || a.iata || a.icao || "",
+      [`${prefix}_osm_id`]: "",
+      [`${prefix}_osm_country`]: a.country || "",
+      [`${prefix}_osm_state`]: "",
+    } : {});
+    setFormData(prev => ({
+      ...prev,
+      ...(atNode(prev.start_latitude, prev.start_longitude, selectedFromNode) ? airportFields(origin, "start") : {}),
+      ...(atNode(prev.end_latitude, prev.end_longitude, selectedToNode) ? airportFields(destination, "end") : {}),
+      miles: "", // recomputed from the new endpoints
+    }));
+  }, [selectedFromNode, selectedToNode]);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -229,6 +250,7 @@ export default function LegForm({
             initialPolyline={formData.flight_polyline}
             initialTrackSource={formData.flight_track_source}
             onAutoFill={handleFlightAutoFill}
+            onRouteLookup={handleRouteLookup}
           />
         </FormGroup>
       )}

@@ -39,6 +39,34 @@ Response:
   "id": 123
 }
 
+### POST `/api/trips/quick`
+Create a trip with all its nodes, legs and car/flight details in one transaction (used by Quick Create). Either everything is saved or nothing is. Legs refer to nodes by their position in `nodes`.
+
+Request Body:
+{
+  "trip": { "name": "Paris & Rome 2026", "start_date": "2026-05-01", "end_date": "2026-05-06", "description": null },
+  "nodes": [
+    { "name": "London", "arrival_date": "2026-05-01", "departure_date": "2026-05-01", "latitude": 51.5, "longitude": -0.12, "osm_name": "...", "osm_id": "R65606", "osm_country": "United Kingdom", "osm_state": "England", "invisible": false },
+    { "name": "Paris", ... }
+  ],
+  "legs": [
+    {
+      "start_index": 0, "end_index": 1, "type": "flight", "date": "2026-05-01", "notes": null,
+      "start_latitude": 51.47, "start_longitude": -0.46, "start_osm_name": "London Heathrow Airport", ...,
+      "miles": 216.4,
+      "car": null,
+      "flight": { "flight_number": "BA304", "airline": "British Airways", "start_airport": "LHR", "end_airport": "CDG", "polyline": null, "track_source": null }
+    }
+  ]
+}
+
+Node fields match `POST /api/nodes/` (without `trip_id`); leg fields match `POST /api/legs/` (without the ids). `car` is `{ "driving_time_seconds", "polyline" }`.
+
+Response:
+{ "message": "Trip created", "id": 123, "node_ids": [456, 457] }
+
+Errors: 400 if there are fewer than two nodes, a leg's indices are out of range or equal, or a value (such as a date) is malformed; 422 for invalid fields.
+
 ### GET `/api/trips/{trip_id}`
 Get a specific trip by ID.
 
@@ -611,6 +639,19 @@ Response:
 Errors: 503 if `ORS_API_KEY` is not set; 502 if OpenRouteService fails or is unreachable.
 
 ## OpenSky API (`/api/integrations/opensky`)
+
+### GET `/api/integrations/opensky/route?flight_number=BA117`
+The scheduled route for a flight number, from adsbdb (no key; works without OpenSky credentials). This is the route the number flies today, which is usually but not always what it flew in the past. Used to autofill a flight leg's airline and airports.
+
+Response:
+{
+  "callsign": "BAW117",
+  "airline": { "name": "British Airways", "iata": "BA", "icao": "BAW" } | null,
+  "origin": { "iata": "LHR", "icao": "EGLL", "name": "London Heathrow Airport", "latitude": 51.47, "longitude": -0.46, "municipality": "London", "country": "United Kingdom" },
+  "destination": { ... }
+}
+
+Errors: 400 for an unrecognisable flight number; 404 if adsbdb doesn't know the flight.
 
 ### POST `/api/integrations/opensky/flight-track`
 The path a flight actually flew, from the OpenSky Network (requires `OPENSKY_CLIENT_ID` and `OPENSKY_CLIENT_SECRET`). The flight number is turned into its ICAO radio callsign (`BA117` → `BAW117`) with adsbdb. The airports come from the request (IATA or ICAO codes; IATA is converted with hexdb.io) or else from adsbdb's current route for that flight number. OpenSky's departures (then arrivals) for that airport around the date give the aircraft, and `/tracks/all` gives its track. Nothing is saved: store `coordinates` on the leg's flight details.

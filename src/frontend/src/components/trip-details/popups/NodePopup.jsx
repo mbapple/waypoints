@@ -1,34 +1,24 @@
 import React, { useEffect, useState } from 'react';
 import Popup from '../../common/Popup';
-import { Text, Flex, Badge, Select } from '../../../styles/components';
+import { Text, Flex, Badge } from '../../../styles/components';
 import { getPlaceLink } from '../../map-integration-components';
 import { Link } from 'react-router-dom';
 import PhotoSlideshowLarge from '../../photos/PhotoSlideshowLarge';
 import { listPhotosByNode } from '../../../api/photos';
-import { getTripsByOsm } from '../../../api/trips';
+import OtherVisits from '../OtherVisits';
 
 // Shows node info, photos, and other trips sharing this OSM feature
 const NodePopup = ({ node, onClose, currentTripId }) => {
   const [photos, setPhotos] = useState([]);
-  const [otherTrips, setOtherTrips] = useState([]); // all trips from API
-  const [selectedTripId, setSelectedTripId] = useState(String(currentTripId));
 
   useEffect(() => {
     if (!node) return;
     let active = true;
     (async () => {
       try { const ph = await listPhotosByNode(node.id); if (active) setPhotos(ph || []); } catch {}
-      try {
-        if (node.osm_id) {
-          const trips = await getTripsByOsm(node.osm_id);
-          if (active) setOtherTrips(trips || []);
-        }
-      } catch {}
     })();
     return () => { active = false; };
   }, [node]);
-
-  const visibleTrips = otherTrips.filter(t => t.id !== currentTripId);
 
   return (
     <Popup title={`Location: ${node.name}`} onClose={onClose}>
@@ -53,22 +43,7 @@ const NodePopup = ({ node, onClose, currentTripId }) => {
             <PhotoSlideshowLarge photos={photos} />
         </div>
       )}
-      {visibleTrips.length > 0 && (
-        <div style={{ marginTop: '1rem' }}>
-          <Text variant="secondary" size="sm" style={{ display: 'block', marginBottom: '0.25rem' }}>Other trips with this location</Text>
-          <Select value={selectedTripId} onChange={e => setSelectedTripId(e.target.value)}>
-            <option value={currentTripId}>Current Trip</option>
-            {visibleTrips.map(t => (
-              <option key={t.id} value={t.id}>{t.name} ({t.start_date} → {t.end_date})</option>
-            ))}
-          </Select>
-          {String(selectedTripId) !== String(currentTripId) && (
-            <div style={{ marginTop: '0.5rem' }}>
-              <Link to={`/trip/${selectedTripId}`}>Go to selected trip →</Link>
-            </div>
-          )}
-        </div>
-      )}
+      <OtherVisits osmId={node.osm_id} currentTripId={node.trip_id ?? currentTripId} />
     </Popup>
   );
 };

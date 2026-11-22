@@ -5,6 +5,7 @@ import { getPlaceLink } from '../../map-integration-components';
 import { Link } from 'react-router-dom';
 import PhotoSlideshowLarge from '../../photos/PhotoSlideshowLarge';
 import { listPhotosByStop } from '../../../api/photos';
+import OtherVisits from '../OtherVisits';
 
 const StopPopup = ({ stop, onClose }) => {
   const [photos, setPhotos] = useState([]);
@@ -32,6 +33,7 @@ const StopPopup = ({ stop, onClose }) => {
           <PhotoSlideshowLarge photos={photos} />
         </div>
       )}
+      <OtherVisits osmId={stop.osm_id} currentTripId={stop.trip_id} />
     </Popup>
   );
 };

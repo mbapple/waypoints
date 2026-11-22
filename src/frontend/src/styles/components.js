@@ -1,5 +1,13 @@
 import styled, { createGlobalStyle } from 'styled-components';
 
+// Style-only props used by the layout/text primitives below. They are read in the
+// CSS but must not reach the DOM (React warns e.g. "Received `true` for a
+// non-boolean attribute `wrap`"). Both plain and transient ($) forms are accepted.
+const styleOnly = (...names) => {
+  const blocked = new Set(names);
+  return { shouldForwardProp: (prop) => !blocked.has(prop) };
+};
+
 // Global styles for the entire application
 export const GlobalStyles = createGlobalStyle`
   * {
@@ -9,7 +17,7 @@ export const GlobalStyles = createGlobalStyle`
   }
   
   html {
-  font-size: calc(16px * var(--font-scale, 1));
+    font-size: calc(16px * var(--font-scale, 1));
     scroll-behavior: smooth;
   }
   
@@ -17,7 +25,7 @@ export const GlobalStyles = createGlobalStyle`
     font-family: ${props => props.theme.fonts.body};
     background-color: ${props => props.theme.colors.background};
     color: ${props => props.theme.colors.text};
-    line-height: 1.6;
+    line-height: ${props => props.theme.lineHeights.normal};
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     overflow-x: hidden;
@@ -26,25 +34,39 @@ export const GlobalStyles = createGlobalStyle`
   h1, h2, h3, h4, h5, h6 {
     font-family: ${props => props.theme.fonts.heading};
     font-weight: ${props => props.theme.fontWeights.semibold};
-    line-height: 1.25;
-    margin-bottom: ${props => props.theme.space[4]};
+    line-height: ${props => props.theme.lineHeights.tight};
+    margin-bottom: ${props => props.theme.space[2]};
+    letter-spacing: -0.01em;
   }
   
   h1 {
-    font-size: ${props => props.theme.fontSizes['3xl']};
+    font-size: 1.75rem;
     font-weight: ${props => props.theme.fontWeights.bold};
+    letter-spacing: -0.02em;
+
+    @media (max-width: ${props => props.theme.breakpoints.sm}) {
+      font-size: ${props => props.theme.fontSizes['2xl']};
+    }
   }
   
   h2 {
-    font-size: ${props => props.theme.fontSizes['2xl']};
-  }
-  
-  h3 {
     font-size: ${props => props.theme.fontSizes.xl};
   }
   
+  h3 {
+    font-size: ${props => props.theme.fontSizes.lg};
+  }
+
+  h4 {
+    font-size: ${props => props.theme.fontSizes.base};
+  }
+
+  h5, h6 {
+    font-size: ${props => props.theme.fontSizes.sm};
+  }
+  
   p {
-    margin-bottom: ${props => props.theme.space[4]};
+    margin-bottom: ${props => props.theme.space[2]};
   }
   
   a {
@@ -58,12 +80,12 @@ export const GlobalStyles = createGlobalStyle`
   }
   
   ul, ol {
-    margin-bottom: ${props => props.theme.space[4]};
-    padding-left: ${props => props.theme.space[6]};
+    margin-bottom: ${props => props.theme.space[3]};
+    padding-left: ${props => props.theme.space[5]};
   }
   
   li {
-    margin-bottom: ${props => props.theme.space[2]};
+    margin-bottom: ${props => props.theme.space[1]};
   }
   
   button {
@@ -113,15 +135,19 @@ export const Container = styled.div`
 export const Card = styled.div`
   background: ${props => props.theme.colors.card};
   border: 1px solid ${props => props.theme.colors.border};
-  border-radius: ${props => props.theme.radii.lg};
-  padding: ${props => props.theme.space[6]};
-  box-shadow: ${props => props.theme.shadows.md};
-  transition: ${props => props.theme.transitions.base};
-  margin-bottom: ${props => props.theme.space[6]};
+  border-radius: ${props => props.theme.radii.xl};
+  padding: ${props => props.theme.space[4]};
+  box-shadow: ${props => props.theme.shadows.sm};
+  transition: ${props => props.theme.transitions.fast};
+  margin-bottom: ${props => props.theme.space[4]};
   
   &:hover {
     border-color: ${props => props.theme.colors.borderHover};
-    box-shadow: ${props => props.theme.shadows.lg};
+    box-shadow: ${props => props.theme.shadows.md};
+  }
+
+  @media (max-width: ${props => props.theme.breakpoints.sm}) {
+    padding: ${props => props.theme.space[3]};
   }
 `;
 
@@ -129,12 +155,15 @@ export const Button = styled.button`
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: ${props => props.theme.space[3]} ${props => props.theme.space[6]};
-  font-size: ${props => props.theme.fontSizes.base};
+  gap: ${props => props.theme.space[2]};
+  padding: ${props => props.theme.space[2]} ${props => props.theme.space[4]};
+  font-size: ${props => props.theme.fontSizes.sm};
   font-weight: ${props => props.theme.fontWeights.medium};
-  border-radius: ${props => props.theme.radii.md};
+  line-height: ${props => props.theme.lineHeights.tight};
+  border-radius: ${props => props.theme.radii.lg};
   transition: ${props => props.theme.transitions.fast};
-  min-height: 44px;
+  min-height: 38px;
+  white-space: nowrap;
   
   /* Variants */
   ${props => {
@@ -145,8 +174,6 @@ export const Button = styled.button`
           color: white;
           &:hover:not(:disabled) {
             background: ${props.theme.colors.primaryHover};
-            transform: translateY(-1px);
-            box-shadow: ${props.theme.shadows.glow};
           }
         `;
       case 'secondary':
@@ -155,7 +182,6 @@ export const Button = styled.button`
           color: white;
           &:hover:not(:disabled) {
             background: ${props.theme.colors.secondaryHover};
-            transform: translateY(-1px);
           }
         `;
       case 'success':
@@ -164,7 +190,6 @@ export const Button = styled.button`
           color: white;
           &:hover:not(:disabled) {
             background: ${props.theme.colors.successHover};
-            transform: translateY(-1px);
           }
         `;
       case 'danger':
@@ -173,7 +198,6 @@ export const Button = styled.button`
           color: white;
           &:hover:not(:disabled) {
             background: ${props.theme.colors.dangerHover};
-            transform: translateY(-1px);
           }
         `;
       case 'outline':
@@ -216,15 +240,16 @@ export const Button = styled.button`
     switch (props.size) {
       case 'sm':
         return `
-          padding: ${props.theme.space[2]} ${props.theme.space[4]};
-          font-size: ${props.theme.fontSizes.sm};
-          min-height: 36px;
+          padding: ${props.theme.space[1]} ${props.theme.space[3]};
+          font-size: ${props.theme.fontSizes.xs};
+          min-height: 30px;
+          border-radius: ${props.theme.radii.md};
         `;
       case 'lg':
         return `
-          padding: ${props.theme.space[4]} ${props.theme.space[8]};
-          font-size: ${props.theme.fontSizes.lg};
-          min-height: 52px;
+          padding: ${props.theme.space[3]} ${props.theme.space[6]};
+          font-size: ${props.theme.fontSizes.base};
+          min-height: 46px;
         `;
       default:
         return '';
@@ -234,14 +259,15 @@ export const Button = styled.button`
 
 export const Input = styled.input`
   width: 100%;
-  padding: ${props => props.theme.space[3]};
+  padding: ${props => props.theme.space[2]} ${props => props.theme.space[3]};
   font-size: ${props => props.theme.fontSizes.base};
+  line-height: ${props => props.theme.lineHeights.snug};
   background: ${props => props.theme.colors.surface};
   border: 1px solid ${props => props.theme.colors.border};
   border-radius: ${props => props.theme.radii.md};
   color: ${props => props.theme.colors.text};
   transition: ${props => props.theme.transitions.fast};
-  min-height: 44px;
+  min-height: 38px;
   
   &::placeholder {
     color: ${props => props.theme.colors.textMuted};
@@ -295,7 +321,7 @@ export const DropdownMenu = styled.div`
 `;
 
 export const DropdownItem = styled.div`
-  padding: ${props => props.theme.space[3]};
+  padding: ${props => props.theme.space[2]} ${props => props.theme.space[3]};
   cursor: pointer;
   border-bottom: 1px solid ${props => props.theme.colors.backgroundSecondary};
   transition: ${props => props.theme.transitions.fast};
@@ -312,7 +338,7 @@ export const DropdownItem = styled.div`
     font-weight: ${props => props.theme.fontWeights.medium};
     font-size: ${props => props.theme.fontSizes.sm};
     color: ${props => props.theme.colors.text};
-    margin-bottom: ${props => props.theme.space[1]};
+    margin-bottom: 2px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -351,14 +377,15 @@ export const LoadingSpinner = styled.div`
 
 export const Select = styled.select`
     width: 100%;
-    padding: ${props => props.theme.space[3]};
+    padding: ${props => props.theme.space[2]} ${props => props.theme.space[3]};
     font-size: ${props => props.theme.fontSizes.base};
+    line-height: ${props => props.theme.lineHeights.snug};
     background: ${props => props.theme.colors.surface};
     border: 1px solid ${props => props.theme.colors.border};
     border-radius: ${props => props.theme.radii.md};
     color: ${props => props.theme.colors.text};
     transition: ${props => props.theme.transitions.fast};
-    min-height: 44px;
+    min-height: 38px;
     cursor: pointer;
     appearance: none;
     background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
@@ -386,15 +413,16 @@ export const Select = styled.select`
 export const Form = styled.form`
   display: flex;
   flex-direction: column;
-  gap: ${props => props.theme.space[4]};
-  max-width: 500px;
+  gap: ${props => props.theme.space[3]};
+  width: 100%;
+  max-width: 600px;
   margin: 0 auto;
 `;
 
 export const FormGroup = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${props => props.theme.space[2]};
+  gap: ${props => props.theme.space[1]};
 `;
 
 export const Label = styled.label`
@@ -406,7 +434,8 @@ export const Label = styled.label`
 export const NavLink = styled.a`
   display: inline-flex;
   align-items: center;
-  padding: ${props => props.theme.space[2]} ${props => props.theme.space[4]};
+  padding: 6px ${props => props.theme.space[3]};
+  font-size: ${props => props.theme.fontSizes.sm};
   color: ${props => props.theme.colors.textSecondary};
   font-weight: ${props => props.theme.fontWeights.medium};
   border-radius: ${props => props.theme.radii.md};
@@ -423,9 +452,13 @@ export const NavLink = styled.a`
   }
 `;
 
-export const Grid = styled.div`
+export const Grid = styled.div.withConfig(styleOnly('columns'))`
   display: grid;
-  gap: ${props => props.theme.space[6]};
+  gap: ${props => props.theme.space[4]};
+
+  @media (max-width: ${props => props.theme.breakpoints.sm}) {
+    gap: ${props => props.theme.space[3]};
+  }
   
   ${props => {
     switch (props.columns) {
@@ -445,16 +478,16 @@ export const Grid = styled.div`
   }}
 `;
 
-export const Flex = styled.div`
+export const Flex = styled.div.withConfig(styleOnly('align', 'justify', 'gap', 'wrap', 'direction'))`
   display: flex;
   align-items: ${props => props.align || 'stretch'};
   justify-content: ${props => props.justify || 'flex-start'};
   gap: ${props => props.gap ? props.theme.space[props.gap] : '0'};
-  flex-wrap: ${props => props.wrap ? 'wrap' : 'nowrap'};
+  flex-wrap: ${props => (props.$wrap ?? props.wrap) ? 'wrap' : 'nowrap'};
   flex-direction: ${props => props.direction || 'row'};
 `;
 
-export const Text = styled.span`
+export const Text = styled.span.withConfig(styleOnly('variant', 'size', 'weight'))`
   color: ${props => {
     switch (props.variant) {
       case 'muted':
@@ -503,13 +536,16 @@ export const Text = styled.span`
   }};
 `;
 
-export const Badge = styled.span`
+export const Badge = styled.span.withConfig(styleOnly('variant'))`
   display: inline-flex;
   align-items: center;
-  padding: ${props => props.theme.space[1]} ${props => props.theme.space[3]};
-  font-size: ${props => props.theme.fontSizes.xs};
+  gap: ${props => props.theme.space[1]};
+  padding: 2px ${props => props.theme.space[2]};
+  font-size: 0.6875rem;
   font-weight: ${props => props.theme.fontWeights.medium};
+  line-height: ${props => props.theme.lineHeights.snug};
   border-radius: ${props => props.theme.radii.full};
+  white-space: nowrap;
   
   ${props => {
     switch (props.variant) {
@@ -518,8 +554,19 @@ export const Badge = styled.span`
           background: rgba(99, 102, 241, 0.2);
           color: ${props.theme.colors.primary};
         `;
+      case 'info':
+        return `
+          background: rgba(6, 182, 212, 0.15);
+          color: ${props.theme.colors.secondary};
+        `;
+      case 'outline':
+        return `
+          background: transparent;
+          color: ${props.theme.colors.textSecondary};
+          box-shadow: inset 0 0 0 1px ${props.theme.colors.border};
+        `;
       case 'success':
-  return `
+        return `
           background: rgba(16, 185, 129, 0.2);
           color: ${props.theme.colors.success};
         `;
@@ -535,8 +582,8 @@ export const Badge = styled.span`
         `;
       case 'invisible':
         return `
-          background: rbga(0,0,0,0);
-          color: ${props.theme.colors.text}
+          background: transparent;
+          color: ${props.theme.colors.text};
         `;
       default:
         return `

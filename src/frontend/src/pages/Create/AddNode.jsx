@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import useDocumentTitle from "../../utils/useDocumentTitle";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import { Card, Button, Text, Flex } from "../../styles/components";
@@ -17,6 +18,7 @@ const FormCard = styled(Card)`
 // Buttons handled in NodeForm
 
 function AddNode() {
+  useDocumentTitle("Add node");
   const { tripID } = useParams();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);

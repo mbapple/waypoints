@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import useDocumentTitle from "../../utils/useDocumentTitle";
 import { useNavigate } from 'react-router-dom';
 import { PageHeader } from '../../components/page-components';
 import { FormCard } from '../../components/input-components';
@@ -7,6 +8,7 @@ import ListForm from '../../components/forms/ListForm';
 import { createList } from '../../api/lists';
 
 export default function AddList() {
+  useDocumentTitle("Add list");
   const navigate = useNavigate();
   const [saving, setSaving] = useState(false);
 

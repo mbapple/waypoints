@@ -1,6 +1,7 @@
 // using shared LegForm; previous inline form and helpers removed
 
 import React, { useEffect, useState } from "react";
+import useDocumentTitle from "../../utils/useDocumentTitle";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { FormCard } from "../../components/input-components";
 import { PageHeader } from "../../components/page-components";
@@ -10,6 +11,7 @@ import { createLeg, createCarDetails, createFlightDetails } from "../../api/legs
 import LegForm from "../../components/forms/LegForm";
 
 function AddLeg() {
+  useDocumentTitle("Add leg");
     const { tripID } = useParams();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);

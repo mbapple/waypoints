@@ -1,14 +1,85 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Form, FormGroup, Label, Input, Select, Button, Text } from '../styles/components';
+import { PageHeader } from '../components/page-components';
 import { useSettings } from '../context/SettingsContext';
 import { getIntegrationStatus } from '../api/integrations';
+import useDocumentTitle from "../utils/useDocumentTitle";
 import styled from 'styled-components';
 
-const Spacer = styled.div`
-    margin-top: 20px;
+const Sections = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: ${p => p.theme.space[4]};
+    margin-bottom: ${p => p.theme.space[6]};
+
+    @media (max-width: ${p => p.theme.breakpoints.sm}) {
+        gap: ${p => p.theme.space[3]};
+    }
+`;
+
+const Section = styled(Card)`
+    margin-bottom: 0;
+
+    &:hover {
+        border-color: ${p => p.theme.colors.border};
+        box-shadow: ${p => p.theme.shadows.sm};
+    }
+
+    h2 {
+        font-size: ${p => p.theme.fontSizes.lg};
+        margin-bottom: ${p => p.theme.space[3]};
+    }
+
+    /* Settings forms read top-down from the card's left edge */
+    form {
+        margin: 0;
+    }
+`;
+
+const Hint = styled(Text).attrs({ variant: 'muted' })`
+    font-size: ${p => p.theme.fontSizes.sm};
+`;
+
+const CategoryRow = styled.li`
+    display: flex;
+    align-items: center;
+    gap: ${p => p.theme.space[2]};
+    padding: 6px 0;
+    margin: 0;
+    border-bottom: 1px solid ${p => p.theme.colors.border};
+    flex-wrap: wrap;
+`;
+
+const EmojiInput = styled.input`
+    width: 4.2em;
+    text-align: center;
+    padding: 2px 6px;
+    background: ${p => p.theme.colors.surface};
+    border: 1px solid ${p => p.theme.colors.border};
+    border-radius: ${p => p.theme.radii.md};
+    color: ${p => p.theme.colors.text};
+    font-size: 1.05rem;
+    min-height: 30px;
+
+    &:focus {
+        border-color: ${p => p.theme.colors.primary};
+    }
+`;
+
+const BackupTable = styled.table`
+    width: 100%;
+    border-collapse: collapse;
+    font-size: ${p => p.theme.fontSizes.sm};
+
+    th, td {
+        padding: 4px 6px;
+        border-bottom: 1px solid ${p => p.theme.colors.border};
+        text-align: left;
+    }
 `;
 
 const Settings = () => {
+  useDocumentTitle("Settings");
     const { settings, setTheme, setFontScale } = useSettings();
     // Stop categories state
     const [categories, setCategories] = useState([]);
@@ -164,9 +235,13 @@ const Settings = () => {
     };
 
     return (
-        <Spacer>
-            <Card>
-                <h2>Settings</h2>
+        <div>
+            <PageHeader>
+                <h1>Settings</h1>
+            </PageHeader>
+            <Sections>
+            <Section>
+                <h2>Display</h2>
                 <Form onSubmit={onSave}>
                     <FormGroup>
                         <Label htmlFor="theme">Theme</Label>
@@ -174,7 +249,7 @@ const Settings = () => {
                             <option value="dark">Dark</option>
                             <option value="light">Light</option>
                         </Select>
-                        <Text variant="muted">Switches the visual theme across the app instantly.</Text>
+                        <Hint>Switches the visual theme across the app instantly.</Hint>
                     </FormGroup>
 
                     <FormGroup>
@@ -186,7 +261,7 @@ const Settings = () => {
                                     ? 'Configured'
                                     : 'Not configured: set ORS_API_KEY in .env and restart the backend'}
                         </Text>
-                        <Text variant="muted">Used to auto-fill driving legs with distance, time, and route polyline.</Text>
+                        <Hint>Used to auto-fill driving legs with distance, time, and route polyline.</Hint>
                     </FormGroup>
 
                     <FormGroup>
@@ -200,24 +275,25 @@ const Settings = () => {
                             value={fontScaleLocal}
                             onChange={(e) => setFontScaleLocal(Number(e.target.value))}
                         />
-                        <Text variant="muted">Current scale: {fontScaleLocal.toFixed(2)}×</Text>
+                        <Hint>Current scale: {fontScaleLocal.toFixed(2)}×</Hint>
                     </FormGroup>
 
-                    <Button type="submit" variant="primary">Save</Button>
-                    {saved && <Text variant="success">Saved</Text>}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        <Button type="submit" variant="primary">Save</Button>
+                        {saved && <Text variant="success" size="sm">Saved</Text>}
+                    </div>
                 </Form>
-            </Card>
-            <Spacer />
-            <Card>
+            </Section>
+            <Section>
                 <h2>Stop Categories</h2>
                 {catError && <Text variant="danger" style={{ marginBottom: '8px' }}>{catError}</Text>}
                 {catLoading && <Text variant="muted">Loading...</Text>}
                 {!catLoading && (
                     <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
                         {categories.map(c => (
-                            <li key={c.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 0', borderBottom: '1px solid #333', flexWrap: 'wrap' }}>
+                            <CategoryRow key={c.id}>
                                 <span style={{ fontWeight: 500 }}>{c.name}</span>
-                                <input
+                                <EmojiInput
                                     type="text"
                                     aria-label={`Emoji for ${c.name}`}
                                     maxLength={16}
@@ -227,17 +303,6 @@ const Settings = () => {
                                         setEmojiEdits(prev => ({ ...prev, [c.id]: val }));
                                     }}
                                     placeholder="(emoji)"
-                                    style={{
-                                        width: '4.2em',
-                                        textAlign: 'center',
-                                        padding: '4px 6px',
-                                        background: '#1f2330',
-                                        border: '1px solid #555',
-                                        borderRadius: 4,
-                                        color: '#fff',
-                                        caretColor: '#fff',
-                                        fontSize: '1.05rem'
-                                    }}
                                     disabled={emojiSaving[c.id]}
                                 />
                                 <Button
@@ -264,23 +329,22 @@ const Settings = () => {
                                 {c.name !== 'other' && (
                                     <Button type="button" size="sm" variant="danger" onClick={() => deleteCategory(c)} disabled={emojiSaving[c.id]} style={{ marginLeft: 'auto' }}>Delete</Button>
                                 )}
-                            </li>
+                            </CategoryRow>
                         ))}
                         {categories.length === 0 && <li><Text variant="muted">No categories yet.</Text></li>}
                     </ul>
                 )}
-                <form onSubmit={addCategory} style={{ marginTop: '16px' }}>
+                <form onSubmit={addCategory} style={{ marginTop: '12px' }}>
                     <Label htmlFor="newCategory">Add Category</Label>
-                    <Input id="newCategory" placeholder="e.g. museum" value={newCategory} onChange={(e) => setNewCategory(e.target.value)} />
-                    <div style={{ marginTop: '8px' }}>
+                    <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+                        <Input id="newCategory" placeholder="e.g. museum" value={newCategory} onChange={(e) => setNewCategory(e.target.value)} />
                         <Button type="submit" variant="primary" disabled={catLoading || !newCategory.trim()}>Add</Button>
                     </div>
                 </form>
-            </Card>
-            <Spacer />
-            <Card>
+            </Section>
+            <Section>
                 <h2>Database Backups</h2>
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', margin: '12px 0' }}>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '8px' }}>
                     <Button type="button" variant="primary" disabled={creatingBackup} onClick={onCreateBackup}>{creatingBackup ? 'Creating...' : 'Create Backup'}</Button>
                     <Button type="button" variant="secondary" disabled={backupLoading} onClick={fetchBackups}>{backupLoading ? 'Refreshing...' : 'Refresh List'}</Button>
                 </div>
@@ -291,29 +355,29 @@ const Settings = () => {
                     <div style={{ marginTop: '8px' }}>
                         {backups.length === 0 && <Text variant="muted">No backups found.</Text>}
                         {backups.length > 0 && (
-                            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+                            <BackupTable>
                                 <thead>
-                                    <tr style={{ textAlign: 'left' }}>
-                                        <th style={{ padding: '4px 6px', borderBottom: '1px solid #333' }}>Filename</th>
-                                        <th style={{ padding: '4px 6px', borderBottom: '1px solid #333' }}>Size</th>
-                                        <th style={{ padding: '4px 6px', borderBottom: '1px solid #333' }}>Modified (UTC)</th>
-                                        <th style={{ padding: '4px 6px', borderBottom: '1px solid #333' }}>Actions</th>
+                                    <tr>
+                                        <th>Filename</th>
+                                        <th>Size</th>
+                                        <th>Modified (UTC)</th>
+                                        <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {backups.map(b => (
-                                        <tr key={b.filename} style={{ borderBottom: '1px solid #222' }}>
-                                            <td style={{ padding: '4px 6px', wordBreak: 'break-all' }}>{b.filename}</td>
-                                            <td style={{ padding: '4px 6px' }}>{(b.size_bytes / 1024).toFixed(1)} KB</td>
-                                            <td style={{ padding: '4px 6px' }}>{b.modified_utc}</td>
-                                            <td style={{ padding: '4px 6px' }}>
+                                        <tr key={b.filename}>
+                                            <td style={{ wordBreak: 'break-all' }}>{b.filename}</td>
+                                            <td>{(b.size_bytes / 1024).toFixed(1)} KB</td>
+                                            <td>{b.modified_utc}</td>
+                                            <td>
                                                 <Button size="sm" variant="outline" type="button" onClick={() => onDownload(b)} style={{ marginRight: '6px' }}>Download</Button>
                                                 <Button size="sm" variant="danger" type="button" onClick={() => { setSelectedRestore(b.filename); }} style={{ marginRight: '6px' }}>Select</Button>
                                             </td>
                                         </tr>
                                     ))}
                                 </tbody>
-                            </table>
+                            </BackupTable>
                         )}
                         {selectedRestore && (
                             <div style={{ marginTop: '12px' }}>
@@ -322,15 +386,16 @@ const Settings = () => {
                                 <Button type="button" variant="outline" disabled={restoreUploading} onClick={() => setSelectedRestore('')} style={{ marginLeft: '8px' }}>Clear</Button>
                             </div>
                         )}
-                        <div style={{ marginTop: '16px' }}>
+                        <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-start' }}>
                             <Label htmlFor="restoreUpload">Upload & Restore (.dump/.sql)</Label>
                             <input id="restoreUpload" type="file" accept=".dump,.sql" disabled={restoreUploading} onChange={onRestoreFile} />
                         </div>
-                        <Text variant="muted" style={{ display: 'block', marginTop: '8px' }}>Restore overwrites current database. Use with caution.</Text>
+                        <Hint style={{ display: 'block', marginTop: '8px' }}>Restore overwrites current database. Use with caution.</Hint>
                     </div>
                 )}
-            </Card>
-        </Spacer>
+            </Section>
+            </Sections>
+        </div>
     );
 };
 

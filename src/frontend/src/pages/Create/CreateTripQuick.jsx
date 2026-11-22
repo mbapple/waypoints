@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import useDocumentTitle from "../../utils/useDocumentTitle";
 import { useNavigate, Link } from "react-router-dom";
 import { ButtonGroup } from "../../components/input-components";
 import { PageHeader } from "../../components/page-components";
@@ -29,6 +30,7 @@ const applyPatch = (prev, patchOrFn) => {
 };
 
 function CreateTripQuick() {
+  useDocumentTitle("Quick create trip");
   const navigate = useNavigate();
   const [state, setState] = useState(initialQuickTripState);
   const [destinations, setDestinations] = useState([]);

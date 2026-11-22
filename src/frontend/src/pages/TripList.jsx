@@ -1,63 +1,35 @@
 import React, { useEffect, useState } from "react";
+import useDocumentTitle from "../utils/useDocumentTitle";
 import { Link, useNavigate } from "react-router-dom";
 import styled from "styled-components";
-import { Card, Button, Text, Grid, Flex, Badge } from "../styles/components";
+import { Button, Text } from "../styles/components";
 import { listTrips } from "../api/trips";
 import { listPhotosByTrip } from "../api/photos";
 import PhotoSlideshowLarge from "../components/photos/PhotoSlideshowLarge";
-
-const PageHeader = styled.div`
-  margin: ${props => props.theme.space[8]} 0 ${props => props.theme.space[6]} 0;
-  text-align: center;
-`;
-
-const TripCard = styled(Card)`
-  transition: ${props => props.theme.transitions.base};
-  cursor: pointer;
-  
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: ${props => props.theme.shadows.xl};
-  }
-`;
-
-// Removed full-card Link wrapper to allow inner interactive controls (e.g., slideshow arrows)
-// to receive clicks without triggering navigation. We'll navigate via onClick on the card.
-
-const TripTitle = styled.h3`
-  color: ${props => props.theme.colors.text};
-  margin-bottom: ${props => props.theme.space[2]};
-  font-size: ${props => props.theme.fontSizes.lg};
-`;
-
-const DateRange = styled(Text)`
-  display: flex;
-  align-items: center;
-  gap: ${props => props.theme.space[2]};
-  margin-bottom: ${props => props.theme.space[3]};
-`;
+import { ListHeader } from "../components/page-components";
+import {
+  CardGrid, MediaCard, MediaPlaceholder, MediaCardBody, MediaCardTitle,
+  MetaLine, MetaItem, CalendarIcon, MoonIcon, MountainIcon,
+} from "../components/common/MediaCard";
+import { formatDateRange, nightsBetween } from "../utils/format";
 
 const EmptyState = styled.div`
   text-align: center;
-  padding: ${props => props.theme.space[16]} ${props => props.theme.space[8]};
+  padding: ${props => props.theme.space[12]} ${props => props.theme.space[4]};
   color: ${props => props.theme.colors.textMuted};
 `;
 
 function TripList() {
+  useDocumentTitle("My Trips");
   const [trips, setTrips] = useState([]);
   const [loading, setLoading] = useState(true);
   const [tripPhotos, setTripPhotos] = useState({});
-  const [imageHeight, setImageHeight] = useState(200);
+  const [imageHeight, setImageHeight] = useState(220);
   const navigate = useNavigate();
-  
+
   useEffect(() => {
     const handleResize = () => {
-      // Adjust image height based on window width
-      if (window.innerWidth < 768) {
-        setImageHeight(150); // Smaller height for smaller screens
-      } else {
-        setImageHeight(200); // Default height for larger screens
-      }
+      setImageHeight(window.innerWidth < 768 ? 200 : 220);
     };
 
     window.addEventListener('resize', handleResize);
@@ -87,80 +59,86 @@ function TripList() {
     }
   };
 
+  const openTrip = (id) => navigate(`/trip/${id}`);
+
   if (loading) {
     return (
       <div>
-        <PageHeader>
-          <h1>My Trips</h1>
-          <Text variant="muted">Loading your adventures...</Text>
-        </PageHeader>
+        <ListHeader>
+          <div>
+            <h1>My Trips</h1>
+            <Text variant="muted">Loading your trips...</Text>
+          </div>
+        </ListHeader>
       </div>
     );
   }
 
   return (
     <div>
-      <PageHeader>
-        <h1>My Trips</h1>
-      </PageHeader>
-
-      <Flex justify="space-between" align="center" style={{ marginBottom: '2rem' }}>
-        <Text variant="muted">
-          {trips.length} {trips.length === 1 ? 'trip' : 'trips'} total
-        </Text>
+      <ListHeader>
+        <div>
+          <h1>My Trips</h1>
+          <Text variant="muted">
+            {trips.length} {trips.length === 1 ? 'trip' : 'trips'}
+          </Text>
+        </div>
         <Button as={Link} to="/create" variant="primary">
-          + Create New Trip
+          + New Trip
         </Button>
-      </Flex>
+      </ListHeader>
 
       {trips.length === 0 ? (
         <EmptyState>
           <h3>No trips yet</h3>
-          <Button 
-            as={Link} 
-            to="/create" 
-            variant="primary" 
-            style={{ marginTop: '1rem' }}
+          <Button
+            as={Link}
+            to="/create"
+            variant="primary"
+            style={{ marginTop: '0.75rem' }}
           >
             Create Your First Trip
           </Button>
         </EmptyState>
       ) : (
-        <Grid columns={2}>
-          {trips.map(trip => (
-            <TripCard
-              key={trip.id}
-              role="button"
-              tabIndex={0}
-              onClick={() => navigate(`/trip/${trip.id}`)}
-              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(`/trip/${trip.id}`); } }}
-            >
-              {tripPhotos[trip.id] && tripPhotos[trip.id].length > 0 && (
-                <div
-                  style={{ marginBottom: '0.75rem' }}
-                  onClick={e => { /* Allow slideshow arrow clicks without navigating */ e.stopPropagation(); }}
-                  onMouseDown={e => e.stopPropagation()}
-                >
-                  <PhotoSlideshowLarge photos={tripPhotos[trip.id]} image_height={imageHeight} />
-                </div>
-              )}
-              <TripTitle>
-                <Link
-                  to={`/trip/${trip.id}`}
-                  onClick={e => e.stopPropagation()}
-                  style={{ textDecoration: 'none', color: 'inherit' }}
-                >
-                  {trip.name}
-                </Link>
-              </TripTitle>
-              <DateRange variant="secondary">
-                <Badge variant="primary">{trip.start_date}</Badge>
-                <Text variant="muted">→</Text>
-                <Badge variant="primary">{trip.end_date}</Badge>
-              </DateRange>
-            </TripCard>
-          ))}
-        </Grid>
+        <CardGrid>
+          {trips.map(trip => {
+            const photos = tripPhotos[trip.id] || [];
+            const nights = nightsBetween(trip.start_date, trip.end_date);
+            return (
+              <MediaCard
+                key={trip.id}
+                role="link"
+                tabIndex={0}
+                aria-label={trip.name}
+                onClick={() => openTrip(trip.id)}
+                onKeyDown={e => {
+                  if (e.target !== e.currentTarget) return; // let inner controls handle their own keys
+                  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openTrip(trip.id); }
+                }}
+              >
+                {photos.length > 0 ? (
+                  <PhotoSlideshowLarge photos={photos} image_height={imageHeight} rounded={false} />
+                ) : (
+                  <MediaPlaceholder $height={imageHeight}><MountainIcon size={36} /></MediaPlaceholder>
+                )}
+                <MediaCardBody>
+                  <MediaCardTitle title={trip.name}>
+                    <Link to={`/trip/${trip.id}`} onClick={e => e.stopPropagation()} tabIndex={-1}>
+                      {trip.name}
+                    </Link>
+                  </MediaCardTitle>
+                  <MetaLine>
+                    <MetaItem><CalendarIcon />{formatDateRange(trip.start_date, trip.end_date)}</MetaItem>
+                    {nights > 0 && (
+                      <MetaItem><MoonIcon />{nights} {nights === 1 ? 'night' : 'nights'}</MetaItem>
+                    )}
+                  </MetaLine>
+                </MediaCardBody>
+              </MediaCard>
+            );
+          })}
+        </CardGrid>
       )}
     </div>
   );

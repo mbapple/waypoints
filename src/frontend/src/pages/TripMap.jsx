@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import useDocumentTitle from "../utils/useDocumentTitle";
 import { useParams } from "react-router-dom";
 import { PageHeader } from "../components/page-components";
 import { Text, Flex, Badge, Button } from "../styles/components";
@@ -15,6 +16,7 @@ function TripMap() {
 
   const [loading, setLoading] = useState(true);
   const [trip, setTrip] = useState(null);
+  useDocumentTitle(trip ? `${trip.name} map` : "Trip map");
   const [nodes, setNodes] = useState([]);
   const [legs, setLegs] = useState([]);
   const [stops, setStops] = useState([]);

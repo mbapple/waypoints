@@ -1,8 +1,9 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { Text, Button } from "../../styles/components";
+import { Text, Button, Flex } from "../../styles/components";
 import { createTrip } from "../../api/trips";
 import TripForm from "../../components/forms/TripForm";
+import useDocumentTitle from "../../utils/useDocumentTitle";
 import { PageHeader } from "../../components/page-components";
 import { FormCard } from "../../components/input-components";
 
@@ -11,6 +12,7 @@ import { FormCard } from "../../components/input-components";
 // Buttons are handled inside TripForm
 
 function CreateTrip() {
+  useDocumentTitle("New trip");
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
 
@@ -35,13 +37,15 @@ function CreateTrip() {
   return (
     <div>
       <PageHeader>
-        <h1>Create a New Trip</h1>
+        <Flex justify="space-between" align="center" gap={3} wrap>
+          <h1>Create a New Trip</h1>
+          <Button as={Link} to="/create/quick" variant="outline" size="sm">
+            Use Quick Create
+          </Button>
+        </Flex>
       </PageHeader>
 
       <FormCard>
-        <Button as={Link} to="/create/quick" variant="outline">
-          Use Quick Create
-        </Button>
         <TripForm
           initialValues={{ name: "", startDate: "", endDate: "", description: "" }}
           onSubmit={handleSubmit}

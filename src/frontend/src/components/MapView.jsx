@@ -3,7 +3,7 @@ import L from 'leaflet';
 import { Link } from "react-router-dom";
 import { MapContainer, TileLayer, Marker, CircleMarker, Polyline, Popup, Tooltip, useMap, useMapEvent } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
-import { applyLeafletDefaultIconFix, getTileLayerConfig, MapGlobalStyles, createStopDivIcon, createAdventureDivIcon, getTripColor } from "../styles/mapTheme";
+import { applyLeafletDefaultIconFix, getTileLayerConfig, MapGlobalStyles, MapZoomClass, createNodeDivIcon, createStopDivIcon, createAdventureDivIcon, getTripColor } from "../styles/mapTheme";
 import HighlightLayer from "./HighlightLayer";
 import { FitToBounds } from "../utils/map_helper_functions";
 import PhotoSlideshowLarge from "./photos/PhotoSlideshowLarge";
@@ -125,6 +125,7 @@ export default function MapView({
       >
         <TileLayer key={isDark ? 'dark' : 'light'} {...getTileLayerConfig(isDark)} noWrap={true} />
         <ClampToWorld />
+        <MapZoomClass />
         <HighlightLayer
           mode={highlightMode}
           visitedCountries={visitedCountries || new Set(Object.values(nodeById).map(n => n?.osm_country).filter(Boolean))}
@@ -141,10 +142,12 @@ export default function MapView({
           <Marker
             key={`node-${m.id}`}
             position={m.pos}
+            icon={createNodeDivIcon(getTripColor(m.tripId))}
+            zIndexOffset={1000}
             opacity={tripOpacity(m.tripId)}
             eventHandlers={{ popupopen: () => loadNodePhotos(m.id) }}
           >
-            <Tooltip direction="top" offset={[0, -24]} opacity={1} permanent={false} sticky>
+            <Tooltip direction="top" offset={[0, -10]} opacity={1} permanent={false} sticky>
               <span>
                 <strong>{m.name}</strong>
               </span>
@@ -193,7 +196,7 @@ export default function MapView({
             icon={createStopDivIcon(s.category, getTripColor(s.tripId))}
             eventHandlers={{ popupopen: () => loadStopPhotos(s.id) }}
           >
-            <Tooltip direction="top" offset={[0, -8]} opacity={1} permanent={false} sticky>
+            <Tooltip direction="top" offset={[0, -10]} opacity={1} permanent={false} sticky>
               <span>
                 <strong>{s.name}</strong>
                 {s.category ? ` · ${s.category}` : ""}
@@ -238,7 +241,7 @@ export default function MapView({
             icon={createAdventureDivIcon(a.category)}
             eventHandlers={{ popupopen: () => loadAdventurePhotos(a.id) }}
           >
-            <Tooltip direction="top" offset={[0, -8]} opacity={1} permanent={false} sticky>
+            <Tooltip direction="top" offset={[0, -10]} opacity={1} permanent={false} sticky>
               <span><strong>{a.name}</strong>{a.category ? ` · ${a.category}` : ''}</span>
             </Tooltip>
             <Popup>
@@ -292,7 +295,7 @@ export default function MapView({
             radius={6}
             pathOptions={{ color: theme.colors.background || '#000', weight: 1.5, fillColor: theme.colors.accent || '#f59e0b', fillOpacity: 0.95 }}
           >
-            <Tooltip direction="top" offset={[0, -6]} opacity={1} sticky>
+            <Tooltip direction="top" offset={[0, -10]} opacity={1} sticky>
               <span><strong>{p.code ? `${p.code}` : p.name}</strong>{p.code && p.name && p.name !== p.code ? ` · ${p.name}` : ""}</span>
             </Tooltip>
             <Popup>

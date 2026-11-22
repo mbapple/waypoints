@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, Link, useNavigate, useSearchParams } from "react-router-dom";
 import { FormCard, DangerZone } from "../../components/input-components";
 import { PageHeader } from "../../components/page-components";
+import useDocumentTitle from "../../utils/useDocumentTitle";
 import { Button, Text, Flex } from "../../styles/components";
 import ConfirmDeleteButton from "../../components/common/ConfirmDeleteButton";
 import { listNodesByTrip } from "../../api/nodes";
@@ -11,7 +12,7 @@ import LegForm from "../../components/forms/LegForm";
 function UpdateLeg() {
   const { tripID } = useParams();
   const navigate = useNavigate();
-  const params = new URLSearchParams(window.location.search);
+  const [params] = useSearchParams();
   const legID = params.get("legID");
 
   const [formData, setFormData] = useState({
@@ -45,6 +46,7 @@ function UpdateLeg() {
   const [nodes, setNodes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  useDocumentTitle("Edit leg");
 
 
   const handleDeleteLeg = async () => {

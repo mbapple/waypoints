@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import useDocumentTitle from "../../utils/useDocumentTitle";
 import { useNavigate, useParams } from 'react-router-dom';
 import { PageHeader } from '../../components/page-components';
 import { FormCard } from '../../components/input-components';
@@ -12,6 +13,7 @@ export default function UpdateList() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [listData, setListData] = useState(null);
+  useDocumentTitle(listData?.name ? `Edit ${listData.name}` : "Edit list");
   const [error, setError] = useState(null);
   const [overrideInput, setOverrideInput] = useState('');
   const [refreshKey, setRefreshKey] = useState(0);

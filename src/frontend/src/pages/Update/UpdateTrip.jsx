@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import useDocumentTitle from "../../utils/useDocumentTitle";
 import { Text } from "../../styles/components";
 import { PageHeader } from "../../components/page-components";
 import { FormCard, DangerZone } from "../../components/input-components";
@@ -18,11 +19,12 @@ function UpdateTrip() {
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  useDocumentTitle(formData.name ? `Edit ${formData.name}` : "Edit trip");
 
   const handleDeleteTrip = async () => {
     try {
       await apiDeleteTrip(tripID);
-      navigate(`/trips`);
+      navigate("/");
     } catch (err) {
       alert("Failed to delete trip.");
       console.error(err);

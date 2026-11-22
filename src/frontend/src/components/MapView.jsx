@@ -112,7 +112,7 @@ export default function MapView({
         zoomDelta={0.01}
         wheelPxPerZoom={90}
       >
-        <TileLayer {...getTileLayerConfig(isDark)} noWrap={true} />
+        <TileLayer key={isDark ? 'dark' : 'light'} {...getTileLayerConfig(isDark)} noWrap={true} />
         <ClampToWorld />
         <HighlightLayer
           mode={highlightMode}

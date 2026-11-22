@@ -1,8 +1,9 @@
 import React, { useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
-import { getTileLayerConfig, createAdventureDivIcon, applyLeafletDefaultIconFix } from '../../styles/mapTheme';
-import styled, { useTheme } from 'styled-components';
+import { getTileLayerConfig, createAdventureDivIcon, applyLeafletDefaultIconFix, MapGlobalStyles } from '../../styles/mapTheme';
+import { useSettings } from '../../context/SettingsContext';
+import styled from 'styled-components';
 import { Link } from 'react-router-dom';
 
 applyLeafletDefaultIconFix();
@@ -30,14 +31,15 @@ function FitBounds({ adventures }) {
 }
 
 export default function AdventureInlineMap({ adventures }) {
-  const theme = useTheme();
-  const tile = getTileLayerConfig(theme.isDarkMode ? true : false);
+  const { settings } = useSettings();
+  const isDark = (settings?.theme || 'dark') === 'dark';
   const first = adventures.find(a => a.latitude && a.longitude);
   const center = first ? [first.latitude, first.longitude] : [20, 0];
   return (
     <MapWrapper>
+      <MapGlobalStyles />
       <MapContainer center={center} zoom={3} style={{ height: '100%', width: '100%' }} scrollWheelZoom={false}>
-        <TileLayer url={tile.url} attribution={tile.attribution} />
+        <TileLayer key={isDark ? 'dark' : 'light'} {...getTileLayerConfig(isDark)} />
         <FitBounds adventures={adventures} />
         {adventures.filter(a => a.latitude && a.longitude).map(a => (
           <Marker key={a.id} position={[a.latitude, a.longitude]} icon={createAdventureDivIcon(a.category)}>

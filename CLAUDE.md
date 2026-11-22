@@ -17,9 +17,12 @@ src/
       start.sh             # container entrypoint: wait for DB → alembic upgrade head → uvicorn :3001
       requirements.txt
       routers/             # one module per resource; connect.py provides get_db()
-  frontend/                # Create React App (React 19, react-router 7, styled-components, react-leaflet)
+  frontend/                # Vite + React 19 (react-router 7, styled-components, react-leaflet)
+    index.html             # Vite entry HTML → src/index.jsx
+    vite.config.js         # dev-server port, /api + /uploads proxy, allowed hosts
+    public/                # static assets served at / (favicon, manifest, logos)
     src/
-      App.js               # all routes
+      App.jsx              # all routes
       api/                 # one module per backend resource
       pages/               # route-level pages (Create/, Update/, Lists/ subfolders)
       components/          # reusable components (common/, forms/, trip-details/, photos/, map/, lists/)
@@ -39,9 +42,10 @@ cp .env.example .env      # set POSTGRES_PASSWORD, optionally ORS_API_KEY
 docker compose up --build
 ```
 
-- Only the frontend is published (port 3000). Its dev server (`src/frontend/src/setupProxy.js`) proxies `/api` and `/uploads` to `waypoints_backend:3001`. The backend and DB are not exposed to the host by default.
+- Only the frontend is published (port 3000). The Vite dev server (`src/frontend/vite.config.js`) proxies `/api` and `/uploads` to `BACKEND_URL` (`http://waypoints_backend:3001`). The backend and DB are not exposed to the host by default.
+- Vite rejects unknown Host headers. localhost and IPs always work; other hostnames need `FRONTEND_ALLOWED_HOSTS` in `.env`.
 - Source dirs are bind-mounted. Frontend edits hot-reload. After backend edits, run `docker compose restart backend`, which also applies new migrations.
-- The frontend container runs `npm ci && npm start` (the dev server) on every start, so boots are slow.
+- The frontend container (`node:24`) runs `npm ci && npm start` (the Vite dev server) on every start. Serving a production build instead is a pending TODO.
 - Backend API docs: `http://localhost:3001/docs` (needs the backend port uncommented in compose) or via `docker compose exec`.
 
 ## Backend conventions
@@ -57,12 +61,14 @@ docker compose up --build
 
 ## Frontend conventions
 
+- **File extensions**: any file containing JSX must be `.jsx` (Vite won't parse JSX in `.js`). Plain modules (`api/`, `utils/`, `styles/theme.js`, `styles/components.js`) stay `.js`. Imports are extensionless.
 - **API calls**: add or extend `src/api/<resource>.js` using the shared axios instance from `api/client.js` (`baseURL: "/api"`). It has a response interceptor that rounds any `miles` / `*_miles` fields to 0.1. Don't call `fetch` against the backend directly.
 - **Pages are composed from reusable components**. Check `components/common/` (Popup, ContextMenu, ConfirmDeleteButton, NodeSelect, LegSelect), `components/forms/` (shared create/update forms), `components/trip-details/`, `components/photos/` and the `*-components.js` modules before writing new UI. Create and Update pages share the same form component.
 - **Styling**: styled-components. Use the primitives in `styles/components.js` (Card, Button, Input, Text, Flex…) and theme tokens (`props.theme.colors/space/fontSizes/breakpoints`) from `styles/theme.js`. Support both dark and light themes and mobile widths.
-- **Routes** live in `App.js`. The page container is keyed by pathname, so page state resets on navigation.
-- **Never put secrets in the frontend.** `REACT_APP_*` vars are compiled into the public bundle. `SettingsContext` holds UI prefs only.
-- External calls made from the browser: Nominatim place search (`components/map-integration-components.js`) and map tiles (`styles/mapTheme.js`). Neither needs a key.
+- **Routes** live in `App.jsx`. The page container is keyed by pathname, so page state resets on navigation.
+- **Never put secrets in the frontend.** `VITE_*` vars and anything imported into `src/` are compiled into the public bundle. `vite.config.js` reads non-prefixed env vars in Node only. `SettingsContext` holds UI prefs only.
+- External calls made from the browser: Nominatim place search (`components/map-integration-components.js`) and OpenStreetMap tiles (`styles/mapTheme.js`). Neither needs a key. Both themes use the same OSM tiles; dark mode adds the `.map-tiles-dark` CSS filter to the tile layer only. Every `<TileLayer>` must spread `getTileLayerConfig(isDark)`, set `key={isDark ? 'dark' : 'light'}` and render `MapGlobalStyles`. Don't switch back to CARTO: it has required an API key since 2026.
+- **Dependencies**: keep `package.json` minimal; every dependency must be imported somewhere in `src/` (or be Vite tooling). Run `npm audit` after changes.
 
 ## Security posture
 
@@ -72,10 +78,10 @@ docker compose up --build
 
 ## Testing / verification
 
-There is no real test suite. `src/frontend/src/App.test.js` is stale CRA boilerplate, and the backend has no tests. Verify changes by:
+There is no test suite (frontend or backend) and no linter. Verify changes by:
 - `python -m py_compile` on changed backend files.
 - `docker compose up --build`, then exercising the UI and endpoints (`curl localhost:3000/api/...` goes through the frontend proxy).
-- Frontend compile check: `docker run --rm -v $PWD/src/frontend:/app -w /app node:20 bash -lc "npm ci && npm run build"`.
+- Frontend compile check: `docker run --rm -v $PWD/src/frontend:/app -w /app node:24 bash -lc "npm ci && npm run build"` (or `npm ci && npm run build` locally with Node ≥20.19).
 
 ## Docs
 

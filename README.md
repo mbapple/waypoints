@@ -59,7 +59,7 @@ The web UI is served on `http://localhost:3000` (or `FRONTEND_PORT`).
 Older versions hardcoded the database credentials (`user` / `password`) in `docker-compose.yml`. An existing `db_data/` directory keeps the credentials it was created with, so set `POSTGRES_USER` and `POSTGRES_PASSWORD` in `.env` to those values. Otherwise, change the password inside Postgres first. The OpenRouteService key is no longer stored in the browser. Move it to `ORS_API_KEY` in `.env`.
 
 # Security:
-WayPoints has **no user authentication**. Anyone who can reach the web UI can view and edit all data, and can create, download and restore database backups. Restoring runs SQL against the database. Run it only on a trusted network, behind a VPN, or behind a reverse proxy that adds authentication. Do not expose port 3000 directly to the internet.
+WayPoints has **no user authentication**. Anyone who can reach the web UI can view and edit all data, and can create, download and restore database backups. Restoring runs SQL against the database. Run it only on a trusted network, behind a VPN, or behind a reverse proxy that adds authentication. Do not expose port 3000 directly to the internet. The frontend container also serves the Vite development server rather than a hardened production build. If you reach WayPoints through a hostname (for example via a reverse proxy), add that hostname to `FRONTEND_ALLOWED_HOSTS` in `.env`.
 
 # Tech Stack:
 ```
@@ -68,8 +68,8 @@ datbase container
 backend
 └── FastAPI
 frontend
-└── React app
-	├── Leaflet Integration
+└── React app (Vite)
+	├── Leaflet Integration (OpenStreetMap tiles, no API key needed)
 	└── Styled with styled-components 
 ```
 **Integrations:**

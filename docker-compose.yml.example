@@ -46,7 +46,7 @@ services:
     command: ["bash", "-lc", "chmod +x /workspaces/src/backend/app/start.sh && /workspaces/src/backend/app/start.sh"]
 
   frontend:
-    image: node:20
+    image: node:24
     container_name: waypoints_frontend
     restart: always
     depends_on:
@@ -54,6 +54,7 @@ services:
     environment:
       CHOKIDAR_USEPOLLING: "true"
       BACKEND_URL: "http://waypoints_backend:3001"
+      FRONTEND_ALLOWED_HOSTS: ${FRONTEND_ALLOWED_HOSTS:-}
     ports:
       - "${FRONTEND_PORT:-3000}:3000"
     volumes:

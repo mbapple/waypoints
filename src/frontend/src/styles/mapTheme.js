@@ -20,17 +20,16 @@ export function applyLeafletDefaultIconFix() {
   } catch {}
 }
 
-// Return a tile layer config matching the current theme
+// Return a tile layer config matching the current theme.
+// Both themes use the keyless OpenStreetMap tiles; dark mode applies a CSS filter
+// to the tile layer only (see .map-tiles-dark in MapGlobalStyles), so markers,
+// routes and highlight overlays keep their colors.
+// Pass `key={isDark ? 'dark' : 'light'}` on <TileLayer> so the class re-applies on theme change.
 export function getTileLayerConfig(isDark) {
-  if (isDark) {
-    return {
-      url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-      attribution:
-        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-    };
-  }
   return {
-    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+    maxZoom: 19,
+    className: isDark ? 'map-tiles-dark' : '',
     attribution:
       '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
   };
@@ -127,6 +126,10 @@ export function createAdventureDivIcon(category) {
 export const MapGlobalStyles = createGlobalStyle`
   .leaflet-container {
     background: ${p => p.theme.colors.backgroundSecondary};
+  }
+  /* Dark map: invert OSM tiles, then rotate hue back so water stays blue-ish */
+  .map-tiles-dark {
+    filter: invert(1) hue-rotate(180deg) brightness(0.95) contrast(0.9);
   }
   .leaflet-div-icon.stop-emoji-icon {
     background: transparent;

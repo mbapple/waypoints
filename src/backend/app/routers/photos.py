@@ -385,3 +385,41 @@ async def delete_photo(photo_id: int):
     return {"message": "Photo deleted"}
 
 
+# Fixed column names for /covers (never interpolate request values into SQL)
+COVER_KINDS = {"trip": "trip_id", "adventure": "adventure_id"}
+
+
+@router.get("/covers")
+def list_cover_photos(kind: str = Query(..., pattern="^(trip|adventure)$"), limit: int = Query(5, ge=1, le=20)):
+    """The newest `limit` photos of every trip (or adventure) in one query, for the list pages.
+
+    Returns {"<trip or adventure id>": [photo, ...]}; ids with no photos are left out.
+    """
+    col = COVER_KINDS[kind]
+    conn = get_db()
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            f"""
+            SELECT id, url, description, trip_id, leg_id, node_id, stop_id, adventure_id, immich_asset_id
+            FROM (
+                SELECT *, ROW_NUMBER() OVER (PARTITION BY {col} ORDER BY id DESC) AS rn
+                FROM photos
+                WHERE {col} IS NOT NULL
+            ) p
+            WHERE rn <= %s
+            ORDER BY {col}, id DESC
+            """,
+            (limit,),
+        )
+        rows = cur.fetchall()
+        cur.close()
+    finally:
+        conn.close()
+
+    covers = {}
+    for r in rows:
+        covers.setdefault(r[col], []).append(r)
+    return covers
+
+

@@ -39,16 +39,27 @@ Backing up of photos coming.
 # Installation:
 Waypoints runs in three docker containers. 
 
-### 1. Copy Docker compose example
+### 1. Copy the example config files
 ```bash
 cp docker-compose.yml.example docker-compose.yml
+cp .env.example .env
 ```
-### 2. Make any changes to paths or other in docker-compose.yml
+Both copies are gitignored, so your changes stay local.
+
+### 2. Edit `.env`
+Set a strong `POSTGRES_PASSWORD` and, optionally, your `ORS_API_KEY` for driving routes. All settings and secrets live here; `docker-compose.yml` reads them automatically. Change paths or ports in `docker-compose.yml` if needed.
 
 ### 3. Launch the containers
 ```bash
 docker compose up
 ```
+The web UI is served on `http://localhost:3000` (or `FRONTEND_PORT`).
+
+### Upgrading from an older version
+Older versions hardcoded the database credentials (`user` / `password`) in `docker-compose.yml`. An existing `db_data/` directory keeps the credentials it was created with, so set `POSTGRES_USER` and `POSTGRES_PASSWORD` in `.env` to those values. Otherwise, change the password inside Postgres first. The OpenRouteService key is no longer stored in the browser. Move it to `ORS_API_KEY` in `.env`.
+
+# Security:
+WayPoints has **no user authentication**. Anyone who can reach the web UI can view and edit all data, and can create, download and restore database backups. Restoring runs SQL against the database. Run it only on a trusted network, behind a VPN, or behind a reverse proxy that adds authentication. Do not expose port 3000 directly to the internet.
 
 # Tech Stack:
 ```
@@ -63,7 +74,7 @@ frontend
 ```
 **Integrations:**
 - [Nominatim](https://nominatim.org/): API used to search for places in Open Street Map.
-- [Open Route Service](https://openrouteservice.org): Automatically fetch driving path and distance between locations in a leg. Set the API key in settings.
+- [Open Route Service](https://openrouteservice.org): Automatically fetch driving path and distance between locations in a leg. Set `ORS_API_KEY` in `.env`. Requests are proxied through the backend, so the key never reaches the browser.
 
 
 # License:

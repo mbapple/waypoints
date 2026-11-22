@@ -1,19 +1,16 @@
-## Connection to the postgres database to be utilized by router files
-
-
-# app/database.py
-import os
+"""Connection to the postgres database, used by the router files."""
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
+import config
+
+
 def get_db():
-    #print("Connecting to the database...")
-    conn = psycopg2.connect(
-        host=os.getenv("DB_HOST", "172.17.0.1"),
-        database=os.getenv("DB_NAME", "travel_database"),
-        user=os.getenv("DB_USER", "user"),
-        password=os.getenv("DB_PASS", "password"),
-        cursor_factory=RealDictCursor
+    return psycopg2.connect(
+        host=config.DB_HOST,
+        port=config.DB_PORT,
+        database=config.DB_NAME,
+        user=config.DB_USER,
+        password=config.DB_PASS,
+        cursor_factory=RealDictCursor,
     )
-    #print("Returning database connection", conn)
-    return conn

@@ -6,9 +6,11 @@ import os
 import subprocess
 import shutil
 
+import config
+
 router = APIRouter(prefix="/api/admin", tags=["admin"])
 
-BACKUP_DIR = Path(os.getenv("BACKUP_DIR", "/workspaces/src/backups")).resolve()
+BACKUP_DIR = Path(config.BACKUP_DIR).resolve()
 BACKUP_DIR.mkdir(parents=True, exist_ok=True)
 
 ALLOWED_SUFFIXES = {".dump", ".sql"}
@@ -21,11 +23,11 @@ def _safe_backup_path(name: str) -> Path:
 
 def _db_config():
     return {
-        "host": os.getenv("DB_HOST", "172.17.0.1"),
-        "port": str(os.getenv("DB_PORT", "5432")),
-        "db": os.getenv("DB_NAME", "travel_database"),
-        "user": os.getenv("DB_USER", "user"),
-        "password": os.getenv("DB_PASS", "password"),
+        "host": config.DB_HOST,
+        "port": str(config.DB_PORT),
+        "db": config.DB_NAME,
+        "user": config.DB_USER,
+        "password": config.DB_PASS,
     }
 
 def _pg_env_and_args():

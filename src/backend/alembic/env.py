@@ -3,18 +3,36 @@ import os
 from logging.config import fileConfig
 
 from sqlalchemy import engine_from_config, pool
+from sqlalchemy.engine import URL
 from alembic import context
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
 
-# Allow overriding DB URL via env
-db_url = os.getenv(
-    "DATABASE_URL",
-    f"postgresql+psycopg2://{os.getenv('DB_USER','user')}:{os.getenv('DB_PASS','password')}@{os.getenv('DB_HOST','172.17.0.1')}:{os.getenv('DB_PORT','5432')}/{os.getenv('DB_NAME','travel_database')}"
-)
-config.set_main_option("sqlalchemy.url", db_url)
+
+def _database_url() -> str:
+    """DATABASE_URL if set, otherwise built from DB_* env vars (see .env.example)."""
+    explicit = os.getenv("DATABASE_URL")
+    if explicit:
+        return explicit
+    user = os.getenv("DB_USER")
+    password = os.getenv("DB_PASS")
+    if not user or not password:
+        raise RuntimeError("Set DATABASE_URL or DB_USER/DB_PASS (see .env.example)")
+    # URL.create escapes special characters in the password
+    return URL.create(
+        "postgresql+psycopg2",
+        username=user,
+        password=password,
+        host=os.getenv("DB_HOST", "db"),
+        port=int(os.getenv("DB_PORT", "5432")),
+        database=os.getenv("DB_NAME", "travel_database"),
+    ).render_as_string(hide_password=False)
+
+
+# configparser treats '%' as interpolation, so escape it
+config.set_main_option("sqlalchemy.url", _database_url().replace("%", "%%"))
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.

@@ -4,7 +4,8 @@ FastAPI + PostgreSQL backend for the trip planning application.
 
 ## Base URL
 - Most endpoints are prefixed with `/api`.
-- Admin database endpoints are under `/admin` and require an `X-Admin-Token` header.
+- Admin database endpoints are under `/api/admin`.
+- **There is no authentication** on any endpoint, including admin backup/restore. Run WayPoints only behind a VPN or an authenticating reverse proxy.
 
 ## Trips API (`/api/trips`)
 
@@ -534,14 +535,42 @@ Update car details for a leg.
 ### DELETE `/api/car_details/{leg_id}`
 Delete car details for a leg.
 
-## Admin API (`/admin`)
+## Admin API (`/api/admin`)
 
-All endpoints require header: `X-Admin-Token: <token>`
+These endpoints are **unauthenticated**. Restore runs `pg_restore`/`psql` against the live database, so an uploaded `.sql` file can execute arbitrary SQL. Do not expose WayPoints to untrusted networks.
 
-- POST `/admin/db/backup` – Create a backup (.dump) into the backups directory.
-- GET `/admin/db/backups` – List backups.
-- GET `/admin/db/backups/{filename}` – Download a backup.
-- POST `/admin/db/restore` – Restore from an uploaded file or an existing filename.
+- POST `/api/admin/db/backup` – Create a backup (.dump) into the backups directory.
+- GET `/api/admin/db/backups` – List backups.
+- GET `/api/admin/db/backups/{filename}` – Download a backup.
+- POST `/api/admin/db/restore` – Restore from an uploaded file or an existing filename.
+
+## Integrations API (`/api/integrations`)
+
+Server-side proxies for third-party APIs, so API keys stay in `.env` and never reach the browser.
+
+### GET `/api/integrations/status`
+Which integrations are configured (keys are never returned).
+
+Response:
+{ "ors_configured": true }
+
+### POST `/api/integrations/ors/route`
+Driving route between two points via OpenRouteService (requires `ORS_API_KEY`).
+
+Request Body:
+{
+  "start": { "lat": 40.7, "lon": -74.0 },
+  "end": { "lat": 39.95, "lon": -75.16 }
+}
+
+Response:
+{
+  "duration_seconds": 5400,
+  "distance_miles": 94.6,
+  "coordinates": [[-74.0, 40.7], ...]
+}
+
+Errors: 503 if `ORS_API_KEY` is not set; 502 if OpenRouteService fails or is unreachable.
 
 ## Data Models (summaries)
 
@@ -622,7 +651,13 @@ Error responses follow this format:
 
 ## Development
 
-To run the backend:
-1. Install dependencies: `pip install -r requirements.txt`
-2. Start the server: `uvicorn main:app --reload`
-3. API docs: `http://localhost:8000/docs`
+The backend normally runs in Docker via the root `docker-compose.yml` (see the main README). `app/start.sh` waits for the database, runs `alembic upgrade head`, then starts uvicorn on port 3001.
+
+Configuration is read from environment variables in `app/config.py` (`DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASS`, `ALLOWED_ORIGINS`, `UPLOAD_DIR`, `BACKUP_DIR`, `ORS_API_KEY`). Compose fills these from the root `.env`.
+
+To run it outside Docker:
+1. Install dependencies: `pip install -r app/requirements.txt`
+2. Export `DB_HOST`, `DB_USER`, `DB_PASS` (and optionally `UPLOAD_DIR`/`BACKUP_DIR` to writable paths)
+3. Run migrations from `src/backend`: `alembic upgrade head`
+4. Start the server from `src/backend/app`: `uvicorn main:app --reload --port 3001`
+5. API docs: `http://localhost:3001/docs`

@@ -4,18 +4,16 @@ set -euo pipefail
 # Ensure we can execute even if mounted as non-executable
 chmod +x "$0" || true
 
-# Build DATABASE_URL from env if not provided
-if [[ -z "${DATABASE_URL:-}" ]]; then
-  DB_HOST="${DB_HOST:-db}"
-  DB_PORT="${DB_PORT:-5432}"
-  DB_NAME="${DB_NAME:-travel_database}"
-  DB_USER="${DB_USER:-user}"
-  DB_PASS="${DB_PASS:-password}"
-  export DATABASE_URL="postgresql+psycopg2://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}"
-fi
+# Connection settings come from the environment (see .env.example).
+# alembic/env.py and app/config.py build the connection from these.
+: "${DB_USER:?DB_USER must be set (see .env.example)}"
+: "${DB_PASS:?DB_PASS must be set (see .env.example)}"
+DB_HOST="${DB_HOST:-db}"
+DB_PORT="${DB_PORT:-5432}"
+DB_NAME="${DB_NAME:-travel_database}"
 
 # Wait for DB to be ready
-until pg_isready -h "${DB_HOST:-db}" -p "${DB_PORT:-5432}" -U "${DB_USER:-user}" -d "${DB_NAME:-travel_database}" >/dev/null 2>&1; do
+until pg_isready -h "${DB_HOST}" -p "${DB_PORT}" -U "${DB_USER}" -d "${DB_NAME}" >/dev/null 2>&1; do
   echo "Waiting for database..."
   sleep 1
 done

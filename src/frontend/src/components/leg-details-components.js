@@ -2,7 +2,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { Input, Label, FormGroup, Text, Button, Flex } from '../styles/components';
-import { useSettings } from '../context/SettingsContext';
+import { getIntegrationStatus, fetchDrivingRoute } from '../api/integrations';
 
 const Inline = styled.div`
   display: grid;
@@ -50,32 +50,14 @@ export function encodePolyline(points) {
   return result;
 }
 
-// OpenRouteService driving directions client (no key -> works only with demo if any). User will configure their own key via env.
-async function fetchRouteORS({ start, end, apiKey }) {
+// OpenRouteService driving directions, proxied through the backend
+// (the API key is set via ORS_API_KEY in .env and never reaches the browser).
+async function fetchRouteORS({ start, end }) {
   // start/end: { lat, lon }
-  const url = 'https://api.openrouteservice.org/v2/directions/driving-car/geojson';
-  const body = {
-    coordinates: [ [start.lon, start.lat], [end.lon, end.lat] ],
-    units: 'mi'
-  };
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': apiKey
-    },
-    body: JSON.stringify(body)
-  });
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`ORS error ${res.status}: ${text}`);
-  }
-  const data = await res.json();
-  const feat = data.features?.[0];
-  const summary = feat?.properties?.summary;
-  const durationSeconds = Math.round(summary?.duration ?? 0);
-  const distanceMiles = summary?.distance ?? 0; // already in miles
-  const coords = feat?.geometry?.coordinates || [];
+  const data = await fetchDrivingRoute(start, end);
+  const durationSeconds = Math.round(data?.duration_seconds ?? 0);
+  const distanceMiles = data?.distance_miles ?? 0; // already in miles
+  const coords = data?.coordinates || [];
   const points = coords.map(([lng, lat]) => ({ lat, lon: lng }));
   const polyline = encodePolyline(points);
   return { durationSeconds, distanceMiles, polyline };
@@ -89,27 +71,27 @@ export const CarDetails = ({
   initialDurationSeconds,
   initialPolyline
 }) => {
-  const { settings } = useSettings();
-  const [apiKey, setApiKey] = useState(settings.orsApiKey || '');
+  const [orsConfigured, setOrsConfigured] = useState(null); // null = unknown/loading
   const [miles, setMiles] = useState(initialMiles ?? '');
   const [duration, setDuration] = useState(initialDurationSeconds ?? ''); // seconds internally
   const [polyline, setPolyline] = useState(initialPolyline ?? '');
   const [loading, setLoading] = useState(false);
-  const canFetch = apiKey && start?.lat && start?.lon && end?.lat && end?.lon;
+  const canFetch = orsConfigured && start?.lat && start?.lon && end?.lat && end?.lon;
   const [autoFetched, setAutoFetched] = useState(false);
 
   useEffect(() => {
-    if (settings.orsApiKey && settings.orsApiKey !== apiKey) {
-      setApiKey(settings.orsApiKey);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [settings.orsApiKey, apiKey]);
+    let active = true;
+    getIntegrationStatus()
+      .then(s => { if (active) setOrsConfigured(Boolean(s?.ors_configured)); })
+      .catch(() => { if (active) setOrsConfigured(false); });
+    return () => { active = false; };
+  }, []);
 
   const doFetch = useCallback(async () => {
     if (!canFetch) return;
     setLoading(true);
     try {
-      const { durationSeconds, distanceMiles, polyline } = await fetchRouteORS({ start, end, apiKey });
+      const { durationSeconds, distanceMiles, polyline } = await fetchRouteORS({ start, end });
       setMiles(distanceMiles.toFixed(1));
   setDuration(durationSeconds);
       setPolyline(polyline);
@@ -121,7 +103,7 @@ export const CarDetails = ({
     } finally {
       setLoading(false);
     }
-  }, [apiKey, canFetch, end, onAutoFill, start]);
+  }, [canFetch, end, onAutoFill, start]);
 
   // Auto-populate once when we have everything needed
   useEffect(() => {
@@ -156,11 +138,8 @@ export const CarDetails = ({
   return (
     <div>
       <Text variant="secondary">Driving details (auto-filled via OpenRouteService; you can edit):</Text>
-      {!apiKey && (
-        <FormGroup>
-          <Label htmlFor="orsKey">OpenRouteService API Key</Label>
-          <Input id="orsKey" value={apiKey} onChange={e => setApiKey(e.target.value)} placeholder="Enter ORS key to auto-fill" />
-        </FormGroup>
+      {orsConfigured === false && (
+        <Text variant="muted">Set ORS_API_KEY in .env to enable auto-fill.</Text>
       )}
       <Flex gap={4}>
         <Button type="button" variant="outline" disabled={!canFetch || loading} onClick={doFetch}>

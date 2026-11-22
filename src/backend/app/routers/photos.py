@@ -5,12 +5,12 @@ import os
 import shutil
 import uuid
 
-#from src.backend.app.routers.connect import get_db
+import config
 from .connect import get_db
 
 router = APIRouter(prefix="/api/photos", tags=["photos"])
 
-UPLOAD_DIR = "/workspaces/src/uploads"
+UPLOAD_DIR = config.UPLOAD_DIR
 ALLOWED_EXTENSIONS = {"jpg", "jpeg", "png", "gif", "webp"}
 MAX_FILE_SIZE = 20 * 1024 * 1024  # 20MB
 

@@ -1,20 +1,9 @@
-# backend/main.py
+# backend/app/main.py
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 
-#from src.backend.app.routers import trips
-#from src.backend.app.routers import nodes
-#from src.backend.app.routers import legs
-#from src.backend.app.routers import stops
-#from src.backend.app.routers import car_details
-#from src.backend.app.routers import flight_details
-#from src.backend.app.routers import photos
-#from src.backend.app.routers import admin
-#from src.backend.app.routers import stop_categories
-#from src.backend.app.routers import search
-#from src.backend.app.routers import adventures
-#from src.backend.app.routers import lists
+import config
 from routers import trips
 from routers import nodes
 from routers import legs
@@ -27,15 +16,15 @@ from routers import stop_categories
 from routers import search
 from routers import adventures
 from routers import lists
+from routers import integrations
 
 app = FastAPI()
-#app = FastAPI(redirect_slashes=False)
 
-# CORS setup
+# CORS setup. The browser normally talks to the frontend dev server, which
+# proxies /api to this backend, so only explicitly configured origins are allowed.
 app.add_middleware(
     CORSMiddleware,
-    #allow_origins=["*"], # Allow all origins for development
-    allow_origins=["http://waypoints_frontend:3000"],  # Should only allow frontend container to access
+    allow_origins=config.ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -54,6 +43,7 @@ app.include_router(stop_categories.router)
 app.include_router(search.router)
 app.include_router(adventures.router)
 app.include_router(lists.router)
+app.include_router(integrations.router)
 
 # Serve uploaded photos statically
-app.mount("/uploads", StaticFiles(directory="/workspaces/src/uploads"), name="uploads")
+app.mount("/uploads", StaticFiles(directory=config.UPLOAD_DIR), name="uploads")

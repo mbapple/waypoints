@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Form, FormGroup, Label, Input, Select, Button, Text } from '../styles/components';
 import { useSettings } from '../context/SettingsContext';
+import { getIntegrationStatus } from '../api/integrations';
 import styled from 'styled-components';
 
 const Spacer = styled.div`
@@ -8,7 +9,7 @@ const Spacer = styled.div`
 `;
 
 const Settings = () => {
-    const { settings, setTheme, setOrsApiKey, setFontScale } = useSettings();
+    const { settings, setTheme, setFontScale } = useSettings();
     // Stop categories state
     const [categories, setCategories] = useState([]);
     const [newCategory, setNewCategory] = useState('');
@@ -17,7 +18,7 @@ const Settings = () => {
     const [emojiEdits, setEmojiEdits] = useState({}); // id -> draft emoji
     const [emojiSaving, setEmojiSaving] = useState({}); // id -> saving state
     const [themeLocal, setThemeLocal] = useState(settings.theme || 'dark');
-    const [orsKeyLocal, setOrsKeyLocal] = useState(settings.orsApiKey || '');
+    const [orsConfigured, setOrsConfigured] = useState(null); // null = loading/unknown
     const [fontScaleLocal, setFontScaleLocal] = useState(settings.fontScale || 1);
     const [saved, setSaved] = useState(false);
     // Backups state (no auth)
@@ -31,9 +32,14 @@ const Settings = () => {
 
     useEffect(() => {
         setThemeLocal(settings.theme || 'dark');
-        setOrsKeyLocal(settings.orsApiKey || '');
         setFontScaleLocal(settings.fontScale || 1);
-    }, [settings.theme, settings.orsApiKey, settings.fontScale]);
+    }, [settings.theme, settings.fontScale]);
+
+    useEffect(() => {
+        getIntegrationStatus()
+            .then((s) => setOrsConfigured(Boolean(s?.ors_configured)))
+            .catch(() => setOrsConfigured(false));
+    }, []);
 
     useEffect(() => {
         // lazy load categories when page mounts
@@ -88,7 +94,6 @@ const Settings = () => {
     const onSave = (e) => {
         e.preventDefault();
         setTheme(themeLocal);
-        setOrsApiKey(orsKeyLocal.trim());
         setFontScale(fontScaleLocal);
         setSaved(true);
         setTimeout(() => setSaved(false), 1500);
@@ -173,8 +178,14 @@ const Settings = () => {
                     </FormGroup>
 
                     <FormGroup>
-                        <Label htmlFor="orsKey">OpenRouteService API Key</Label>
-                        <Input id="orsKey" placeholder="sk_..." value={orsKeyLocal} onChange={(e) => setOrsKeyLocal(e.target.value)} />
+                        <Label>OpenRouteService</Label>
+                        <Text variant={orsConfigured ? 'success' : 'muted'}>
+                            {orsConfigured === null
+                                ? 'Checking…'
+                                : orsConfigured
+                                    ? 'Configured'
+                                    : 'Not configured: set ORS_API_KEY in .env and restart the backend'}
+                        </Text>
                         <Text variant="muted">Used to auto-fill driving legs with distance, time, and route polyline.</Text>
                     </FormGroup>
 

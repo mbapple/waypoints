@@ -1,18 +1,21 @@
+# Copy to docker-compose.yml (gitignored) and adjust paths/ports as needed.
+# Settings and secrets come from .env (copy .env.example); compose reads it
+# automatically. Each service only receives the variables it needs.
 services:
   db:
     image: postgis/postgis:17-3.5
     container_name: travel_database
     restart: always
     environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: travel_database
+      POSTGRES_USER: ${POSTGRES_USER:?set POSTGRES_USER in .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-travel_database}
     #ports:
     #  - "5432:5432"
     volumes:
       - ./db_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U user -d travel_database"]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -29,10 +32,11 @@ services:
     environment:
       DB_HOST: db
       DB_PORT: "5432"
-      DB_NAME: travel_database
-      DB_USER: user
-      DB_PASS: password
-      ALLOWED_ORIGINS: "http://waypoints_frontend:3000"
+      DB_NAME: ${POSTGRES_DB:-travel_database}
+      DB_USER: ${POSTGRES_USER:?set POSTGRES_USER in .env}
+      DB_PASS: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000}
+      ORS_API_KEY: ${ORS_API_KEY:-}
     #ports:
     #  - "3001:3001"
     volumes:
@@ -49,13 +53,10 @@ services:
       - backend
     environment:
       CHOKIDAR_USEPOLLING: "true"
-      REACT_APP_API_BASE_URL: "/api"
+      BACKEND_URL: "http://waypoints_backend:3001"
     ports:
-      - "3000:3000"
+      - "${FRONTEND_PORT:-3000}:3000"
     volumes:
       - ./src/frontend:/app
     working_dir: /app
     command: ["bash", "-lc", "npm ci && npm start"]
-
-volumes:
-  db_data: {}

@@ -1,10 +1,20 @@
-uploads/
-__pycache__/
-*.pyc
-pgdata/
-*.db
+# Local configuration and secrets
 .env
-src/node_modules/
+.env.*
+!.env.example
+docker-compose.yml
+.claude/settings.local.json
+
+# Runtime data (database, uploaded photos, DB backups)
+db_data/
+pgdata/
 uploads/
 backups/
-docker-compose.yml
+*.db
+
+# Python
+__pycache__/
+*.pyc
+
+# Node
+node_modules/

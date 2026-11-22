@@ -2,16 +2,15 @@ import React, { createContext, useContext, useEffect, useMemo, useState } from '
 
 const STORAGE_KEY = 'app.settings.v1';
 
+// Per-browser UI preferences only. Secrets (API keys) belong in the backend .env.
 const defaultSettings = {
   theme: 'dark',
-  orsApiKey: '',
   fontScale: 1,
 };
 
 const SettingsContext = createContext({
   settings: defaultSettings,
   setTheme: (theme) => {},
-  setOrsApiKey: (key) => {},
   setFontScale: (scale) => {},
 });
 
@@ -19,11 +18,13 @@ export const SettingsProvider = ({ children }) => {
   const [settings, setSettings] = useState(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) return { ...defaultSettings, ...JSON.parse(raw) };
+      if (raw) {
+        // Drop the legacy browser-stored ORS key; it now lives server-side (ORS_API_KEY).
+        const { orsApiKey, ...stored } = JSON.parse(raw) || {};
+        return { ...defaultSettings, ...stored };
+      }
     } catch {}
-    // hydrate from env for first load
-    const envKey = window?.env?.REACT_APP_ORS_API_KEY || process.env.REACT_APP_ORS_API_KEY || '';
-    return { ...defaultSettings, orsApiKey: envKey };
+    return { ...defaultSettings };
   });
 
   useEffect(() => {
@@ -35,7 +36,6 @@ export const SettingsProvider = ({ children }) => {
   const api = useMemo(() => ({
     settings,
     setTheme: (theme) => setSettings((s) => ({ ...s, theme })),
-    setOrsApiKey: (key) => setSettings((s) => ({ ...s, orsApiKey: key })),
     setFontScale: (scale) => setSettings((s) => ({ ...s, fontScale: Number(scale) || 1 })),
   }), [settings]);
 

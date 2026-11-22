@@ -32,6 +32,7 @@ function AddStop() {
         osmState: "",
     start_date: searchParams.get("date") || "",
     end_date: "",
+        isLodging: false,
     });
 
     const [loading, setLoading] = useState(false);
@@ -54,7 +55,8 @@ function AddStop() {
                 osm_country: data.osmCountry || null,
                 osm_state: data.osmState || null,
                 start_date: data.start_date || null,
-                end_date: data.end_date || null
+                end_date: data.end_date || null,
+                is_lodging: !!data.isLodging,
             });
             navigate(`/trip/${tripID}`);
         } catch (err) {

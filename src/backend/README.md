@@ -546,12 +546,26 @@ Errors:
 ## Photos API (`/api/photos`)
 
 ### POST `/api/photos/upload`
-Upload a photo (multipart/form-data). At least one of trip_id, leg_id, node_id, stop_id is required.
+Upload a photo (multipart/form-data). At least one of trip_id, leg_id, node_id, stop_id, adventure_id is required. For JPEGs the capture time is read from EXIF into `taken_at`.
 
-Form fields: file (binary), trip_id?, leg_id?, node_id?, stop_id?, description?
+Form fields: file (binary), trip_id?, leg_id?, node_id?, stop_id?, adventure_id?, description?
 
 Response:
 { "id": 1, "url": "/uploads/xxxx.jpg" }
+
+### GET `/api/photos/calendar?start=YYYY-MM-DD&end=YYYY-MM-DD`
+One random trip or adventure photo per day in the range (inclusive, at most 120 days), used by the calendar's month view. A photo's day is its capture date (`taken_at`); photos without one fall back to the date of their stop, node or leg, or to their trip's or adventure's date when that is a single day.
+
+Before answering, it backfills `taken_at` for up to 200 photos of trips/adventures overlapping the range: EXIF for uploads, the asset's local capture time for Immich photos.
+
+Response:
+[
+  { "date": "2026-05-03", "id": 12, "url": "/uploads/xxxx.jpg", "thumbnail_url": "/uploads/xxxx.jpg",
+    "description": null, "trip_id": 3, "trip_name": "Japan", "adventure_id": null, "adventure_name": null,
+    "day_count": 7 }
+]
+
+`thumbnail_url` is the Immich thumbnail proxy for Immich photos. `day_count` is how many photos that day has.
 
 ### GET `/api/photos/by_trip/{trip_id}`
 List photos linked to a trip.

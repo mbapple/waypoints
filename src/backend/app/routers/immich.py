@@ -124,6 +124,15 @@ def _local_taken_at(asset: dict) -> Optional[str]:
     return value[:19]
 
 
+def asset_taken_at(asset_id: str) -> Optional[str]:
+    """Local capture time of one Immich asset (used to backfill photos.taken_at)."""
+    return _local_taken_at(_immich_json("GET", f"/assets/{_check_asset_id(asset_id)}"))
+
+
+def thumbnail_url(asset_id: str) -> str:
+    return f"{router.prefix}/assets/{asset_id}/thumbnail"
+
+
 def _asset_summary(asset: dict, linked_ids: set) -> Optional[dict]:
     asset_id = str(asset.get("id") or "").lower()
     if not UUID_RE.match(asset_id):
@@ -141,7 +150,7 @@ def _asset_summary(asset: dict, linked_ids: set) -> Optional[dict]:
         "country": exif.get("country"),
         "filename": asset.get("originalFileName"),
         "linked": asset_id in linked_ids,
-        "thumbnail_url": f"{router.prefix}/assets/{asset_id}/thumbnail",
+        "thumbnail_url": thumbnail_url(asset_id),
         "preview_url": f"{router.prefix}/assets/{asset_id}/preview",
     }
 
@@ -303,11 +312,12 @@ def link_asset(req: LinkRequest):
         url_path = f"{router.prefix}/assets/{asset_id}/preview"
         cur.execute(
             """
-            INSERT INTO photos (trip_id, adventure_id, leg_id, node_id, stop_id, url, description, immich_asset_id)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            INSERT INTO photos (trip_id, adventure_id, leg_id, node_id, stop_id, url, description, immich_asset_id, taken_at)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
             RETURNING id
             """,
-            (req.trip_id, req.adventure_id, req.leg_id, req.node_id, req.stop_id, url_path, req.description, asset_id),
+            (req.trip_id, req.adventure_id, req.leg_id, req.node_id, req.stop_id, url_path, req.description, asset_id,
+             _local_taken_at(asset)),
         )
         row = cur.fetchone()
         conn.commit()

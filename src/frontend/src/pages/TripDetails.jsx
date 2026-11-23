@@ -19,7 +19,7 @@ import { getIntegrationStatus } from "../api/integrations";
 import TripItinerary from "../components/trip-details/TripItinerary";
 import { HERO_HEIGHT, Header, Crumb, TripMeta, Description, Actions, Hero, SectionHeader, PhotoBar } from "../components/trip-details/trip-page-styles";
 import { CameraIcon, EditIcon, MapIcon, PlusIcon } from "../components/common/Icons";
-import { dateRange, fmtTripRange, photosByEntity } from "../utils/itinerary";
+import { dayCount as countDays, fmtTripRange, photosByEntity } from "../utils/itinerary";
 import NodePopup from "../components/trip-details/popups/NodePopup";
 import LegPopup from "../components/trip-details/popups/LegPopup";
 import StopPopup from "../components/trip-details/popups/StopPopup";
@@ -123,7 +123,7 @@ function TripDetails() {
     try { setTripPhotos(await listPhotosByTrip(tripID)); } catch {}
   };
 
-  const dayCount = trip.start_date && trip.end_date ? dateRange(trip.start_date, trip.end_date).length : 0;
+  const dayCount = trip.start_date && trip.end_date ? countDays(trip.start_date, trip.end_date) : 0;
   const nodeCount = nodes.filter(n => !n.invisible).length;
   const openEntity = (type, data) => setPopupEntity({ type, data });
 

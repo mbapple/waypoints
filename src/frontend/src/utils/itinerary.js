@@ -12,12 +12,27 @@
 
 const DAY_MS = 86400000;
 
-export function dateRange(start, end) {
+// Dated items this far outside the trip's own dates are treated as typos (e.g. year 0226 for 2026):
+// they go to "Not scheduled" instead of stretching the itinerary over centuries of empty days.
+const WIDEN_LIMIT_DAYS = 31;
+// Hard cap on itinerary days, so bad trip dates can't make the page render thousands of day cards.
+export const MAX_ITINERARY_DAYS = 731;
+
+// Number of calendar days from start to end inclusive (0 if either is invalid or end < start).
+export function dayCount(start, end) {
+  const s = new Date(`${start}T00:00:00Z`).getTime();
+  const e = new Date(`${end}T00:00:00Z`).getTime();
+  if (isNaN(s) || isNaN(e) || e < s) return 0;
+  return Math.round((e - s) / DAY_MS) + 1;
+}
+
+// Every date from start to end inclusive, at most `limit` of them (from the start).
+export function dateRange(start, end, limit = Infinity) {
   const out = [];
   const s = new Date(`${start}T00:00:00Z`);
   const e = new Date(`${end}T00:00:00Z`);
   if (isNaN(s) || isNaN(e) || e < s) return out;
-  for (let t = s.getTime(); t <= e.getTime(); t += DAY_MS) out.push(new Date(t).toISOString().slice(0, 10));
+  for (let t = s.getTime(); t <= e.getTime() && out.length < limit; t += DAY_MS) out.push(new Date(t).toISOString().slice(0, 10));
   return out;
 }
 
@@ -31,11 +46,12 @@ export function nodeSpan(n) {
 }
 
 // Days a non-lodging stop shows up on.
-export function stopDays(stop, nodeById, legById) {
+// `range` builds the day list for a dated span (buildItinerary passes one clamped to the itinerary).
+export function stopDays(stop, nodeById, legById, range = dateRange) {
   if (stop.start_date || stop.end_date) {
     const s = stop.start_date || stop.end_date;
     const e = stop.end_date || stop.start_date;
-    return e > s ? dateRange(s, e) : [s];
+    return e > s ? range(s, e) : [s];
   }
   // Undated: first day of its node, or the date of its leg
   if (stop.node_id && nodeById.has(stop.node_id)) {
@@ -47,7 +63,7 @@ export function stopDays(stop, nodeById, legById) {
 }
 
 // Nights a lodging stop covers: check-in night through the night before check-out.
-function lodgingNights(stop, nodeById) {
+function lodgingNights(stop, nodeById, range = dateRange) {
   let s = stop.start_date;
   let e = stop.end_date;
   if (!s && stop.node_id && nodeById.has(stop.node_id)) {
@@ -56,7 +72,7 @@ function lodgingNights(stop, nodeById) {
   }
   if (!s) return [];
   if (!e || e <= s) return [s];
-  return dateRange(s, addDays(e, -1));
+  return range(s, addDays(e, -1));
 }
 
 // Chain one day's legs into groups between visible nodes.
@@ -107,16 +123,35 @@ export function buildItinerary({ trip, nodes = [], legs = [], stops = [] }) {
   const nodeById = new Map(nodes.map((n) => [n.id, n]));
   const legById = new Map(legs.map((l) => [l.id, l]));
 
-  // Trip days: the trip's own range, widened to cover any dated item that falls outside it
-  const allDates = [
-    trip?.start_date, trip?.end_date,
+  // Trip days: the trip's own range, widened to cover dated items just outside it.
+  // Items far outside it (usually a mistyped year) stay out and end up in `unscheduled`.
+  const itemDates = [
     ...nodes.flatMap((n) => [n.arrival_date, n.departure_date]),
     ...legs.map((l) => l.date),
   ].filter(Boolean).sort();
-  const start = trip?.start_date || allDates[0];
-  const end = trip?.end_date || allDates[allDates.length - 1];
-  const dates = start && end ? dateRange(start <= allDates[0] ? start : allDates[0], end >= allDates[allDates.length - 1] ? end : allDates[allDates.length - 1]) : [];
+  let start = trip?.start_date;
+  let end = trip?.end_date;
+  if (start && end && start <= end) {
+    const lo = addDays(start, -WIDEN_LIMIT_DAYS);
+    const hi = addDays(end, WIDEN_LIMIT_DAYS);
+    const near = itemDates.filter((d) => d >= lo && d <= hi);
+    if (near.length) {
+      if (near[0] < start) start = near[0];
+      if (near[near.length - 1] > end) end = near[near.length - 1];
+    }
+  } else {
+    // No usable trip range: span the dated items (and whichever trip date is set)
+    const all = [trip?.start_date, trip?.end_date, ...itemDates].filter(Boolean).sort();
+    start = all[0];
+    end = all[all.length - 1];
+  }
+  const totalDays = start && end ? dayCount(start, end) : 0;
+  const dates = totalDays ? dateRange(start, end, MAX_ITINERARY_DAYS) : [];
   const dayIndex = new Map(dates.map((d, i) => [d, i]));
+  const first = dates[0];
+  const last = dates[dates.length - 1];
+  // Only the days of a span that are on the itinerary (clamped first, so a huge span stays cheap)
+  const daysWithin = (s, e) => (first ? dateRange(s < first ? first : s, e > last ? last : e) : []);
 
   const days = dates.map((date, i) => ({
     date, dayNumber: i + 1, totalDays: dates.length,
@@ -140,7 +175,7 @@ export function buildItinerary({ trip, nodes = [], legs = [], stops = [] }) {
   for (const n of nodes) {
     if (n.invisible) continue;
     const span = nodeSpan(n);
-    const covered = span ? dateRange(span[0], span[1]).filter((d) => dayIndex.has(d)) : [];
+    const covered = span ? daysWithin(span[0], span[1]).filter((d) => dayIndex.has(d)) : [];
     if (!covered.length) { unscheduled.nodes.push(n); continue; }
     for (const d of covered) days[dayIndex.get(d)].nodes.push(n);
   }
@@ -148,7 +183,7 @@ export function buildItinerary({ trip, nodes = [], legs = [], stops = [] }) {
   // Stops and lodging
   for (const s of stops) {
     if (s.is_lodging) {
-      const nights = lodgingNights(s, nodeById).filter((d) => dayIndex.has(d));
+      const nights = lodgingNights(s, nodeById, daysWithin).filter((d) => dayIndex.has(d));
       if (!nights.length) { unscheduled.stops.push(s); continue; }
       const checkOut = s.end_date && s.end_date > (s.start_date || '') ? s.end_date : null;
       nights.forEach((d, idx) => {
@@ -156,7 +191,7 @@ export function buildItinerary({ trip, nodes = [], legs = [], stops = [] }) {
       });
       continue;
     }
-    const ds = stopDays(s, nodeById, legById).filter((d) => dayIndex.has(d));
+    const ds = stopDays(s, nodeById, legById, daysWithin).filter((d) => dayIndex.has(d));
     if (!ds.length) { unscheduled.stops.push(s); continue; }
     for (const d of ds) days[dayIndex.get(d)].stops.push(s);
   }
@@ -167,7 +202,8 @@ export function buildItinerary({ trip, nodes = [], legs = [], stops = [] }) {
     day.nodes.sort((a, b) => (nodeSpan(a)?.[0] || '').localeCompare(nodeSpan(b)?.[0] || '') || a.id - b.id);
     day.itemCount = day.stops.length + day.lodging.filter((l) => l.checkIn).length + day.legGroups.length;
   }
-  return { days, unscheduled };
+  // truncated: the trip's dates span more days than the itinerary shows
+  return { days, unscheduled, totalDays, truncated: totalDays > dates.length };
 }
 
 // ---- Date formatting (dates are calendar dates, so format in UTC to avoid TZ shifts) ----

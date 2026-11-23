@@ -4,11 +4,19 @@ import ItineraryDay, { LegLine } from "./ItineraryDay";
 import ItineraryStopCard from "./ItineraryStopCard";
 import { DayCard, DayTitle, MetaRow, StopGrid, LegList, DayFooter, FooterLabel, InfoRow, Avatar } from "./itinerary-styles";
 import { PinIcon } from "../common/Icons";
-import { buildItinerary, photosByEntity, fmtSpan } from "../../utils/itinerary";
+import { buildItinerary, photosByEntity, fmtSpan, fmtLong } from "../../utils/itinerary";
 
 const Days = styled.div`
   display: grid;
   gap: 12px;
+`;
+
+const Notice = styled.div`
+  padding: 10px 14px;
+  border: 1px solid ${(p) => p.theme.colors.border};
+  border-radius: ${(p) => p.theme.radii.lg};
+  color: ${(p) => p.theme.colors.textMuted};
+  font-size: 0.9rem;
 `;
 
 const Empty = styled.div`
@@ -25,7 +33,7 @@ const Empty = styled.div`
  * onOpen(type, entity) opens the detail popup for a 'node' | 'leg' | 'stop'.
  */
 export default function TripItinerary({ trip, tripID, nodes, legs, stops, photos, onOpen }) {
-  const { days, unscheduled } = useMemo(() => buildItinerary({ trip, nodes, legs, stops }), [trip, nodes, legs, stops]);
+  const { days, unscheduled, totalDays, truncated } = useMemo(() => buildItinerary({ trip, nodes, legs, stops }), [trip, nodes, legs, stops]);
   const byEntity = useMemo(() => photosByEntity(photos), [photos]);
   const nodeById = useMemo(() => new Map(nodes.map((n) => [n.id, n])), [nodes]);
 
@@ -50,6 +58,12 @@ export default function TripItinerary({ trip, tripID, nodes, legs, stops, photos
 
   return (
     <Days>
+      {truncated && (
+        <Notice role="status">
+          These dates span {totalDays.toLocaleString()} days, so only the first {days.length} (to {fmtLong(days[days.length - 1].date)}) are shown.
+          Check the trip's dates, and its nodes' and legs' dates, for a mistyped year.
+        </Notice>
+      )}
       {days.map((day) => (
         <ItineraryDay key={day.date} day={day} tripID={tripID} photos={byEntity} nodePhoto={nodePhoto} legLabel={legLabel} onOpen={onOpen} />
       ))}

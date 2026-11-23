@@ -1,10 +1,10 @@
 import React, { useMemo } from "react";
 import styled from "styled-components";
-import ItineraryDay, { LegLine } from "./ItineraryDay";
+import ItineraryDay, { LegLine, NodeRow } from "./ItineraryDay";
 import ItineraryStopCard from "./ItineraryStopCard";
-import { DayCard, DayTitle, MetaRow, StopGrid, LegList, DayFooter, FooterLabel, InfoRow, Avatar } from "./itinerary-styles";
+import { DayCard, DayTitle, MetaRow, StopGrid, LegList, DayFooter, FooterLabel } from "./itinerary-styles";
 import { PinIcon } from "../common/Icons";
-import { buildItinerary, photosByEntity, fmtSpan, fmtLong } from "../../utils/itinerary";
+import { buildItinerary, photosByEntity, fmtLong } from "../../utils/itinerary";
 
 const Days = styled.div`
   display: grid;
@@ -89,11 +89,7 @@ export default function TripItinerary({ trip, tripID, nodes, legs, stops, photos
               <div>
                 <FooterLabel><PinIcon size={14} /> Nodes</FooterLabel>
                 {unscheduled.nodes.map((n) => (
-                  <InfoRow key={n.id} type="button" onClick={() => onOpen("node", n)}>
-                    <Avatar><PinIcon size={16} /></Avatar>
-                    <span className="text"><span className="name">{n.name}</span>{n.osm_name && <span className="sub">{n.osm_name}</span>}</span>
-                    {fmtSpan(n.arrival_date, n.departure_date)}
-                  </InfoRow>
+                  <NodeRow key={n.id} node={n} photo={nodePhoto(n.id)} tripID={tripID} onOpen={onOpen} />
                 ))}
               </div>
             </DayFooter>

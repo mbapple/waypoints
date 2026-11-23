@@ -2,6 +2,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { useTheme } from "styled-components";
 import ItineraryStopCard, { photoSrc } from "./ItineraryStopCard";
+import { getPlaceLink } from "../map-integration-components";
 import EntityMenu from "./EntityMenu";
 import { TransportIcon, BedIcon, GlobeIcon, PlusIcon, PinIcon } from "../common/Icons";
 import {
@@ -46,34 +47,54 @@ export function LegLine({ seg, tripID, onOpen }) {
   );
 }
 
-function LodgingRow({ entry, photos, onOpen }) {
+// An InfoRow that holds an EntityMenu: a div acting as a button, since buttons can't nest
+function ClickableRow({ onActivate, children }) {
+  return (
+    <InfoRow as="div" role="button" tabIndex={0} onClick={onActivate}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onActivate(); } }}>
+      {children}
+    </InfoRow>
+  );
+}
+
+function LodgingRow({ entry, photos, tripID, onOpen }) {
   const { stop, night, nights, checkIn, checkOut } = entry;
   const photo = photos.stop.get(stop.id)?.[0];
   const sub = [nights > 1 && `Night ${night} of ${nights}`, stop.osm_name].filter(Boolean).join(" · ");
   return (
-    <InfoRow type="button" onClick={() => onOpen("stop", stop)}>
+    <ClickableRow onActivate={() => onOpen("stop", stop)}>
       <Avatar>{photo ? <img src={photoSrc(photo)} alt="" /> : <BedIcon size={16} />}</Avatar>
       <span className="text">
         <span className="name">{stop.name}</span>
         {sub && <span className="sub">{sub}</span>}
       </span>
       {checkOut ? <Pill $solid>Check-out {fmtShort(checkOut)}</Pill> : checkIn && <Pill $solid>Check-in</Pill>}
-    </InfoRow>
+      <EntityMenu bare label="Stop actions" items={[
+        { label: "Edit stop", to: `/trip/${tripID}/update-stop?stopID=${stop.id}` },
+        stop.osm_id && { label: "Open in OpenStreetMap", href: getPlaceLink(stop.osm_id, stop.osm_name) },
+      ]} />
+    </ClickableRow>
   );
 }
 
-function NodeRow({ node, date, photo, onOpen }) {
-  const arriving = node.arrival_date === date && node.departure_date && node.departure_date !== date;
-  const leaving = node.departure_date === date && node.arrival_date !== date;
+/** A visible node. Without a `date` (the "Not scheduled" list) it shows the node's own dates. */
+export function NodeRow({ node, date, photo, tripID, onOpen }) {
+  const arriving = date && node.arrival_date === date && node.departure_date && node.departure_date !== date;
+  const leaving = date && node.departure_date === date && node.arrival_date !== date;
+  const span = fmtSpan(node.arrival_date, node.departure_date);
   return (
-    <InfoRow type="button" onClick={() => onOpen("node", node)}>
+    <ClickableRow onActivate={() => onOpen("node", node)}>
       <Avatar>{photo ? <img src={photoSrc(photo)} alt="" /> : <PinIcon size={16} />}</Avatar>
       <span className="text">
         <span className="name">{node.name}</span>
         {node.osm_name && node.osm_name !== node.name && <span className="sub">{node.osm_name}</span>}
       </span>
-      <Pill $solid>{leaving ? "Leaving" : arriving ? "Arriving" : fmtSpan(node.arrival_date, node.departure_date)}</Pill>
-    </InfoRow>
+      {(leaving || arriving || span) && <Pill $solid>{leaving ? "Leaving" : arriving ? "Arriving" : span}</Pill>}
+      <EntityMenu bare label="Node actions" items={[
+        { label: "Edit node", to: `/trip/${tripID}/update-node?nodeID=${node.id}` },
+        node.osm_id && { label: "Open in OpenStreetMap", href: getPlaceLink(node.osm_id, node.osm_name) },
+      ]} />
+    </ClickableRow>
   );
 }
 
@@ -140,13 +161,13 @@ export default function ItineraryDay({ day, tripID, photos, nodePhoto, legLabel,
           {day.lodging.length > 0 && (
             <div>
               <FooterLabel><BedIcon size={14} /> Staying overnight</FooterLabel>
-              {day.lodging.map((l) => <LodgingRow key={l.stop.id} entry={l} photos={photos} onOpen={onOpen} />)}
+              {day.lodging.map((l) => <LodgingRow key={l.stop.id} entry={l} photos={photos} tripID={tripID} onOpen={onOpen} />)}
             </div>
           )}
           {day.nodes.length > 0 && (
             <div>
               <FooterLabel><GlobeIcon size={14} /> {day.nodes.length > 1 ? "Nodes" : "Node"}</FooterLabel>
-              {day.nodes.map((n) => <NodeRow key={n.id} node={n} date={day.date} photo={nodePhoto(n.id)} onOpen={onOpen} />)}
+              {day.nodes.map((n) => <NodeRow key={n.id} node={n} date={day.date} photo={nodePhoto(n.id)} tripID={tripID} onOpen={onOpen} />)}
             </div>
           )}
         </DayFooter>

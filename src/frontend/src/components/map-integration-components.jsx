@@ -22,7 +22,9 @@ const DropdownHeading = styled.div`
 const MAX_LOCAL_MATCHES = 5;
 const NOMINATIM = 'https://nominatim.openstreetmap.org';
 
-const nominatimOsmId = (place) => `${place.osm_type.charAt(0).toUpperCase()}${place.osm_id}`;
+// "R7444" / "N123"; '' when Nominatim gives no OSM object (e.g. postcode or interpolated-address hits)
+const nominatimOsmId = (place) =>
+    place?.osm_type && place.osm_id != null ? `${String(place.osm_type).charAt(0).toUpperCase()}${place.osm_id}` : '';
 
 // Nominatim result -> the place shape PlaceSearchInput passes to onPlaceSelect
 export const nominatimToPlace = (place) => ({

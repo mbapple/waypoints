@@ -197,6 +197,28 @@ export function createAdventureDivIcon(category) {
   return cachedDivIcon(`adv|${emoji}`, `<span class="wp-adventure">${emoji}</span>`);
 }
 
+// Photo card for the Map timeline: up to two thumbnails in a trip-colored frame that sits above
+// its point (zero-size icon like the others; .wp-photo is positioned by CSS). Cached per card.
+const escapeAttr = (v) => String(v ?? '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+export function createPhotoCardIcon(key, photos, color) {
+  const cacheKey = `photo|${key}`;
+  let icon = _iconCache.get(cacheKey);
+  if (!icon) {
+    const c = safeCssColor(color);
+    const imgs = photos
+      .map((p) => `<img src="${escapeAttr(p.thumb)}" alt="${escapeAttr(p.description || 'Photo')}" draggable="false" onerror="this.style.display='none'">`)
+      .join('');
+    icon = L.divIcon({
+      className: 'wp-photo-marker',
+      html: `<div class="wp-photo" style="--wp-c:${c}">${imgs}</div>`,
+      iconSize: null,
+      popupAnchor: [0, -84],
+    });
+    _iconCache.set(cacheKey, icon);
+  }
+  return icon;
+}
+
 // Global Leaflet popup theming so popups align with app theme
 export const MapGlobalStyles = createGlobalStyle`
   .leaflet-container {
@@ -289,6 +311,55 @@ export const MapGlobalStyles = createGlobalStyle`
     height: 18px;
     font-size: 10px;
     border-width: 2px;
+  }
+  /* ----- Timeline photo cards (see createPhotoCardIcon) ----- */
+  .leaflet-marker-icon.wp-photo-marker {
+    background: none;
+    border: none;
+  }
+  @keyframes wp-photo-in {
+    from { opacity: 0; transform: translate(-50%, calc(-100% - 2px)) scale(0.4); }
+    to { opacity: 1; transform: translate(-50%, calc(-100% - 12px)) scale(1); }
+  }
+  .wp-photo {
+    position: absolute;
+    left: 0;
+    top: 0;
+    transform: translate(-50%, calc(-100% - 12px));
+    transform-origin: 50% 100%;
+    display: flex;
+    gap: 3px;
+    padding: 3px;
+    background: ${p => p.theme.colors.card};
+    border: 2px solid var(--wp-c);
+    border-radius: 8px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+    cursor: pointer;
+    animation: wp-photo-in 0.35s ease-out;
+  }
+  /* pointer down to the place */
+  .wp-photo::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -7px;
+    border-left: 7px solid transparent;
+    border-right: 7px solid transparent;
+    border-top: 9px solid var(--wp-c);
+  }
+  .wp-photo img {
+    display: block;
+    width: 64px;
+    height: 64px;
+    object-fit: cover;
+    border-radius: 5px;
+    background: ${p => p.theme.colors.backgroundSecondary};
+    user-select: none;
+  }
+  .wp-zoom-low .wp-photo img {
+    width: 48px;
+    height: 48px;
   }
   .leaflet-popup-content-wrapper {
     background: ${p => p.theme.colors.card};

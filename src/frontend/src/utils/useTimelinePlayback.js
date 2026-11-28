@@ -133,6 +133,8 @@ export default function useTimelinePlayback(features) {
     totalCount: features.length,
     playing,
     inPlay: !!play,
+    playPos: play ? play.pos : null, // float feature index while in play mode
+    playStart: play ? play.startIdx : null,
     speed,
     setSpeed,
     play: play_,

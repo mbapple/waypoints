@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import L from "leaflet";
 // no Link usage in this page after refactor
@@ -17,7 +17,9 @@ import { buildMapLayersForAllTrips } from "../utils/mapData";
 import { listAirports } from "../api/destinations";
 import { listCities } from "../api/cities";
 import { listLists, getList } from "../api/lists";
-import { buildTimelineFeatures } from "../utils/timeline";
+import { listPhotosByTrip } from "../api/photos";
+import { API_ORIGIN } from "../api/client";
+import { buildTimelineFeatures, buildPhotoCards, recentPhotoCards, upcomingPhotoCards } from "../utils/timeline";
 import useTimelinePlayback from "../utils/useTimelinePlayback";
 import TravelTimeline from "../components/map/TravelTimeline";
 
@@ -200,6 +202,34 @@ function MapPage() {
 	useEffect(() => { if (!isTimeline) pauseTimeline(); }, [isTimeline, pauseTimeline]);
 	const tripLayers = isTimeline ? tl.visible : { markers, stopMarkers, adventureMarkers, polylines };
 
+	// Timeline photos: every trip's photos, fetched the first time the Timeline view opens
+	const [photosByTrip, setPhotosByTrip] = useState(null);
+	const photosRequested = useRef(false);
+	useEffect(() => {
+		if (!isTimeline || loading || photosRequested.current) return;
+		photosRequested.current = true;
+		Promise.allSettled(trips.map((t) => listPhotosByTrip(t.id))).then((results) => {
+			setPhotosByTrip(Object.fromEntries(trips.map((t, i) => [t.id, results[i].status === "fulfilled" ? results[i].value || [] : []])));
+		});
+	}, [isTimeline, loading, trips]);
+	const photoCards = useMemo(() => buildPhotoCards(timeline.features, photosByTrip, trips), [timeline.features, photosByTrip, trips]);
+	const photoMarkers = useMemo(
+		() => (isTimeline ? recentPhotoCards(photoCards, tl.playPos, tl.playStart, tl.speed) : []),
+		[isTimeline, photoCards, tl.playPos, tl.playStart, tl.speed],
+	);
+	// Warm the browser cache with the next few cards' thumbnails so they don't pop up empty
+	const preloaded = useRef(new Set());
+	const playStep = tl.playPos == null ? null : Math.floor(tl.playPos);
+	useEffect(() => {
+		if (playStep == null) return;
+		upcomingPhotoCards(photoCards, playStep).forEach((c) => c.photos.forEach((p) => {
+			if (preloaded.current.has(p.thumb)) return;
+			preloaded.current.add(p.thumb);
+			const img = new Image();
+			img.src = p.thumb.startsWith("http") ? p.thumb : `${API_ORIGIN}${p.thumb}`;
+		}));
+	}, [playStep, photoCards]);
+
 	// Place markers + bounds for the airports / cities / list views
 	const placeView = useMemo(() => {
 		if (mapView === "trips" || mapView === "timeline") return null;
@@ -282,6 +312,8 @@ function MapPage() {
 					placeMarkers={placeView ? placeView.placeMarkers : []}
 					polylines={placeView ? [] : tripLayers.polylines}
 					headMarkers={isTimeline ? tl.visible.heads : []}
+					photoMarkers={photoMarkers}
+					onPhotoMarkerClick={pauseTimeline}
 					bounds={placeView ? placeView.placeBounds : bounds}
 					highlightMode={highlightMode}
 					nodeById={nodeById}

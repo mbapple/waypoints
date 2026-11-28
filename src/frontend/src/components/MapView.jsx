@@ -3,7 +3,8 @@ import L from 'leaflet';
 import { Link } from "react-router-dom";
 import { MapContainer, TileLayer, Marker, CircleMarker, Polyline, Popup, Tooltip, useMap, useMapEvent } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
-import { applyLeafletDefaultIconFix, getTileLayerConfig, MapGlobalStyles, MapZoomClass, createNodeDivIcon, createStopDivIcon, createAdventureDivIcon, getTripColor } from "../styles/mapTheme";
+import { applyLeafletDefaultIconFix, getTileLayerConfig, MapGlobalStyles, MapZoomClass, createNodeDivIcon, createStopDivIcon, createAdventureDivIcon, createPhotoCardIcon, getTripColor } from "../styles/mapTheme";
+import { fmtLong } from "../utils/itinerary";
 import HighlightLayer from "./HighlightLayer";
 import { FitToBounds } from "../utils/map_helper_functions";
 import PhotoSlideshowLarge from "./photos/PhotoSlideshowLarge";
@@ -42,6 +43,8 @@ export default function MapView({
   placeMarkers = [], // [{ key, name, code?, pos, countLabel?, faded?, trips: [{id, name}] }]
   polylines = [], // [{ positions, color, tripId?, type?, opacity?, weight? }] (opacity/weight override the defaults)
   headMarkers = [], // [{ key, pos, color, tripId? }] dots at the tip of a line being drawn (Map timeline)
+  photoMarkers = [], // [{ key, pos, title, date, tripId, tripName, photos: [{ url, thumb, ... }], opacity, order }] (Map timeline)
+  onPhotoMarkerClick, // (card) => void, e.g. to pause playback
   bounds,
   highlightMode = "off",
   nodeById = {},
@@ -308,6 +311,33 @@ export default function MapView({
               fillOpacity: tripOpacity(h.tripId),
             }}
           />
+        ))}
+
+        {photoMarkers.map((c) => (
+          <Marker
+            key={c.key}
+            position={c.pos}
+            icon={createPhotoCardIcon(c.key, c.photos, getTripColor(c.tripId))}
+            opacity={Math.min(c.opacity ?? 1, tripOpacity(c.tripId))}
+            zIndexOffset={3000 - (c.order || 0) * 10}
+            keyboard={false}
+            eventHandlers={{ click: () => onPhotoMarkerClick?.(c) }}
+          >
+            <Popup>
+              <div style={{ minWidth: 240 }}>
+                <div style={{ fontWeight: 700, marginBottom: 4 }}>{c.title}</div>
+                <div style={{ fontSize: theme.fontSizes.xs, color: theme.colors.textSecondary, marginBottom: 6 }}>
+                  {[c.date && fmtLong(c.date), c.tripName].filter(Boolean).join(" · ")}
+                </div>
+                <PhotoSlideshowLarge photos={c.photos} image_height={160} expandable />
+                {c.tripId != null && (
+                  <div style={{ marginTop: 8 }}>
+                    <Link to={pathForTripId(c.tripId)} style={linkStyle}>{linkLabel}</Link>
+                  </div>
+                )}
+              </div>
+            </Popup>
+          </Marker>
         ))}
 
         {placeMarkers.map((p) => (

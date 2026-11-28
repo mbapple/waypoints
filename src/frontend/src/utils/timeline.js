@@ -4,7 +4,7 @@
 // Dates are calendar dates only (no times), so order within a day comes from the trip's
 // structure: legs run from their start node to their end node, and stops sit at a node or on a leg.
 
-import { nodeSpan, stopDays } from "./itinerary";
+import { nodeSpan, stopDays, photosByEntity } from "./itinerary";
 
 export const DAY_MS = 86400000;
 
@@ -101,14 +101,16 @@ export function buildTimelineFeatures({ trips = [], nodesByTrip = {}, legsByTrip
     nodes.forEach((n) => {
       const marker = markerById.get(n.id);
       if (!marker) return; // invisible or no coordinates
-      push({ key: `node-${n.id}`, kind: "node", id: n.id, tripId, tripStart, rank: 2 * nodeRank.get(n.id), date: nodeSpan(n)?.[0] || tripStart, marker });
+      push({ key: `node-${n.id}`, kind: "node", id: n.id, name: n.name, tripId, tripStart, rank: 2 * nodeRank.get(n.id), date: nodeSpan(n)?.[0] || tripStart, marker });
     });
 
     legs.forEach((l) => {
       const lines = linesByLeg.get(l.id);
       if (!lines?.length) return; // no endpoints
       const polylines = lines.map((p, i) => ({ ...p, key: `leg-${l.id}-${i}` }));
-      push({ key: `leg-${l.id}`, kind: "leg", id: l.id, tripId, tripStart, rank: legRank(l), date: l.date, polylines });
+      const end = (id, osmName) => nodeById.get(id)?.name || osmName || "?";
+      const name = `${end(l.start_node_id, l.start_osm_name)} → ${end(l.end_node_id, l.end_osm_name)}`;
+      push({ key: `leg-${l.id}`, kind: "leg", id: l.id, name, tripId, tripStart, rank: legRank(l), date: l.date, polylines });
     });
 
     stops.forEach((s) => {
@@ -117,12 +119,12 @@ export function buildTimelineFeatures({ trips = [], nodesByTrip = {}, legsByTrip
       let rank = BIG;
       if (s.node_id && nodeRank.has(s.node_id)) rank = 2 * nodeRank.get(s.node_id) + 0.5;
       else if (s.leg_id && legById.has(s.leg_id)) rank = legRank(legById.get(s.leg_id)) + 0.5;
-      push({ key: `stop-${s.id}`, kind: "stop", id: s.id, tripId, tripStart, rank, date: stopDays(s, nodeById, legById)[0], marker });
+      push({ key: `stop-${s.id}`, kind: "stop", id: s.id, name: s.name, tripId, tripStart, rank, date: stopDays(s, nodeById, legById)[0], marker });
     });
   });
 
   (layers.adventureMarkers || []).forEach((a) => {
-    push({ key: `adv-${a.id}`, kind: "adventure", id: a.id, tripId: null, tripStart: null, rank: 0, date: a.start_date || a.end_date, marker: a });
+    push({ key: `adv-${a.id}`, kind: "adventure", id: a.id, name: a.name, tripId: null, tripStart: null, rank: 0, date: a.start_date || a.end_date, marker: a });
   });
 
   features.sort((a, b) =>
@@ -186,4 +188,74 @@ export function layersFromFeatures(features, partial = null) {
   features.forEach((f) => add(f));
   if (partial?.feature) add(partial.feature, partial.frac);
   return { markers, stopMarkers, adventureMarkers, polylines, heads };
+}
+
+// ---- Photos during playback ----
+// When a node, stop or leg is drawn, a card with its newest PHOTOS_PER_FEATURE photos pops up
+// on the map and fades out PHOTO_SECONDS later; at most MAX_PHOTO_CARDS are shown at once.
+export const PHOTOS_PER_FEATURE = 2;
+export const PHOTO_SECONDS = 3;
+export const MAX_PHOTO_CARDS = 3;
+
+// Small image for the map card: Immich's thumbnail size via the backend proxy, else the upload itself
+export function photoThumbUrl(photo) {
+  return photo.immich_asset_id ? `/api/integrations/immich/assets/${photo.immich_asset_id}/thumbnail` : photo.url;
+}
+
+// photosByTrip = { tripId: GET /photos/by_trip/{id} rows } (newest first)
+// -> { byIndex: Map(featureIndex -> card), indices: ascending feature indices that have a card }
+export function buildPhotoCards(features, photosByTrip, trips = []) {
+  const byIndex = new Map();
+  const indices = [];
+  if (!photosByTrip) return { byIndex, indices };
+  const tripName = new Map((trips || []).map((t) => [Number(t.id), t.name]));
+  const entities = photosByEntity(Object.values(photosByTrip).flat());
+  features.forEach((f, i) => {
+    if (f.kind !== "node" && f.kind !== "stop" && f.kind !== "leg") return;
+    const photos = (entities[f.kind].get(f.id) || []).slice(0, PHOTOS_PER_FEATURE);
+    if (!photos.length) return;
+    let pos = f.marker?.pos;
+    if (f.kind === "leg") { // halfway along the route
+      const half = slicePolyline(f.polylines.map((p) => p.positions), 0.5);
+      const last = half[half.length - 1];
+      pos = last?.[last.length - 1];
+    }
+    if (!pos) return;
+    byIndex.set(i, {
+      key: `photo-${f.key}`,
+      pos,
+      title: f.name || "",
+      date: f.date,
+      tripId: f.tripId,
+      tripName: tripName.get(f.tripId) || "Trip",
+      photos: photos.map((p) => ({ ...p, thumb: photoThumbUrl(p) })),
+    });
+    indices.push(i);
+  });
+  return { byIndex, indices };
+}
+
+// Cards to show at playback position `playPos` (float feature index; playback began at `playStart`).
+// Newest first, each with an `opacity` that fades over the last quarter of its time on screen.
+export function recentPhotoCards({ byIndex, indices }, playPos, playStart, speed) {
+  if (playPos == null || !indices.length) return [];
+  const life = PHOTO_SECONDS * speed; // in steps, so cards stay up for the same time at any speed
+  const cur = Math.floor(playPos);
+  let j = indices.length - 1;
+  while (j >= 0 && indices[j] > cur) j -= 1;
+  const out = [];
+  for (; j >= 0 && out.length < MAX_PHOTO_CARDS; j -= 1) {
+    const i = indices[j];
+    if (i < playStart) break;
+    const age = playPos - i;
+    if (age > life) break;
+    out.push({ ...byIndex.get(i), opacity: Math.min(1, (life - age) / (life * 0.25)), order: out.length });
+  }
+  return out;
+}
+
+// The next few cards after `playPos`, so their thumbnails can be preloaded before they pop up
+export function upcomingPhotoCards({ byIndex, indices }, playPos, count = 4) {
+  const cur = Math.floor(playPos ?? -1);
+  return indices.filter((i) => i > cur).slice(0, count).map((i) => byIndex.get(i));
 }
